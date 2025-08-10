@@ -6,32 +6,22 @@ const dbConfig = defineConfig({
   connections: {
     postgres: {
       client: 'pg',
-      connection: {
-        host: env.get('DB_HOST'),
-        port: env.get('DB_PORT'),
-        user: env.get('DB_USER'),
-        password: env.get('DB_PASSWORD'),
-        database: env.get('DB_DATABASE'),
-        ssl: {
-          rejectUnauthorized: false
-        }
-      },
+      connection: `postgresql://${env.get('DB_USER')}:${env.get('DB_PASSWORD')}@${env.get('DB_HOST')}:${env.get('DB_PORT')}/${env.get('DB_DATABASE')}?pgbouncer=true`,
       pool: {
         min: 0,
-        max: 10,
-        acquireTimeoutMillis: 60000,
+        max: 7,
+        acquireTimeoutMillis: 300000,
         createTimeoutMillis: 30000,
-        destroyTimeoutMillis: 5000,
         idleTimeoutMillis: 30000,
         reapIntervalMillis: 1000,
-        createRetryIntervalMillis: 200
+        createRetryIntervalMillis: 200,
       },
       migrations: {
         naturalSort: true,
         paths: ['database/migrations'],
         tableName: 'adonis_schema',
-        disableTransactions: false
-      }
+        disableTransactions: false,
+      },
     },
   },
 })
