@@ -8,34 +8,9 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-        },
-        gray: {
-          50: '#f9fafb',
-          100: '#f3f4f6',
-          200: '#e5e7eb',
-          300: '#d1d5db',
-          400: '#9ca3af',
-          500: '#6b7280',
-          600: '#4b5563',
-          700: '#374151',
-          800: '#1f2937',
-          900: '#111827',
-        },
-      },
       fontFamily: {
         sans: [
+          'Instrument Sans',
           'Inter',
           'ui-sans-serif',
           'system-ui',
@@ -47,6 +22,27 @@ export default {
           'Arial',
           'sans-serif',
         ],
+      },
+      colors: {
+        ...theme('colors'),
+        primary: {
+          DEFAULT: "#5A45FF",
+          lighter: "#a599ff"
+        },
+        sand: {
+          1: "var(--sand-1)",
+          2: "var(--sand-2)",
+          3: "var(--sand-3)",
+          4: "var(--sand-4)",
+          5: "var(--sand-5)",
+          6: "var(--sand-6)",
+          7: "var(--sand-7)",
+          8: "var(--sand-8)",
+          9: "var(--sand-9)",
+          10: "var(--sand-10)",
+          11: "var(--sand-11)",
+          12: "var(--sand-12)"
+        }
       },
     },
   },

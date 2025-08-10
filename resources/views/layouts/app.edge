@@ -6,12 +6,11 @@
     <title>
       {{ title || 'Ad Reporting Tool' }}
     </title>
+    <meta name="csrf-token" content="{{ csrfToken }}">
     @vite(['resources/js/app.js'])
-    <script src="https://cdn.tailwindcss.com">
-      
-    </script>
+    
     <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      href="/css/fontawesome.css"
       rel="stylesheet"
     />
   </head>
@@ -34,7 +33,7 @@
 
               <div class="flex items-center space-x-4">
                 <a href="{{ route('dashboard.index') }}" class="text-gray-700 hover:text-blue-600">Dashboard</a>
-                <a href="#" class="text-gray-700 hover:text-blue-600">Integrations</a>
+                <a href="{{ route('integrations.index') }}" class="text-gray-700 hover:text-blue-600">Integrations</a>
                 <a href="#" class="text-gray-700 hover:text-blue-600">Reports</a>
 
                 <div class="relative">
@@ -54,15 +53,15 @@
       
       <!-- Flash Messages -->
       @if(flashMessages.has('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-          <i class="fas fa-check-circle mr-2"></i>
+        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4" role="alert" aria-live="polite">
+          <i class="fas fa-check-circle mr-2" aria-hidden="true"></i>
           {{ flashMessages.get('success') }}
         </div>
       @end
       
       @if(flashMessages.has('error'))
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <i class="fas fa-exclamation-circle mr-2"></i>
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert" aria-live="polite">
+          <i class="fas fa-exclamation-circle mr-2" aria-hidden="true"></i>
           {{ flashMessages.get('error') }}
         </div>
       @end

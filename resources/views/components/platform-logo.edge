@@ -1,0 +1,19 @@
+@component('platform-logo', (platform, size = 'md'))
+  @if(platform === 'google_ads')
+    <div class="{{ size === 'sm' ? 'w-6 h-6' : size === 'lg' ? 'w-12 h-12' : 'w-8 h-8' }} bg-red-100 rounded-lg flex items-center justify-center">
+      <i class="fab fa-google text-red-600 {{ size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-xl' : 'text-sm' }}"></i>
+    </div>
+  @elseif(platform === 'meta_ads')
+    <div class="{{ size === 'sm' ? 'w-6 h-6' : size === 'lg' ? 'w-12 h-12' : 'w-8 h-8' }} bg-blue-100 rounded-lg flex items-center justify-center">
+      <i class="fab fa-facebook text-blue-600 {{ size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-xl' : 'text-sm' }}"></i>
+    </div>
+  @elseif(platform === 'tiktok_ads')
+    <div class="{{ size === 'sm' ? 'w-6 h-6' : size === 'lg' ? 'w-12 h-12' : 'w-8 h-8' }} bg-black rounded-lg flex items-center justify-center">
+      <i class="fab fa-tiktok text-white {{ size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-xl' : 'text-sm' }}"></i>
+    </div>
+  @else
+    <div class="{{ size === 'sm' ? 'w-6 h-6' : size === 'lg' ? 'w-12 h-12' : 'w-8 h-8' }} bg-gray-100 rounded-lg flex items-center justify-center">
+      <i class="fas fa-ad text-gray-600 {{ size === 'sm' ? 'text-xs' : size === 'lg' ? 'text-xl' : 'text-sm' }}"></i>
+    </div>
+  @end
+@endcomponent

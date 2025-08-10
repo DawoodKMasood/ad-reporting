@@ -75,6 +75,78 @@
   .stat-card-danger {
     @apply border-red-500;
   }
+
+  .integration-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4 transition-all duration-200 hover:shadow-md;
+  }
+
+  .integration-card-connected {
+    @apply border-green-200 bg-green-50;
+  }
+
+  .integration-card-disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .account-summary-card {
+    @apply flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow;
+  }
+
+  .sync-status-active {
+    @apply flex h-3 w-3 relative;
+  }
+
+  .sync-status-active-inner {
+    @apply animate-ping absolute h-3 w-3 rounded-full bg-green-400 opacity-75;
+  }
+
+  .sync-status-active-dot {
+    @apply relative inline-flex rounded-full h-3 w-3 bg-green-500;
+  }
+
+  .sync-status-syncing {
+    @apply flex h-3 w-3 relative;
+  }
+
+  .sync-status-syncing-inner {
+    @apply animate-ping absolute h-3 w-3 rounded-full bg-blue-400 opacity-75;
+  }
+
+  .sync-status-syncing-dot {
+    @apply relative inline-flex rounded-full h-3 w-3 bg-blue-500;
+  }
+
+  .sync-status-error {
+    @apply flex h-3 w-3 relative;
+  }
+
+  .sync-status-error-dot {
+    @apply relative inline-flex rounded-full h-3 w-3 bg-red-500;
+  }
+
+  .sync-status-inactive {
+    @apply flex h-3 w-3 relative;
+  }
+
+  .sync-status-inactive-dot {
+    @apply relative inline-flex rounded-full h-3 w-3 bg-gray-500;
+  }
+
+  .platform-logo-google {
+    @apply bg-red-100 rounded-lg flex items-center justify-center;
+  }
+
+  .platform-logo-meta {
+    @apply bg-blue-100 rounded-lg flex items-center justify-center;
+  }
+
+  .platform-logo-tiktok {
+    @apply bg-black rounded-lg flex items-center justify-center;
+  }
+
+  .platform-logo-default {
+    @apply bg-gray-100 rounded-lg flex items-center justify-center;
+  }
 }
 
 /* Custom utilities */
@@ -82,9 +154,53 @@
   .min-h-screen-nav {
     min-height: calc(100vh - 4rem);
   }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-slow {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
 }
 
 /* Auth page background */
 .auth-background {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .integration-card {
+    @apply bg-gray-800 border-gray-700;
+  }
+
+  .integration-card-connected {
+    @apply border-green-800 bg-green-900/20;
+  }
+
+  .account-summary-card {
+    @apply bg-gray-800 border-gray-700;
+  }
+
+  .platform-logo-google {
+    @apply bg-red-900/20;
+  }
+
+  .platform-logo-meta {
+    @apply bg-blue-900/20;
+  }
+
+  .platform-logo-tiktok {
+    @apply bg-gray-900;
+  }
+
+  .platform-logo-default {
+    @apply bg-gray-700;
+  }
 }

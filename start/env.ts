@@ -36,4 +36,24 @@ export default await Env.create(new URL('../', import.meta.url), {
   DB_PASSWORD: Env.schema.string.optional(),
   DB_DATABASE: Env.schema.string(),
   DB_SSL: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for Google Ads OAuth2
+  |----------------------------------------------------------
+  */
+  GOOGLE_ADS_CLIENT_ID: Env.schema.string(),
+  GOOGLE_ADS_CLIENT_SECRET: Env.schema.string(),
+  GOOGLE_ADS_DEVELOPER_TOKEN: Env.schema.string(),
+  GOOGLE_ADS_LOGIN_CUSTOMER_ID: Env.schema.string(),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for encryption
+  |----------------------------------------------------------
+  */
+  ENCRYPTION_KEY: Env.schema.string(),
+  PREVIOUS_ENCRYPTION_KEYS: Env.schema.string.optional(),
+  ENCRYPTION_KEY_DEVELOPMENT: Env.schema.string.optional(),
+  ENCRYPTION_KEY_PRODUCTION: Env.schema.string.optional(),
 })

@@ -6,13 +6,7 @@
     <title>
       Create Account - Ad Reporting Tool
     </title>
-    <script src="https://cdn.tailwindcss.com">
-      
-    </script>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
-      rel="stylesheet"
-    />
+    <link href="/css/fontawesome.css" rel="stylesheet">
     <style>
       body {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -75,7 +69,7 @@
                   type="text"
                   id="fullName"
                   name="fullName"
-                  value="{{ old('fullName') }}"
+                  value="{{ old('fullName') || '' }}"
                   required
                   placeholder="Enter your full name"
                   class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
@@ -101,7 +95,7 @@
                   type="email"
                   id="email"
                   name="email"
-                  value="{{ old('email') }}"
+                  value="{{ old('email') || '' }}"
                   required
                   autocomplete="email"
                   placeholder="Enter your email address"

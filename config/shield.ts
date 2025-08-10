@@ -6,8 +6,24 @@ const shieldConfig = defineConfig({
    * to learn more
    */
   csp: {
-    enabled: false,
-    directives: {},
+    enabled: true,
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      fontSrc: ["'self'", 'https:', 'data:'],
+      connectSrc: ["'self'", 'https:'],
+      mediaSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      childSrc: ["'self'"],
+      frameSrc: ["'self'"],
+      workerSrc: ["'self'", 'blob:'],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'"],
+      baseUri: ["'self'"],
+      manifestSrc: ["'self'"],
+    },
     reportOnly: false,
   },
 
@@ -18,7 +34,7 @@ const shieldConfig = defineConfig({
   csrf: {
     enabled: true,
     exceptRoutes: [],
-    enableXsrfCookie: false,
+    enableXsrfCookie: true,
     methods: ['POST', 'PUT', 'PATCH', 'DELETE'],
   },
 
@@ -37,6 +53,8 @@ const shieldConfig = defineConfig({
   hsts: {
     enabled: true,
     maxAge: '180 days',
+    includeSubDomains: true,
+    preload: true,
   },
 
   /**

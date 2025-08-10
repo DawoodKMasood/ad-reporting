@@ -1,0 +1,33 @@
+@component('integration-card', (platform))
+  <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+    <div class="flex items-center">
+      @include('components/platform-logo', { platform: platform.name, size: 'md' })
+      <div class="ml-3">
+        <h3 class="text-sm font-medium text-gray-900">
+          {{ platform.displayName }}
+        </h3>
+        <p class="text-xs text-gray-500">
+          {{ platform.description }}
+        </p>
+      </div>
+    </div>
+    <div>
+      @if(platform.connected)
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          <i class="fas fa-check-circle mr-1"></i>
+          Connected
+        </span>
+      @else
+        <button
+          type="button"
+          data-action="connect-platform"
+          data-platform="{{ platform.name }}"
+          class="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 {{ platform.disabled ? 'opacity-50 cursor-not-allowed' : '' }}"
+          {{ platform.disabled ? 'disabled' : '' }}
+        >
+          {{ platform.disabled ? 'Coming Soon' : 'Connect' }}
+        </button>
+      @end
+    </div>
+  </div>
+@endcomponent
