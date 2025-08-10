@@ -42,10 +42,13 @@
     "@swc/core": "1.11.24",
     "@types/luxon": "^3.7.1",
     "@types/node": "^22.15.18",
+    "autoprefixer": "^10.4.20",
     "eslint": "^9.26.0",
     "hot-hook": "^0.4.0",
     "pino-pretty": "^13.0.0",
+    "postcss": "^8.4.49",
     "prettier": "^3.5.3",
+    "tailwindcss": "^3.4.17",
     "ts-node-maintained": "^10.9.5",
     "typescript": "~5.8",
     "vite": "^6.3.5"

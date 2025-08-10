@@ -9,4 +9,14 @@
 
 import router from '@adonisjs/core/services/router'
 
-router.on('/').render('pages/home')
+// Import route modules
+import './routes/auth.js'
+import './routes/dashboard.js'
+
+// Home route - redirects based on auth status
+router.get('/', async ({ auth, response }) => {
+  if (await auth.check()) {
+    return response.redirect().toRoute('dashboard.index')
+  }
+  return response.redirect().toRoute('auth.login')
+})
