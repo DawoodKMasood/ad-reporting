@@ -4,8 +4,9 @@ export default class DashboardController {
   /**
    * Display dashboard index page
    */
-  async index({ view, auth }: HttpContext) {
+  async index({ view, auth, response }: HttpContext) {
     const user = auth.getUserOrFail()
+    response.header('Content-Type', 'text/html; charset=utf-8')
     
     return view.render('pages/dashboard/index', {
       user,
@@ -22,8 +23,9 @@ export default class DashboardController {
   /**
    * Display dashboard overview
    */
-  async overview({ view, auth }: HttpContext) {
+  async overview({ view, auth, response }: HttpContext) {
     const user = auth.getUserOrFail()
+    response.header('Content-Type', 'text/html; charset=utf-8')
     
     return view.render('pages/dashboard/overview', {
       user,
