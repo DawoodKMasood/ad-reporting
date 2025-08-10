@@ -6,7 +6,7 @@ export default class DashboardController {
    */
   async index({ view, auth }: HttpContext) {
     const user = auth.getUserOrFail()
-    
+
     return view.render('pages/dashboard/index', {
       user,
       stats: {
@@ -24,7 +24,7 @@ export default class DashboardController {
    */
   async overview({ view, auth }: HttpContext) {
     const user = auth.getUserOrFail()
-    
+
     return view.render('pages/dashboard/overview', {
       user,
     })

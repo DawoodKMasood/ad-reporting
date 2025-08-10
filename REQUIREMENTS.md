@@ -3,20 +3,23 @@
 ## Core Functionality
 
 ### Authentication & User Management
+
 - User registration and login system
 - JWT-based session management
 - Password reset functionality
 - User profiles with account settings
 
 ### Ad Platform Integration
+
 - Google Ads API integration
-- Meta (Facebook) Ads API integration  
+- Meta (Facebook) Ads API integration
 - TikTok Ads API integration
 - OAuth2 authentication flow for each platform
 - Account connection management
 - Data synchronization and refresh
 
 ### Dashboard & Reporting
+
 - Main dashboard with key metrics overview
 - Campaign performance metrics
 - Spend, impressions, clicks, conversions tracking
@@ -25,6 +28,7 @@
 - Export capabilities (CSV, PDF)
 
 ### Data Visualization
+
 - Interactive charts and graphs
 - Performance trends visualization
 - Comparison charts between platforms
@@ -32,6 +36,7 @@
 - Responsive design for mobile/desktop
 
 ### Data Management
+
 - Automated data fetching from connected accounts
 - Data transformation and normalization
 - Historical data storage
@@ -41,6 +46,7 @@
 ## Technical Requirements
 
 ### Backend (AdonisJS)
+
 - RESTful API design
 - Authentication middleware
 - Database migrations and seeders
@@ -50,6 +56,7 @@
 - Environment configuration
 
 ### Frontend
+
 - Modern JavaScript framework integration
 - Responsive UI components
 - Real-time data updates
@@ -57,6 +64,7 @@
 - Progressive Web App capabilities
 
 ### Database
+
 - User management tables
 - Connected accounts storage
 - Ad campaign data storage
@@ -64,6 +72,7 @@
 - Data indexing for performance
 
 ### Security
+
 - Secure API key storage
 - Encrypted database connections
 - Input validation and sanitization
@@ -71,6 +80,7 @@
 - Rate limiting protection
 
 ### Performance
+
 - Database query optimization
 - API response caching
 - Background data processing
@@ -78,6 +88,7 @@
 - CDN integration for assets
 
 ## MVP Features (Phase 1)
+
 - User authentication system
 - Connect one ad platform (Google Ads)
 - Basic dashboard with key metrics
@@ -85,6 +96,7 @@
 - Manual data refresh
 
 ## Future Enhancements (Phase 2+)
+
 - Multiple platform connections
 - Automated reporting schedules
 - Custom dashboard builder

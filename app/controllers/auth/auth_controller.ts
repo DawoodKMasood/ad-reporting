@@ -21,16 +21,17 @@ export default class AuthController {
    * Handle login request
    */
   async login({ auth, request, response, session }: HttpContext) {
-    const { email, password } = await request.validateUsing(loginValidator)
-
     try {
+      const { email, password } = await request.validateUsing(loginValidator)
+
       const user = await User.verifyCredentials(email, password)
       await auth.use('web').login(user)
-      
+
       session.flash('success', 'Welcome back!')
       return response.redirect().toRoute('dashboard.index')
     } catch (error) {
       session.flash('error', 'Invalid credentials')
+      session.flashAll()
       return response.redirect().back()
     }
   }
@@ -39,16 +40,17 @@ export default class AuthController {
    * Handle register request
    */
   async register({ auth, request, response, session }: HttpContext) {
-    const data = await request.validateUsing(registerValidator)
-
     try {
+      const data = await request.validateUsing(registerValidator)
+
       const user = await User.create(data)
       await auth.use('web').login(user)
-      
+
       session.flash('success', 'Account created successfully!')
       return response.redirect().toRoute('dashboard.index')
     } catch (error) {
       session.flash('error', 'Registration failed. Please try again.')
+      session.flashAll()
       return response.redirect().back()
     }
   }

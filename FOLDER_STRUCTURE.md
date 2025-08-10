@@ -176,31 +176,37 @@ docs/
 ## Key Organizational Principles
 
 ### Controllers
+
 - Separate controllers by feature domain
 - Thin controllers, business logic in services
 - Consistent API response formats
 
 ### Services
+
 - Platform-specific integration services
 - Data transformation and processing services
 - Reusable business logic components
 
 ### Models
+
 - Database entity representations
 - Relationship definitions
 - Data validation rules
 
 ### Jobs
+
 - Background data synchronization
 - Scheduled report generation
 - Token refresh automation
 
 ### Frontend
+
 - Component-based organization
 - Separation of concerns (services, utilities, components)
 - Responsive and modular CSS structure
 
 ### Configuration
+
 - Environment-specific settings
 - API credentials and endpoints
 - Feature flags and toggles
