@@ -12,14 +12,26 @@ const dbConfig = defineConfig({
         user: env.get('DB_USER'),
         password: env.get('DB_PASSWORD'),
         database: env.get('DB_DATABASE'),
-        ssl: env.get('DB_SSL') === 'true' ? {
+        ssl: {
           rejectUnauthorized: false
-        } : false
+        }
+      },
+      pool: {
+        min: 0,
+        max: 10,
+        acquireTimeoutMillis: 60000,
+        createTimeoutMillis: 30000,
+        destroyTimeoutMillis: 5000,
+        idleTimeoutMillis: 30000,
+        reapIntervalMillis: 1000,
+        createRetryIntervalMillis: 200
       },
       migrations: {
         naturalSort: true,
         paths: ['database/migrations'],
-      },
+        tableName: 'adonis_schema',
+        disableTransactions: false
+      }
     },
   },
 })
