@@ -141,6 +141,7 @@ class IntegrationManager {
     }
     
     const url = `/integrations/connect/${platform}`;
+    console.log('Connecting to platform:', platform, 'URL:', url);
     
     // Show loading state
     const originalText = button.innerHTML;
@@ -157,8 +158,12 @@ class IntegrationManager {
       },
       body: JSON.stringify({ platform: platform })
     })
-    .then(response => response.json())
+    .then(response => {
+      console.log('Response received:', response);
+      return response.json();
+    })
     .then(data => {
+      console.log('Data received:', data);
       if (data.success && data.redirectUrl) {
         this.showNotification('Redirecting to platform authorization...', 'success');
         // Redirect to platform authorization URL
@@ -178,6 +183,7 @@ class IntegrationManager {
       }
     })
     .catch(error => {
+      console.error('Connection failed:', error);
       this.showNotification('Connection failed: ' + error.message, 'error');
       // Restore button state
       button.innerHTML = originalText;

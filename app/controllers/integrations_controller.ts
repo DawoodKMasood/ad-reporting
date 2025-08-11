@@ -73,13 +73,23 @@ export default class IntegrationsController {
   /**
    * Initiate OAuth2 flow for a specific platform (starting with Google Ads)
    */
-  async connect({ request, auth, response }: HttpContext) {
+  async connect({ request, auth, response, session }: HttpContext) {
     try {
+      logger.info('Initiating OAuth2 flow', {
+        method: request.method(),
+        url: request.url(),
+        headers: request.headers()
+      })
+      
       const user = auth.getUserOrFail()
+      logger.info('User authenticated', { userId: user.id })
+      
       const payload = await request.validateUsing(connectValidator)
+      logger.info('Validation passed', { payload })
       
       // For now, we only support Google Ads
       if (payload.platform !== 'google_ads') {
+        logger.warn('Unsupported platform requested', { platform: payload.platform })
         // Check if it's an API request
         const isApiRequest = request.header('Accept')?.includes('application/json') ||
           request.header('Content-Type')?.includes('application/json')
@@ -95,27 +105,36 @@ export default class IntegrationsController {
         }
       }
       
-      // In a real implementation, we would:
-      // 1. Generate OAuth2 URL with proper state parameter
-      // 2. Redirect user to the OAuth2 provider
-      // 3. Store state in session for security verification
+      // Import the Google Ads OAuth service
+      const googleAdsOAuthService = await import('#services/google_ads_oauth_service')
       
-      // For this implementation, we'll return a mock URL
-      // In a real app, this would be generated using the OAuth2 client
-      const mockAuthUrl = `/oauth/${payload.platform}?user_id=${user.id}&redirect_uri=/integrations/callback`
+      // Generate OAuth2 URL with proper state parameter
+      const state = `${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
+      logger.info('Generating auth URL with state', { state })
+      
+      // Store state in session for security verification
+      session.put('oauth_state', state)
+      
+      // Generate the authorization URL using the Google Ads OAuth service
+      const authUrl = googleAdsOAuthService.default.generateAuthUrl(user.id, state)
+      logger.info('Generated auth URL', { authUrl })
       
       // Return JSON for API requests or redirect for web requests
       const isApiRequest = request.header('Accept')?.includes('application/json') ||
         request.header('Content-Type')?.includes('application/json')
+      logger.info('Request type detection', { isApiRequest, accept: request.header('Accept'), contentType: request.header('Content-Type') })
+      
       if (isApiRequest) {
+        logger.info('Returning JSON response for API request')
         return {
           success: true,
-          redirectUrl: mockAuthUrl,
+          redirectUrl: authUrl,
           message: 'OAuth2 flow initiated successfully',
         }
       }
       
-      return response.redirect().toPath(mockAuthUrl)
+      logger.info('Redirecting to Google auth URL for web request')
+      return response.redirect().toPath(authUrl)
     } catch (error) {
       logger.error('Error initiating OAuth2 flow:', error)
       
@@ -136,34 +155,75 @@ export default class IntegrationsController {
   /**
    * Handle OAuth2 callback from ad platforms
    */
-  async callback({ request, auth, response }: HttpContext) {
+  async callback({ request, auth, response, session, params }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      const { code, state, platform } = request.qs()
+      const { code, state } = request.qs()
+      const { platform } = params
       
-      // In a real implementation, we would:
-      // 1. Verify the state parameter to prevent CSRF attacks
-      // 2. Exchange the authorization code for access/refresh tokens
-      // 3. Store the tokens securely in the database
-      // 4. Fetch account information from the platform
+      logger.info('OAuth2 callback received', { code: !!code, state, platform })
       
-      // For this implementation, we'll simulate the process
+      // Verify the state parameter to prevent CSRF attacks
+      const storedState = session.get('oauth_state')
+      logger.info('Verifying state parameter', { storedState, receivedState: state })
+      
+      if (!state || state !== storedState) {
+        logger.error('Invalid state parameter', { storedState, receivedState: state })
+        return response.badRequest({
+          error: 'Invalid state parameter',
+          message: 'The state parameter does not match. Possible CSRF attack.'
+        })
+      }
+      
+      // Clear the state from session
+      session.forget('oauth_state')
+      
+      // Exchange the authorization code for access/refresh tokens
       if (!code) {
-        return response.badRequest({ 
+        logger.error('Missing authorization code')
+        return response.badRequest({
           error: 'Missing authorization code',
           message: 'Authorization code is required to complete the connection'
         })
       }
       
-      // Mock account creation
-      const connectedAccount = await ConnectedAccount.create({
-        userId: user.id,
-        platform: platform || 'google_ads',
-        accountId: `mock_account_${Date.now()}`,
-        refreshToken: 'mock_refresh_token',
-        accessToken: 'mock_access_token',
-        isActive: true
+      // For now, we only support Google Ads
+      if (platform !== 'google_ads') {
+        logger.error('Unsupported platform in callback', { platform })
+        return response.badRequest({
+          error: 'Unsupported platform',
+          message: `Platform ${platform} is not supported`
+        })
+      }
+      
+      // Import the Google Ads OAuth service
+      const googleAdsOAuthService = await import('#services/google_ads_oauth_service')
+      
+      // Exchange code for tokens
+      logger.info('Exchanging code for tokens')
+      const tokens = await googleAdsOAuthService.default.exchangeCodeForTokens(code)
+      logger.info('Tokens received', {
+        hasAccessToken: !!tokens.accessToken,
+        hasRefreshToken: !!tokens.refreshToken,
+        expiryDate: tokens.expiryDate
       })
+      
+      // For Google Ads, we need to get the account ID
+      // In a real implementation, we would fetch the customer list from Google Ads API
+      // For now, we'll use a mock account ID
+      const accountId = `google_ads_account_${Date.now()}`
+      logger.info('Using mock account ID', { accountId })
+      
+      // Store the tokens securely in the database
+      logger.info('Storing tokens in database')
+      const connectedAccount = await googleAdsOAuthService.default.storeTokens(
+        user.id,
+        accountId,
+        tokens.accessToken,
+        tokens.refreshToken,
+        tokens.expiryDate
+      )
+      logger.info('Tokens stored successfully', { connectedAccountId: connectedAccount.id })
       
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
@@ -175,6 +235,7 @@ export default class IntegrationsController {
       }
       
       // For web requests, redirect to integrations page
+      logger.info('Redirecting to integrations index')
       return response.redirect().toRoute('integrations.index')
     } catch (error) {
       logger.error('Error handling OAuth2 callback:', error)

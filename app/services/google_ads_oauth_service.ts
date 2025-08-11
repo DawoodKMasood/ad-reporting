@@ -26,10 +26,17 @@ export class GoogleAdsOAuthService {
 
   constructor() {
     // Initialize the OAuth2 client with credentials from environment variables
+    logger.info('Initializing Google Ads OAuth service', {
+      clientId: env.get('GOOGLE_ADS_CLIENT_ID'),
+      clientSecret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
+      host: env.get('HOST'),
+      port: env.get('PORT')
+    })
+    
     this.oauth2Client = new google.auth.OAuth2(
       env.get('GOOGLE_ADS_CLIENT_ID'),
       env.get('GOOGLE_ADS_CLIENT_SECRET'),
-      `${env.get('HOST')}:${env.get('PORT')}/integrations/google_ads/callback`
+      `${env.get('HOST')}:${env.get('PORT')}/integrations/callback/google_ads`
     )
   }
 
