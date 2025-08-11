@@ -1,5 +1,6 @@
-@layout('layouts/app')
-@section('content')
+@layout.app({ title: 'Integrations' })
+
+@slot('main')
   <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
     <!-- Page Header -->
     <div class="mb-8">
@@ -133,4 +134,5 @@
       });
     }, 5000);
   </script>
-@endsection
+@endslot
+@end

@@ -11,6 +11,9 @@
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       }
     </style>
+    @if ($slots.meta)
+      {{{ await $slots.meta() }}}
+    @endif
   </head>
   <body class="min-h-screen font-sans">
     <div id="app">
@@ -35,7 +38,7 @@
       
       <div class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
         <div class="max-w-md w-full">
-          @!section('content')
+          {{{ await $slots.main() }}}
         </div>
       </div>
     </div>

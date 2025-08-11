@@ -1,5 +1,6 @@
-@layout('layouts/app')
-@section('content')
+@layout.app({ title: 'Server Error' })
+
+@slot('main')
   <div class="flex items-center justify-center h-screen bg-gray-100">
     <div class="bg-white shadow-md rounded-lg px-10 py-8">
       <h1 class="text-3xl font-bold text-gray-900 mb-4">
@@ -10,4 +11,5 @@
       </p>
     </div>
   </div>
-@endsection
+@endslot
+@end

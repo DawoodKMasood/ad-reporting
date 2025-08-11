@@ -1,5 +1,6 @@
-@layout('layouts/auth')
-@section('content')
+@layout.auth({ title: 'Sign In - Ad Reporting Tool' })
+
+@slot('main')
   <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
     <!-- Header -->
     <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-10 text-center">
@@ -113,4 +114,5 @@
       © 2025 Ad Reporting Tool. All rights reserved.
     </p>
   </div>
-@endsection
+@endslot
+@end

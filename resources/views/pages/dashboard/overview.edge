@@ -1,7 +1,6 @@
-@layout('layouts/app')
-@set('title', 'Dashboard Overview')
+@layout.app({ title: 'Dashboard Overview' })
 
-@section('content')
+@slot('main')
   <!-- Header -->
   <div class="mb-8">
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -324,4 +323,5 @@
       console.log("Overview page loaded - ready for chart initialization when data is available");
     });
   </script>
-@endsection
+@endslot
+@end
