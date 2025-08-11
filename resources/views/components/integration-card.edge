@@ -1,8 +1,9 @@
 <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
   <div class="flex items-center">
-    @set('platform', platform.name)
-    @set('size', 'md')
-    @include('components/platform-logo')
+    @!component(
+      'components/platform-logo',
+      { platform: platform.name, size: 'md' }
+    )
     <div class="ml-3">
       <h3 class="text-sm font-medium text-gray-900">
         {{ platform.displayName }}
@@ -28,6 +29,6 @@
       >
         {{ platform.disabled ? 'Coming Soon' : 'Connect' }}
       </button>
-    @end
+    @endif
   </div>
 </div>

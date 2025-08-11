@@ -1,8 +1,9 @@
 <div class="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
   <div class="flex-shrink-0">
-    @set('platform', account.platform)
-    @set('size', 'sm')
-    @include('components/platform-logo')
+    @!component(
+      'components/platform-logo',
+      { platform: account.platform, size: 'sm' }
+    )
   </div>
   <div class="ml-3 flex-1 min-w-0">
     <div class="flex items-center justify-between">
