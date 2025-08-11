@@ -24,7 +24,6 @@ export default {
         ],
       },
       colors: {
-        ...theme('colors'),
         primary: {
           DEFAULT: "#5A45FF",
           lighter: "#a599ff"
