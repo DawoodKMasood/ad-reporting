@@ -8,18 +8,7 @@ export default class AuthController {
    * Show login form
    */
   async showLogin({ view }: HttpContext) {
-    console.log('Rendering login view')
-    try {
-      const renderedView = await view.render('pages/auth/login')
-      console.log('Rendered view content length:', renderedView.length)
-      // Log first and last parts of the rendered content to check if it's raw template code
-      console.log('First 200 chars:', renderedView.substring(0, 200))
-      console.log('Last 200 chars:', renderedView.substring(Math.max(0, renderedView.length - 200)))
-      return renderedView
-    } catch (error) {
-      console.error('Error rendering login view:', error)
-      throw error
-    }
+    return view.render('pages/auth/login')
   }
 
   /**

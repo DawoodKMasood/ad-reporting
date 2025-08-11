@@ -3,16 +3,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>
-      {{ title || 'Ad Reporting Tool' }}
-    </title>
+    <title>{{ title || 'Ad Reporting Tool' }}</title>
     <meta name="csrf-token" content="{{ csrfToken }}">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/tailwind.min.css" rel="stylesheet">
-    
-    <link
-      href="/css/fontawesome.css"
-      rel="stylesheet"
-    />
+    <link href="/css/fontawesome.css" rel="stylesheet" />
   </head>
   <body class="bg-gray-50 font-sans">
     <div id="app">
@@ -28,7 +22,7 @@
                 >
                   <i class="fas fa-chart-bar text-blue-600 mr-2"></i>
                   Ad Reporting
-              </a>
+                </a>
               </div>
 
               <div class="flex items-center space-x-4">
@@ -40,9 +34,9 @@
                   <span class="text-gray-700">{{ auth.user.fullName || auth.user.email }}</span>
                   <form method="POST" action="{{ route('auth.logout') }}" class="inline ml-4">
                     {{ csrfField() }}
-                  <button type="submit" class="text-red-600 hover:text-red-800">
+                    <button type="submit" class="text-red-600 hover:text-red-800">
                       <i class="fas fa-sign-out-alt"></i>Logout
-                  </button>
+                    </button>
                   </form>
                 </div>
               </div>
