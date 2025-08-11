@@ -26,7 +26,7 @@
             <div class="ml-3">
               <p class="text-sm font-medium text-gray-500">Total Spend</p>
               <p class="text-lg font-semibold text-gray-900">
-                ${{ formatNumber ? formatNumber(campaignPerformance.reduce((sum, data) => sum + data.spend, 0)) : campaignPerformance.reduce((sum, data) => sum + data.spend, 0).toLocaleString() }}
+                ${{ formatNumber(totalSpend) }}
               </p>
             </div>
           </div>
@@ -43,7 +43,7 @@
             <div class="ml-3">
               <p class="text-sm font-medium text-gray-500">Impressions</p>
               <p class="text-lg font-semibold text-gray-900">
-                {{ formatNumber ? formatNumber(campaignPerformance.reduce((sum, data) => sum + data.impressions, 0)) : campaignPerformance.reduce((sum, data) => sum + data.impressions, 0).toLocaleString() }}
+                {{ formatNumber(totalImpressions) }}
               </p>
             </div>
           </div>
@@ -60,7 +60,7 @@
             <div class="ml-3">
               <p class="text-sm font-medium text-gray-500">Clicks</p>
               <p class="text-lg font-semibold text-gray-900">
-                {{ formatNumber ? formatNumber(campaignPerformance.reduce((sum, data) => sum + data.clicks, 0)) : campaignPerformance.reduce((sum, data) => sum + data.clicks, 0).toLocaleString() }}
+                {{ formatNumber(totalClicks) }}
               </p>
             </div>
           </div>
@@ -77,7 +77,7 @@
             <div class="ml-3">
               <p class="text-sm font-medium text-gray-500">Conversions</p>
               <p class="text-lg font-semibold text-gray-900">
-                {{ formatNumber ? formatNumber(campaignPerformance.reduce((sum, data) => sum + data.conversions, 0)) : campaignPerformance.reduce((sum, data) => sum + data.conversions, 0).toLocaleString() }}
+                {{ formatNumber(totalConversions) }}
               </p>
             </div>
           </div>
@@ -108,13 +108,13 @@
                   {{ data.connectedAccount.platform.replace('_', ' ') }}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                  ${{ formatNumber ? formatNumber(data.spend) : data.spend.toLocaleString() }}
+                  ${{ formatNumber(data.spend) }}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                  {{ formatNumber ? formatNumber(data.impressions) : data.impressions.toLocaleString() }}
+                  {{ formatNumber(data.impressions) }}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                  {{ formatNumber ? formatNumber(data.clicks) : data.clicks.toLocaleString() }}
+                  {{ formatNumber(data.clicks) }}
                 </td>
                 <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                   {{ data.ctr.toFixed(2) }}%

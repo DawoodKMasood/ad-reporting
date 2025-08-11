@@ -9,7 +9,7 @@
       <span class="text-sm text-gray-500">{{ connectedAccounts.length }} accounts</span>
     </div>
     
-    @if(connectedAccounts.length === 0)
+    @if(!connectedAccounts || connectedAccounts.length === 0)
       <div class="text-center py-8">
         <i class="fas fa-unlink text-4xl text-gray-300 mb-4"></i>
         <h3 class="text-lg font-medium text-gray-900 mb-2">No Connected Accounts</h3>

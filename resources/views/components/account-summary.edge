@@ -1,23 +1,21 @@
-@component('account-summary', (account))
-  <div class="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
-    <div class="flex-shrink-0">
-      @include('components/platform-logo', { platform: account.platform, size: 'sm' })
-    </div>
-    <div class="ml-3 flex-1 min-w-0">
-      <div class="flex items-center justify-between">
-        <h3 class="text-sm font-medium text-gray-900 truncate">
-          {{ account.platform.replace('_', ' ') }}
-        </h3>
-        @include('components/sync-status', { status: account.isActive ? 'active' : 'inactive', lastSyncAt: account.lastSyncAt })
-      </div>
-      <p class="text-xs text-gray-500 truncate">
-        Account ID: {{ account.accountId }}
-      </p>
-    </div>
-    <div class="ml-2 flex-shrink-0">
-      <a href="{{ route('integrations.show', { id: account.id }) }}" class="text-blue-600 hover:text-blue-800">
-        <i class="fas fa-chevron-right"></i>
-      </a>
-    </div>
+<div class="flex items-center p-3 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
+  <div class="flex-shrink-0">
+    @include('components/platform-logo', { platform: account.platform, size: 'sm' })
   </div>
-@endcomponent
+  <div class="ml-3 flex-1 min-w-0">
+    <div class="flex items-center justify-between">
+      <h3 class="text-sm font-medium text-gray-900 truncate">
+        {{ account.platform.replace('_', ' ') }}
+      </h3>
+      @include('components/sync-status', { status: account.isActive ? 'active' : 'inactive', lastSyncAt: account.lastSyncAt })
+    </div>
+    <p class="text-xs text-gray-500 truncate">
+      Account ID: {{ account.accountId }}
+    </p>
+  </div>
+  <div class="ml-2 flex-shrink-0">
+    <a href="{{ route('integrations.show', { id: account.id }) }}" class="text-blue-600 hover:text-blue-800">
+      <i class="fas fa-chevron-right"></i>
+    </a>
+  </div>
+</div>

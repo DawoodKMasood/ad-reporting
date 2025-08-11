@@ -1,33 +1,31 @@
-@component('sync-status', (status, lastSyncAt = null))
-  <div class="flex items-center">
-    @if(status === 'active' || status === 'connected')
-      <span class="flex h-3 w-3">
-        <span class="animate-ping absolute h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-      </span>
-      <span class="ml-2 text-sm font-medium text-green-800">Active</span>
-    @elseif(status === 'syncing')
-      <span class="flex h-3 w-3">
-        <span class="animate-ping absolute h-3 w-3 rounded-full bg-blue-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-      </span>
-      <span class="ml-2 text-sm font-medium text-blue-800">Syncing</span>
-    @elseif(status === 'error')
-      <span class="flex h-3 w-3">
-        <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-      </span>
-      <span class="ml-2 text-sm font-medium text-red-800">Error</span>
-    @else
-      <span class="flex h-3 w-3">
-        <span class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
-      </span>
-      <span class="ml-2 text-sm font-medium text-gray-800">Inactive</span>
-    @end
-    
-    @if(lastSyncAt)
-      <span class="ml-2 text-xs text-gray-500">
-        Last sync: {{ lastSyncAt.toRelative() }}
-      </span>
-    @end
-  </div>
-@endcomponent
+<div class="flex items-center">
+  @if(status === 'active' || status === 'connected')
+    <span class="flex h-3 w-3">
+      <span class="animate-ping absolute h-3 w-3 rounded-full bg-green-400 opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+    </span>
+    <span class="ml-2 text-sm font-medium text-green-800">Active</span>
+  @elseif(status === 'syncing')
+    <span class="flex h-3 w-3">
+      <span class="animate-ping absolute h-3 w-3 rounded-full bg-blue-400 opacity-75"></span>
+      <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+    </span>
+    <span class="ml-2 text-sm font-medium text-blue-800">Syncing</span>
+  @elseif(status === 'error')
+    <span class="flex h-3 w-3">
+      <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+    </span>
+    <span class="ml-2 text-sm font-medium text-red-800">Error</span>
+  @else
+    <span class="flex h-3 w-3">
+      <span class="relative inline-flex rounded-full h-3 w-3 bg-gray-500"></span>
+    </span>
+    <span class="ml-2 text-sm font-medium text-gray-800">Inactive</span>
+  @end
+  
+  @if(lastSyncAt)
+    <span class="ml-2 text-xs text-gray-500">
+      Last sync: {{ lastSyncAt.toRelative() }}
+    </span>
+  @end
+</div>
