@@ -12,6 +12,8 @@ router
 
 
     router.get('/connect/:platform', [IntegrationsController, 'connect']).as('integrations.connect')
+    
+    router.post('/connect/:platform', [IntegrationsController, 'connect']).as('integrations.connect.post')
 
     router.get('/callback/:platform', [IntegrationsController, 'callback']).as('integrations.callback')
 
