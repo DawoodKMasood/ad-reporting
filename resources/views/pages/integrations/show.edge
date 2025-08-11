@@ -10,7 +10,10 @@
       </a>
       <div class="flex items-center justify-between">
         <div class="flex items-center">
-          @include('components/platform-logo', { platform: connectedAccount.platform, size: 'lg' })
+          @!component(
+            'components/platform-logo',
+            { platform: connectedAccount.platform, size: 'lg' }
+          )
           <div class="ml-4">
             <h1 class="text-2xl font-bold text-gray-900">
               {{ connectedAccount.platform.replace('_', ' ') }} Account
@@ -56,7 +59,10 @@
           <div>
             <h2 class="text-lg font-semibold text-gray-900">Account Status</h2>
             <div class="mt-2 flex items-center">
-              @include('components/sync-status', { status: connectedAccount.isActive ? 'active' : 'inactive', lastSyncAt: connectedAccount.lastSyncAt })
+              @!component(
+                'components/sync-status',
+                { status: connectedAccount.isActive ? 'active' : 'inactive', lastSyncAt: connectedAccount.lastSyncAt }
+              )
             </div>
           </div>
           <div class="text-right">

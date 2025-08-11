@@ -10,9 +10,10 @@
       <h3 class="text-sm font-medium text-gray-900 truncate">
         {{ account.platform.replace('_', ' ') }}
       </h3>
-      @set('status', account.isActive ? 'active' : 'inactive')
-      @set('lastSyncAt', account.lastSyncAt)
-      @include('components/sync-status')
+      @!component(
+        'components/sync-status',
+        { status: account.isActive ? 'active' : 'inactive', lastSyncAt: account.lastSyncAt }
+      )
     </div>
     <p class="text-xs text-gray-500 truncate">
       Account ID: {{ account.accountId }}

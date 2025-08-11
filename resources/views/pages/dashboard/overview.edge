@@ -251,8 +251,11 @@
                   </div>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-1.5">
-                  @set('bgClass', platform === 'google_ads' ? 'bg-blue-500' : platform === 'meta_ads' ? 'bg-green-500' : platform === 'tiktok_ads' ? 'bg-purple-500' : 'bg-gray-500')
-                  <div class="h-1.5 rounded-full {{ bgClass }}" style="width: {{ Math.min(100, (metrics.totalSpend / totalSpend) * 100) }}%"></div>
+                  @!component(
+                    'components/platform-logo',
+                    { platform: platform, size: 'sm' }
+                  )
+                  <div class="h-1.5 rounded-full {{ platform === 'google_ads' ? 'bg-blue-500' : platform === 'meta_ads' ? 'bg-green-500' : platform === 'tiktok_ads' ? 'bg-purple-500' : 'bg-gray-500' }}" style="width: {{ Math.min(100, (metrics.totalSpend / totalSpend) * 100) }}%"></div>
                 </div>
               @end
             </div>
