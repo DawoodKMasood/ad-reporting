@@ -99,7 +99,17 @@ export default defineConfig({
     },
   ],
 
-  assetsBundler: false,
+  assetsBundler: {
+    name: 'vite',
+    devServer: {
+      command: 'vite',
+      args: ['--clearScreen', 'false'],
+    },
+    build: {
+      command: 'vite',
+      args: ['build'],
+    },
+  },
   hooks: {
     onBuildStarting: [() => import('@adonisjs/vite/build_hook')],
   },

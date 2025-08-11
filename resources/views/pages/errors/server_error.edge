@@ -1,8 +1,13 @@
-<h1>
-  {{ error.code }} - Server error
-</h1>
-<p>
-  This template is rendered by the
-  <a href="http://docs.adonisjs.com/guides/exception-handling#status-pages">status pages feature</a>
-  of the global exception handler.
-</p>
+@layout('layouts/app')
+@section('content')
+  <div class="flex items-center justify-center h-screen bg-gray-100">
+    <div class="bg-white shadow-md rounded-lg px-10 py-8">
+      <h1 class="text-3xl font-bold text-gray-900 mb-4">
+        {{ error.code }} - Server error
+      </h1>
+      <p class="text-gray-700">
+        There was an unexpected error on the server. Please try again later.
+      </p>
+    </div>
+  </div>
+@endsection

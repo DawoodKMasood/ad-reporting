@@ -1,135 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>
-      Dashboard - Ad Reporting Tool
-    </title>
-    <meta name="csrf-token" content="{{ csrfToken }}">
-    @vite(['resources/js/app.js'])
-    
-    <link href="/css/fontawesome.css" rel="stylesheet">
-    <style>
-      body {
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      }
-    </style>
-  </head>
-  <body class="bg-gray-100">
-    <!-- Flash Messages -->
-    @if(flashMessages.has('success'))
-      <div
-        class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-50 border border-green-200 text-green-800 px-6 py-4 rounded-lg shadow-lg z-50 max-w-md"
-        role="alert"
-        aria-live="polite"
-      >
-        <div class="flex items-center">
-          <i class="fas fa-check-circle mr-3 text-green-600" aria-hidden="true"></i>
-          <span class="font-medium">{{ flashMessages.get('success') }}</span>
-        </div>
-      </div>
-    @end
-    
-    @if(flashMessages.has('error'))
-      <div
-        class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-red-50 border border-red-200 text-red-800 px-6 py-4 rounded-lg shadow-lg z-50 max-w-md"
-        role="alert"
-        aria-live="polite"
-      >
-        <div class="flex items-center">
-          <i class="fas fa-exclamation-circle mr-3 text-red-600" aria-hidden="true"></i>
-          <span class="font-medium">{{ flashMessages.get('error') }}</span>
-        </div>
-      </div>
-    @end
-    
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm border-b border-gray-200">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-          <div class="flex items-center">
-            <div class="flex-shrink-0 flex items-center">
-              <div
-                class="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center"
-              >
-                <i class="fas fa-chart-line text-white text-sm" aria-hidden="true"></i>
-                <span class="sr-only">Ad Reporting Tool</span>
-              </div>
-              <span class="ml-3 text-xl font-bold text-gray-900">Ad Reporting Tool</span>
-            </div>
+@layout('layouts/app')
+@set('title', 'Dashboard')
 
-            <div class="hidden md:ml-10 md:flex md:space-x-8">
-              <a
-                href="{{ route('dashboard.index') }}"
-                class="text-blue-600 border-b-2 border-blue-500 px-1 pt-1 pb-4 text-sm font-medium"
-              >
-                Dashboard
-            </a>
-              <a href="#" class="text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium">
-                Integrations
-            </a>
-              <a href="#" class="text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium">
-                Reports
-            </a>
-              <a href="#" class="text-gray-500 hover:text-gray-700 px-1 pt-1 pb-4 text-sm font-medium">
-                Analytics
-            </a>
-            </div>
-          </div>
-
-          <div class="flex items-center">
-            <div class="relative">
-              <button
-                class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                onclick="toggleDropdown()"
-              >
-                <div
-                  class="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-700 rounded-full flex items-center justify-center"
-                >
-                  <span class="text-white text-sm font-medium" aria-hidden="true">{{ user.fullName.charAt(0) }}</span>
-                  <span class="sr-only">{{ user.fullName }}</span>
-                </div>
-                <span class="ml-3 text-gray-700 font-medium hidden md:block">{{ user.fullName }}</span>
-                <i class="fas fa-chevron-down ml-2 text-gray-400 text-xs"></i>
-              </button>
-
-              <div
-                id="userDropdown"
-                class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
-              >
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                  <i class="fas fa-user mr-2"></i>Profile
-              </a>
-                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                  <i class="fas fa-cog mr-2"></i>Settings
-              </a>
-                <div class="border-t border-gray-100">
-                </div>
-                <form method="POST" action="{{ route('auth.logout') }}">
-                  {{ csrfField() }}
-                <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </nav>
-
-    <!-- Main Content -->
-    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-      <!-- Page Header -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900">
-          Dashboard
-        </h1>
-        <p class="mt-2 text-gray-600">
-          Welcome back, {{ user.fullName }}! Here's your advertising performance overview.
-        </p>
-      </div>
+@section('content')
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-900">
+        Dashboard
+      </h1>
+      <p class="mt-2 text-gray-600">
+        Welcome back, {{ user.fullName }}! Here's your advertising performance overview.
+      </p>
+    </div>
 
       <!-- Stats Cards -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -420,5 +303,4 @@
         });
       }, 5e3);
     </script>
-  </body>
-</html>
+@endsection
