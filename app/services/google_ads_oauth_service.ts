@@ -33,10 +33,25 @@ export class GoogleAdsOAuthService {
       port: env.get('PORT')
     })
     
+    // Construct the redirect URI with proper protocol
+    const host = env.get('HOST')
+    const port = env.get('PORT')
+    let redirectUri = ''
+    
+    if (host === 'localhost' || host === '127.0.0.1') {
+      // For localhost, use http
+      redirectUri = `http://${host}:${port}/integrations/callback/google_ads`
+    } else {
+      // For production, use https
+      redirectUri = `https://${host}:${port}/integrations/callback/google_ads`
+    }
+    
+    logger.info('OAuth redirect URI', { redirectUri })
+    
     this.oauth2Client = new google.auth.OAuth2(
       env.get('GOOGLE_ADS_CLIENT_ID'),
       env.get('GOOGLE_ADS_CLIENT_SECRET'),
-      `${env.get('HOST')}:${env.get('PORT')}/integrations/callback/google_ads`
+      redirectUri
     )
   }
 

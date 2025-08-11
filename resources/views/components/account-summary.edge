@@ -12,7 +12,7 @@
       </h3>
       @set('status', account.isActive ? 'active' : 'inactive')
       @set('lastSyncAt', account.lastSyncAt)
-      @include('components.sync-status')
+      @include('components/sync-status')
     </div>
     <p class="text-xs text-gray-500 truncate">
       Account ID: {{ account.accountId }}
