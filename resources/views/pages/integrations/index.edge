@@ -33,7 +33,7 @@
         @else
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @each(account in connectedAccounts)
-              @include('components/account-summary', { account })
+              @include('components.account-summary')
             @end
           </div>
         @end
@@ -53,7 +53,7 @@
         <div class="space-y-4">
           @if(availablePlatforms)
             @each(platform in availablePlatforms)
-              @include('components/integration-card', { platform })
+              @include('components.integration-card')
             @end
           @else
             <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
