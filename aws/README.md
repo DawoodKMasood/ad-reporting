@@ -5,6 +5,22 @@
 - PM2 installed globally
 - PostgreSQL database configured
 - Environment variables configured
+- **Recommended**: 4GB+ RAM or swap file for build process
+
+## Memory Issue on 2GB Instances
+
+If you get memory errors during build:
+
+1. **Setup swap file (recommended):**
+   ```bash
+   sudo bash aws/setup-swap.sh
+   ```
+
+2. **Use optimized build:**
+   ```bash
+   npm run build:optimized
+   pm2 start ecosystem.config.js
+   ```
 
 ## Quick Deployment
 
@@ -20,9 +36,9 @@
 
 ## Manual Build Process
 
-1. **Build the application:**
+1. **Clean build (if previous failed):**
    ```bash
-   npm run build
+   npm run build:clean
    ```
 
 2. **Install production dependencies in build directory:**
@@ -46,6 +62,18 @@
 - Delete: `npm run pm2:delete`
 - View logs: `npm run pm2:logs`
 - Check status: `npm run pm2:status`
+
+## Troubleshooting
+
+**Memory errors during build:**
+- Run `sudo bash aws/setup-swap.sh` to add swap space
+- Use `npm run build:optimized` instead of regular build
+- Clean failed builds: `npm run build:clean`
+
+**Build cleanup:**
+```bash
+bash aws/clean-build.sh
+```
 
 ## AWS CodeDeploy
 

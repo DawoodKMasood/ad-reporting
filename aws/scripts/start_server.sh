@@ -7,7 +7,7 @@ cd /var/www/ad-reporting
 npm ci
 
 # Build the application
-npm run build
+node --max-old-space-size=1536 ace build
 
 # Install production dependencies in build directory
 cd build
