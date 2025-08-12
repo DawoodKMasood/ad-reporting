@@ -21,4 +21,4 @@ npm ci --omit="dev"
 
 # Start the server
 echo "Starting server..."
-node bin/server.js
+sudo node bin/server.js
