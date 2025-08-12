@@ -17,8 +17,8 @@ export default {
       time: true,
       autorestart: true,
       watch: false,
-      max_memory_restart: '512M',
-      node_args: '--max-old-space-size=512'
+      max_memory_restart: '1G',
+      node_args: '--max-old-space-size=1024'
     }
   ]
 };
