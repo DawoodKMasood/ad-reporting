@@ -3,9 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "main": "build/bin/server.js",
   "license": "UNLICENSED",
   "scripts": {
-    "start": "cd build && node bin/server.js",
+    "start": "node build/bin/server.js",
     "build": "npm run build:assets && node ace build --ignore-ts-errors",
     "build:assets": "vite build",
     "build:vercel": "npm run build:assets && node ace build --ignore-ts-errors",

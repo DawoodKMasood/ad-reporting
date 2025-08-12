@@ -43,6 +43,6 @@ vite.config.ts
 # Keep only these
 !build/
 !public/
-!api/
+!index.js
 !package.json
 !vercel.json
