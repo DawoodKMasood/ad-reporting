@@ -2,14 +2,23 @@
   "version": 2,
   "builds": [
     {
-      "src": "index.js",
+      "src": "package.json",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["build/**", "public/**"]
+        "includeFiles": ["build/**", "public/**"],
+        "maxLambdaSize": "50mb"
       }
+    },
+    {
+      "src": "api/*.js",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
     {
       "src": "/assets/(.*)",
       "dest": "/public/assets/$1",
@@ -33,7 +42,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/index.js"
+      "dest": "/build/bin/server.js"
     }
   ],
   "env": {
