@@ -1,7 +1,5 @@
 {
   "version": 2,
-  "buildCommand": "npm ci --legacy-peer-deps && npm run build",
-  "installCommand": "npm ci --legacy-peer-deps --ignore-scripts",
   "routes": [
     {
       "src": "/assets/(.*)",
@@ -30,7 +28,6 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+    "NODE_ENV": "production"
   }
 }
