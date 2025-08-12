@@ -15,16 +15,11 @@ export default defineConfig({
        * Paths to watch and reload the browser on file change
        */
       reload: ['resources/views/**/*.edge'],
-    }),
-    {
-      name: 'tailwindcss-plugin',
-      config: () => {
-        return {
-          postcss: {
-            plugins: [tailwindcss()],
-          },
-        }
-      }
-    }
+    })
   ],
+  css: {
+    postcss: {
+      plugins: [tailwindcss()],
+    },
+  },
 })

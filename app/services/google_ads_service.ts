@@ -520,7 +520,7 @@ export class GoogleAdsService {
    * @param currency - The currency code (optional, defaults to USD)
    * @returns Normalized amount in USD
    */
-  private normalizeCurrency(amount: number, currency: string = 'USD'): number {
+  private normalizeCurrency(amount: number): number {
     // In a real implementation, you would use a currency conversion API
     // For now, we'll just return the amount as-is
     return amount

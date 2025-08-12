@@ -2,7 +2,6 @@ import type { HttpContext } from '@adonisjs/core/http'
 import ConnectedAccount from '#models/connected_account'
 import CampaignData from '#models/campaign_data'
 import logger from '@adonisjs/core/services/logger'
-import type { DateTime } from 'luxon'
 
 interface Stats {
   totalSpend: number

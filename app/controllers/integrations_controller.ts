@@ -2,7 +2,6 @@ import type { HttpContext } from '@adonisjs/core/http'
 import ConnectedAccount from '#models/connected_account'
 import { connectValidator, disconnectValidator, syncValidator } from '#validators/integrations'
 import logger from '@adonisjs/core/services/logger'
-import { DateTime } from 'luxon'
 import googleAdsService from '#services/google_ads_service'
 
 export default class IntegrationsController {

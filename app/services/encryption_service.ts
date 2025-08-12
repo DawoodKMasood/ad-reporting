@@ -97,7 +97,7 @@ export class EncryptionService {
    * @param iterations - Number of iterations for PBKDF2
    * @returns The derived key
    */
-  private deriveKey(password: string, salt: Buffer, iterations: number = 100000): Buffer {
+  private deriveKey(password: string, salt: Buffer): Buffer {
     return createHash(EncryptionService.HASH_ALGORITHM)
       .update(password)
       .update(salt)
