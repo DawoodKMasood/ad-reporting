@@ -7,15 +7,10 @@ set -e
 echo "Starting deployment..."
 
 # Install dependencies
-npm ci
+npm ci --only=production
 
 # Build the application
 npm run build
-
-# Install production dependencies in build directory
-cd build
-npm ci --omit=dev
-cd ..
 
 # Create logs directory if it doesn't exist
 mkdir -p logs
