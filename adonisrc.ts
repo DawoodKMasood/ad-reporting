@@ -101,6 +101,10 @@ export default defineConfig({
       pattern: 'public/**',
       reloadServer: false,
     },
+    {
+      pattern: '.env',
+      reloadServer: false,
+    },
   ],
 
   assetsBundler: {
