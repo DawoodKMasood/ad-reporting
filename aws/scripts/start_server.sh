@@ -4,10 +4,15 @@
 cd /var/www/ad-reporting
 
 # Install dependencies
-npm ci --only=production
+npm ci
 
 # Build the application
 npm run build
+
+# Install production dependencies in build directory
+cd build
+npm ci --omit=dev
+cd ..
 
 # Create logs directory
 mkdir -p logs

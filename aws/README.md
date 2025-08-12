@@ -13,19 +13,33 @@
    npm install
    ```
 
-2. **Build the application:**
-   ```bash
-   npm run build
-   ```
-
-3. **Start with PM2:**
+2. **Start with PM2 (builds automatically):**
    ```bash
    npm run pm2:start
    ```
 
+## Manual Build Process
+
+1. **Build the application:**
+   ```bash
+   npm run build
+   ```
+
+2. **Install production dependencies in build directory:**
+   ```bash
+   cd build
+   npm ci --omit=dev
+   cd ..
+   ```
+
+3. **Start with PM2:**
+   ```bash
+   pm2 start ecosystem.config.js
+   ```
+
 ## PM2 Commands
 
-- Start: `npm run pm2:start`
+- Start: `npm run pm2:start` (builds and starts)
 - Stop: `npm run pm2:stop`
 - Restart: `npm run pm2:restart`
 - Reload: `npm run pm2:reload`
