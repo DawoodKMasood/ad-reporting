@@ -20,5 +20,5 @@ cd build
 npm ci --omit="dev"
 
 # Start the server
-echo "Starting server on port 3333..."
+echo "Starting server..."
 node bin/server.js
