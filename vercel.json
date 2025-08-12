@@ -5,7 +5,8 @@
       "src": "package.json",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["build/**", "public/**"]
+        "includeFiles": ["build/**", "public/**"],
+        "maxLambdaSize": "50mb"
       }
     },
     {
@@ -46,10 +47,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "build/bin/server.js": {
-      "maxDuration": 30
-    }
   }
 }
