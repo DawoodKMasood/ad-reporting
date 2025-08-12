@@ -6,13 +6,16 @@
 
 # Source files (keep compiled build)
 app/
-resources/
 start/
 config/
 database/
 tests/
 commands/
 providers/
+
+# Keep resources for views but exclude source files
+resources/css/
+resources/js/
 
 # Development dependencies
 node_modules/
@@ -44,5 +47,6 @@ vite.config.ts
 !build/
 !public/
 !api/
+!resources/views/
 !package.json
 !vercel.json
