@@ -22,14 +22,4 @@ export default defineConfig({
       plugins: [tailwindcss()],
     },
   },
-  build: {
-    outDir: '../public/assets',
-    assetsDir: '',
-    rollupOptions: {
-      output: {
-        manualChunks: undefined,
-      },
-    },
-  },
-  base: '/assets/',
 })
