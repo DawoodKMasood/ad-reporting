@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "main": "build/bin/server.js",
   "license": "UNLICENSED",
   "scripts": {
     "start": "node build/bin/server.js",

@@ -1,10 +1,14 @@
 {
   "version": 2,
-  "functions": {
-    "api/index.js": {
-      "runtime": "nodejs18.x"
+  "builds": [
+    {
+      "src": "index.js",
+      "use": "@vercel/node",
+      "config": {
+        "includeFiles": ["build/**", "public/**"]
+      }
     }
-  },
+  ],
   "routes": [
     {
       "src": "/assets/(.*)",
@@ -29,7 +33,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/api/index.js"
+      "dest": "/index.js"
     }
   ],
   "env": {

@@ -4,7 +4,7 @@
 .env.development
 .env.test
 
-# Source files (keep compiled build)
+# Source files
 app/
 resources/
 start/
@@ -40,9 +40,9 @@ tailwind.config.js
 postcss.config.js
 vite.config.ts
 
-# Keep only these for deployment
+# Keep only these
 !build/
 !public/
-!api/
+!index.js
 !package.json
 !vercel.json
