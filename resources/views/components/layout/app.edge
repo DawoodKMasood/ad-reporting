@@ -13,7 +13,7 @@
   </head>
   <body class="bg-gray-50 font-sans">
     <div id="app">
-      @if(auth.isAuthenticated)
+      @if(auth && auth.isAuthenticated)
         <!-- Navigation Bar -->
         <nav class="bg-white shadow-lg border-b border-gray-200">
           <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -63,7 +63,7 @@
       @end
       
       <!-- Main Content -->
-      <main class="{{ auth.isAuthenticated ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : '' }}">
+      <main class="{{ (auth && auth.isAuthenticated) ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : '' }}">
         {{{ await $slots.main() }}}
       </main>
     </div>
