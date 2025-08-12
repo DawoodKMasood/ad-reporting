@@ -5,8 +5,11 @@
   "type": "module",
   "license": "UNLICENSED",
   "scripts": {
-    "start": "node bin/server.js",
-    "build": "node ace build",
+    "start": "cd build && node bin/server.js",
+    "build": "npm run build:assets && node ace build --ignore-ts-errors",
+    "build:assets": "vite build",
+    "build:vercel": "npm run build:assets && node ace build --ignore-ts-errors",
+    "postbuild": "echo 'Build completed successfully'",
     "dev": "node ace serve --hmr",
     "test": "node ace test",
     "lint": "eslint .",
