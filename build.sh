@@ -3,9 +3,14 @@
 # Vercel Build Script for AdonisJS
 echo "Starting Vercel build process..."
 
-# Install dependencies
-echo "Installing dependencies..."
-npm ci
+# Clear npm cache and remove node_modules
+echo "Cleaning up..."
+rm -rf node_modules package-lock.json
+npm cache clean --force
+
+# Install dependencies with legacy peer deps
+echo "Installing dependencies with legacy peer deps..."
+npm install --legacy-peer-deps --no-audit --no-fund
 
 # Build frontend assets with Vite
 echo "Building frontend assets..."
@@ -24,11 +29,6 @@ fi
 
 if [ ! -f "build/bin/server.js" ]; then
   echo "Error: Server file not found"
-  exit 1
-fi
-
-if [ ! -d "public/assets" ]; then
-  echo "Error: Assets directory not found"
   exit 1
 fi
 

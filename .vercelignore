@@ -1,5 +1,4 @@
 # Development files
-.env
 .env.local
 .env.development
 .env.test
@@ -43,10 +42,15 @@ tailwind.config.js
 postcss.config.js
 vite.config.ts
 
+# Backup files
+*.backup
+
 # Keep only these for deployment
 !build/
 !public/
 !api/
 !resources/views/
 !package.json
+!package-lock.json
+!.npmrc
 !vercel.json

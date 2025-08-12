@@ -14,7 +14,9 @@
     "test": "node ace test",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf node_modules package-lock.json && npm cache clean --force",
+    "fresh-install": "npm run clean && npm install --legacy-peer-deps"
   },
   "imports": {
     "#controllers/*": "./app/controllers/*.js",
@@ -65,12 +67,16 @@
     "@adonisjs/static": "^1.1.1",
     "@adonisjs/vite": "^4.0.0",
     "@vinejs/vine": "^3.0.1",
+    "domexception": "^4.0.0",
     "edge.js": "^6.3.0",
     "google-ads-api": "^21.0.0",
     "googleapis": "^155.0.1",
     "luxon": "^3.7.1",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2"
+  },
+  "overrides": {
+    "node-domexception": "npm:domexception@^4.0.0"
   },
   "hotHook": {
     "boundaries": [
