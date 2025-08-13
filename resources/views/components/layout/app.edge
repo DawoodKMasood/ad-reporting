@@ -204,7 +204,7 @@
     </script>
     
     <!-- Confirmation Modals -->
-    @include('components/confirmation-modal', {
+    @!component('components/confirmation-modal', {
       id: 'sync-account-modal',
       title: 'Sync Account',
       message: 'Are you sure you want to sync this account? This may take a few moments.',
@@ -212,7 +212,7 @@
       cancelButtonText: 'Cancel'
     })
     
-    @include('components/confirmation-modal', {
+    @!component('components/confirmation-modal', {
       id: 'sync-error-modal',
       title: 'Sync Failed',
       message: 'Failed to sync account.',
@@ -220,7 +220,7 @@
       cancelButtonText: 'Close'
     })
     
-    @include('components/confirmation-modal', {
+    @!component('components/confirmation-modal', {
       id: 'disconnect-account-modal',
       title: 'Disconnect Account',
       message: 'Are you sure you want to disconnect this account? This will stop data synchronization.',
@@ -228,7 +228,7 @@
       cancelButtonText: 'Cancel'
     })
     
-    @include('components/confirmation-modal', {
+    @!component('components/confirmation-modal', {
       id: 'disconnect-error-modal',
       title: 'Disconnect Failed',
       message: 'Failed to disconnect account.',
@@ -236,7 +236,7 @@
       cancelButtonText: 'Close'
     })
     
-    @include('components/confirmation-modal', {
+    @!component('components/confirmation-modal', {
       id: 'connection-error-modal',
       title: 'Connection Failed',
       message: 'Failed to initiate connection.',
