@@ -20,30 +20,17 @@ edge.global('now', () => {
 })
 
 /**
- * Register global for flash messages
+ * Register global for flash messages - use session directly
  */
 edge.global('flashMessages', function (this: any) {
-  const ctx = this.ctx
-  if (!ctx?.session) {
-    return {
-      has: () => false,
-      get: () => null,
-      all: () => ({}),
-    }
-  }
-  
-  return ctx.session.flashMessages || {
-    has: () => false,
-    get: () => null,
-    all: () => ({}),
-  }
+  return this.ctx?.session?.flashMessages
 })
 
 /**
  * Register global for auth
  */
 edge.global('auth', function (this: any) {
-  return this.ctx?.auth || null
+  return this.ctx?.auth
 })
 
 /**
@@ -77,10 +64,14 @@ edge.global('route', (routeName: string, params?: any) => {
  */
 edge.global('old', function (this: any, key: string, defaultValue: any = null) {
   const session = this.ctx?.session
-  if (!session || !session.flashMessages) {
+  if (!session?.flashMessages) {
     return defaultValue
   }
   
-  const oldData = session.flashMessages.get('old') || {}
-  return oldData[key] !== undefined ? oldData[key] : defaultValue
+  try {
+    const oldData = session.flashMessages.get('old') || {}
+    return oldData[key] !== undefined ? oldData[key] : defaultValue
+  } catch {
+    return defaultValue
+  }
 })
