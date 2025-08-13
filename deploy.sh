@@ -44,26 +44,32 @@ echo "Creating application directory..."
 mkdir -p $APP_DIR
 mkdir -p $APP_DIR/logs
 
-# Copy application files
+# Copy application files (including hidden files)
 echo "Copying application files..."
+shopt -s dotglob
 cp -r ./* $APP_DIR/
+shopt -u dotglob
 cd $APP_DIR
 
 # Set ownership
 echo "Setting ownership..."
 chown -R www-data:www-data $APP_DIR
 
-# Ensure .env exists in root
-if [ ! -f ".env" ]; then
-    if [ -f ".env.example" ]; then
-        echo "Creating .env from .env.example..."
-        cp .env.example .env
-    else
-        echo "Error: No .env or .env.example file found!"
-        exit 1
-    fi
+# Verify .env file exists
+echo "Checking for .env file..."
+if [ -f ".env" ]; then
+    echo "✓ .env file found"
+elif [ -f ".env.example" ]; then
+    echo "Creating .env from .env.example..."
+    cp .env.example .env
+    chown www-data:www-data .env
+    echo "✓ .env created from example"
+else
+    echo "Error: No .env or .env.example file found!"
+    echo "Contents of current directory:"
+    ls -la
+    exit 1
 fi
-chown www-data:www-data .env
 
 # Install dependencies and build
 echo "Installing dependencies..."
