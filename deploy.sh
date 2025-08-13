@@ -197,13 +197,20 @@ mkdir -p /etc/nginx/sites-available
 mkdir -p /etc/nginx/sites-enabled
 rm -f /etc/nginx/sites-enabled/default
 
-# Create nginx config
-echo "Setting up nginx..."
+# Create final HTTPS nginx config
+echo "Creating HTTPS nginx configuration..."
 cat > /etc/nginx/sites-available/$DOMAIN << EOF
 server {
     listen 80;
     server_name $DOMAIN;
-    return 301 https://\$server_name\$request_uri;
+    
+    location /.well-known/acme-challenge/ {
+        root /var/www/html;
+    }
+    
+    location / {
+        return 301 https://\$server_name\$request_uri;
+    }
 }
 
 server {
@@ -275,7 +282,8 @@ server {
 }
 EOF
 
-# Temporary HTTP config for SSL setup
+# Temporary HTTP-only config for SSL certificate generation
+echo "Creating temporary HTTP configuration for SSL setup..."
 cat > /etc/nginx/sites-available/$DOMAIN.temp << EOF
 server {
     listen 80;
@@ -295,38 +303,124 @@ server {
 }
 EOF
 
-# Use temp config first
+# Start with temporary HTTP config
+echo "Setting up nginx with temporary HTTP configuration..."
 ln -sf /etc/nginx/sites-available/$DOMAIN.temp /etc/nginx/sites-enabled/$DOMAIN
 systemctl enable nginx
-nginx -t && systemctl restart nginx
 
-# Get SSL certificate
-mkdir -p /var/www/html
-echo "Getting SSL certificate..."
-certbot certonly --webroot -w /var/www/html -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN
-
-if [ $? -eq 0 ]; then
-    echo "SSL certificate obtained, switching to HTTPS config..."
-    ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN
-    nginx -t && systemctl reload nginx
-else
-    echo "SSL failed, keeping HTTP config"
+# Test nginx config
+if ! nginx -t; then
+    echo "Nginx configuration test failed!"
+    exit 1
 fi
 
-# Setup certificate renewal
-(crontab -l 2>/dev/null | grep -v certbot; echo "0 12 * * * /usr/bin/certbot renew --quiet") | crontab -
+systemctl restart nginx
+
+# Prepare for SSL certificate
+mkdir -p /var/www/html
+chown -R www-data:www-data /var/www/html
+
+# Check domain DNS resolution
+echo "Checking domain DNS resolution..."
+if ! nslookup $DOMAIN > /dev/null 2>&1; then
+    echo "WARNING: Domain $DOMAIN does not resolve to this server!"
+    echo "Please ensure your domain points to this server's IP address before SSL will work."
+    echo "Current server IP addresses:"
+    hostname -I
+    echo "You can still access the site via HTTP, but HTTPS will not work until DNS is configured."
+fi
+
+# Try to get SSL certificate
+echo "Attempting to get SSL certificate for $DOMAIN..."
+sleep 5  # Give nginx time to start properly
+
+# Stop nginx temporarily for standalone mode
+systemctl stop nginx
+
+# Try standalone mode first (more reliable)
+if certbot certonly --standalone -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN; then
+    echo "✓ SSL certificate obtained successfully with standalone mode!"
+    SSL_SUCCESS=true
+else
+    echo "Standalone SSL failed, trying webroot mode..."
+    systemctl start nginx
+    sleep 3
+    
+    if certbot certonly --webroot -w /var/www/html -d $DOMAIN --non-interactive --agree-tos --email admin@$DOMAIN; then
+        echo "✓ SSL certificate obtained successfully with webroot mode!"
+        SSL_SUCCESS=true
+    else
+        echo "⚠ SSL certificate generation failed!"
+        echo "SSL Error details:"
+        tail -20 /var/log/letsencrypt/letsencrypt.log 2>/dev/null || echo "No SSL logs found"
+        SSL_SUCCESS=false
+    fi
+fi
+
+# Start nginx if it's not running
+systemctl start nginx
+
+# Switch to appropriate config based on SSL success
+if [ "$SSL_SUCCESS" = true ]; then
+    echo "Switching to HTTPS configuration..."
+    ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN
+    
+    # Test the SSL configuration
+    if nginx -t; then
+        systemctl reload nginx
+        echo "✓ HTTPS configuration activated successfully!"
+        
+        # Test HTTPS
+        sleep 3
+        if curl -k -s -o /dev/null -w "%{http_code}" https://$DOMAIN/ | grep -q "200\|404\|302"; then
+            echo "✓ HTTPS is working!"
+        else
+            echo "⚠ HTTPS configuration applied but not responding yet"
+        fi
+    else
+        echo "⚠ HTTPS configuration has errors, reverting to HTTP"
+        ln -sf /etc/nginx/sites-available/$DOMAIN.temp /etc/nginx/sites-enabled/$DOMAIN
+        systemctl reload nginx
+    fi
+else
+    echo "Keeping HTTP-only configuration until SSL certificate is available"
+    echo "To retry SSL later, run:"
+    echo "  sudo certbot certonly --standalone -d $DOMAIN"
+    echo "  sudo ln -sf /etc/nginx/sites-available/$DOMAIN /etc/nginx/sites-enabled/$DOMAIN"
+    echo "  sudo nginx -t && sudo systemctl reload nginx"
+fi
+
+# Setup certificate renewal regardless
+echo "Setting up automatic certificate renewal..."
+(crontab -l 2>/dev/null | grep -v certbot; echo "0 12 * * * /usr/bin/certbot renew --quiet && systemctl reload nginx") | crontab -
 
 # Setup firewall
+echo "Configuring firewall..."
 ufw allow 22/tcp
 ufw allow 80/tcp
 ufw allow 443/tcp
 ufw --force enable
 
+echo ""
 echo "=== Deployment Complete ==="
-echo "Domain: https://$DOMAIN"
+echo "Domain: $DOMAIN"
 echo "Service: $SERVICE_NAME"
-echo "Check status: systemctl status $SERVICE_NAME"
-echo "Check logs: journalctl -u $SERVICE_NAME -f"
-echo "Test URL: curl http://localhost:3333/"
 
+if [ "$SSL_SUCCESS" = true ]; then
+    echo "✓ HTTPS: https://$DOMAIN"
+    echo "✓ HTTP redirects to HTTPS"
+else
+    echo "⚠ HTTP only: http://$DOMAIN"
+    echo "⚠ HTTPS not available - check DNS configuration"
+fi
+
+echo ""
+echo "Management commands:"
+echo "  systemctl status $SERVICE_NAME    - Check service status"
+echo "  journalctl -u $SERVICE_NAME -f    - Follow service logs"
+echo "  nginx -t                          - Test nginx config"
+echo "  systemctl reload nginx            - Reload nginx"
+echo "  certbot certificates              - Check SSL certificates"
+
+echo ""
 systemctl status $SERVICE_NAME --no-pager
