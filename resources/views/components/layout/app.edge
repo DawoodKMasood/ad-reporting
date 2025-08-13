@@ -103,7 +103,7 @@
           .catch(error => {
             console.error('Error:', error);
             // Show generic error modal
-            document.getElementById('sync-error-modal').querySelector('#sync-error-modal-description').textContent = 'Failed to sync account. Please try again.';
+            document.getElementById('sync-error-modal-description').textContent = 'Failed to sync account. Please try again.';
             window['sync-error-modal_show']();
             button.disabled = false;
             button.innerHTML = originalContent;
@@ -141,7 +141,7 @@
             } else {
               // Show error modal with specific message
               const errorMessage = 'Failed to disconnect account: ' + (data.message || 'Unknown error');
-              document.getElementById('disconnect-error-modal').querySelector('#disconnect-error-modal-description').textContent = errorMessage;
+              document.getElementById('disconnect-error-modal-description').textContent = errorMessage;
               window['disconnect-error-modal_show']();
               button.disabled = false;
               button.innerHTML = originalContent;
@@ -150,7 +150,7 @@
           .catch(error => {
             console.error('Error:', error);
             // Show generic error modal
-            document.getElementById('disconnect-error-modal').querySelector('#disconnect-error-modal-description').textContent = 'Failed to disconnect account. Please try again.';
+            document.getElementById('disconnect-error-modal-description').textContent = 'Failed to disconnect account. Please try again.';
             window['disconnect-error-modal_show']();
             button.disabled = false;
             button.innerHTML = originalContent;
@@ -186,7 +186,7 @@
           } else {
             // Show error modal with specific message
             const errorMessage = 'Failed to initiate connection: ' + (data.message || 'Unknown error');
-            document.getElementById('connection-error-modal').querySelector('#connection-error-modal-description').textContent = errorMessage;
+            document.getElementById('connection-error-modal-description').textContent = errorMessage;
             window['connection-error-modal_show']();
             button.innerHTML = originalText;
             button.disabled = false;
@@ -195,7 +195,7 @@
         .catch(error => {
           console.error('Error:', error);
           // Show generic error modal
-          document.getElementById('connection-error-modal').querySelector('#connection-error-modal-description').textContent = 'Failed to connect platform. Please try again.';
+          document.getElementById('connection-error-modal-description').textContent = 'Failed to connect platform. Please try again.';
           window['connection-error-modal_show']();
           button.innerHTML = originalText;
           button.disabled = false;
