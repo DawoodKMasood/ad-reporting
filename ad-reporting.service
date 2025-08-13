@@ -1,18 +1,25 @@
 [Unit]
 Description=Ad Reporting AdonisJS Application
-After=network.target
+After=network.target postgresql.service
 Wants=network.target
 
 [Service]
 Type=simple
 User=www-data
 Group=www-data
-WorkingDirectory=/var/www/ad-reporting
+WorkingDirectory=/var/www/ad-reporting/build
+ExecStartPre=/bin/mkdir -p /var/www/ad-reporting/logs
 ExecStart=/usr/bin/node bin/server.js
 Restart=always
 RestartSec=10
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+# Environment
 Environment=NODE_ENV=production
 Environment=PORT=3333
+Environment=HOST=0.0.0.0
 
 # Logging
 StandardOutput=journal
@@ -25,6 +32,10 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 ReadWritePaths=/var/www/ad-reporting
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
 
 [Install]
 WantedBy=multi-user.target
