@@ -18,6 +18,20 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Stop existing service and kill processes on port 3333
+echo "Stopping existing services and processes..."
+systemctl stop $SERVICE_NAME 2>/dev/null || true
+pkill -f "node.*server.js" 2>/dev/null || true
+sleep 2
+
+# Kill any remaining processes on port 3333
+PIDS=$(lsof -ti:3333 2>/dev/null || true)
+if [ ! -z "$PIDS" ]; then
+    echo "Killing processes on port 3333: $PIDS"
+    kill -9 $PIDS 2>/dev/null || true
+    sleep 2
+fi
+
 # Update system
 echo "Updating system packages..."
 apt update && apt upgrade -y
@@ -31,7 +45,7 @@ fi
 
 # Install required packages
 echo "Installing required packages..."
-apt install -y nginx certbot python3-certbot-nginx git curl
+apt install -y nginx certbot python3-certbot-nginx git curl lsof
 
 # Fix NPM permissions
 echo "Fixing NPM permissions..."
@@ -102,20 +116,11 @@ cd build
 echo "Installing production dependencies..."
 sudo -u www-data npm ci --omit="dev" --ignore-scripts
 
-# Test if the app can start manually
-echo "Testing application startup..."
-cd $APP_DIR/build
-timeout 5 sudo -u www-data NODE_ENV=production PORT=3333 node bin/server.js &
-TEST_PID=$!
-sleep 3
-
-if kill -0 $TEST_PID 2>/dev/null; then
-    echo "✓ Application test successful"
-    kill $TEST_PID 2>/dev/null
-else
-    echo "✗ Application test failed"
-    echo "Checking for missing modules..."
-    sudo -u www-data NODE_ENV=production PORT=3333 node -e "console.log('Node.js works'); require('./bin/server.js')" 2>&1 | head -20
+# Quick test to ensure port 3333 is free
+echo "Verifying port 3333 is available..."
+if lsof -Pi :3333 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    echo "Error: Port 3333 is still in use!"
+    lsof -Pi :3333 -sTCP:LISTEN
     exit 1
 fi
 
@@ -161,27 +166,30 @@ systemctl enable $SERVICE_NAME
 systemctl start $SERVICE_NAME
 
 # Wait and check service
-sleep 10
+echo "Starting service and waiting for startup..."
+sleep 15
+
 if ! systemctl is-active --quiet $SERVICE_NAME; then
     echo "Service failed to start! Full logs:"
     journalctl -u $SERVICE_NAME --no-pager -n 50
     echo ""
     echo "Checking .env file in build directory:"
-    cat build/.env | head -10
+    echo "PORT setting: $(grep '^PORT=' build/.env || echo 'PORT not found')"
     echo ""
-    echo "Manual test from build directory:"
-    cd build
-    sudo -u www-data NODE_ENV=production node bin/server.js &
-    MANUAL_PID=$!
-    sleep 5
-    if kill -0 $MANUAL_PID 2>/dev/null; then
-        echo "Manual start works! Stopping..."
-        kill $MANUAL_PID
-        echo "Issue might be with systemd configuration"
-    else
-        echo "Manual start also fails"
-    fi
+    echo "Service status:"
+    systemctl status $SERVICE_NAME --no-pager
     exit 1
+else
+    echo "✓ Service started successfully!"
+    
+    # Test if the service is responding
+    echo "Testing service response..."
+    sleep 5
+    if curl -s -o /dev/null -w "%{http_code}" http://localhost:3333/ | grep -q "200\|404\|302"; then
+        echo "✓ Service is responding to HTTP requests"
+    else
+        echo "⚠ Service started but not responding to HTTP requests yet"
+    fi
 fi
 
 # Setup nginx directories
@@ -319,5 +327,6 @@ echo "Domain: https://$DOMAIN"
 echo "Service: $SERVICE_NAME"
 echo "Check status: systemctl status $SERVICE_NAME"
 echo "Check logs: journalctl -u $SERVICE_NAME -f"
+echo "Test URL: curl http://localhost:3333/"
 
 systemctl status $SERVICE_NAME --no-pager
