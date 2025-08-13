@@ -71,6 +71,11 @@ else
     exit 1
 fi
 
+# Fix PORT in .env file (must be 3333, not 80)
+echo "Fixing PORT in .env file..."
+sed -i 's/^PORT=.*/PORT=3333/' .env
+chown www-data:www-data .env
+
 # Install dependencies and build
 echo "Installing dependencies..."
 sudo -u www-data npm cache clean --force
@@ -79,15 +84,42 @@ sudo -u www-data npm install
 echo "Building application..."
 sudo -u www-data npm run build
 
-# Copy .env to build directory
+# Verify build completed successfully
+if [ ! -d "build" ] || [ ! -f "build/bin/server.js" ]; then
+    echo "Error: Build failed or server.js not found!"
+    echo "Build directory contents:"
+    ls -la build/ 2>/dev/null || echo "Build directory does not exist"
+    exit 1
+fi
+
+# Copy .env to build directory and fix PORT there too
 echo "Copying .env to build directory..."
 cp .env build/.env
+sed -i 's/^PORT=.*/PORT=3333/' build/.env
 chown www-data:www-data build/.env
 
 cd build
 echo "Installing production dependencies..."
 sudo -u www-data npm ci --omit="dev" --ignore-scripts
-cd ..
+
+# Test if the app can start manually
+echo "Testing application startup..."
+cd $APP_DIR/build
+timeout 5 sudo -u www-data NODE_ENV=production PORT=3333 node bin/server.js &
+TEST_PID=$!
+sleep 3
+
+if kill -0 $TEST_PID 2>/dev/null; then
+    echo "✓ Application test successful"
+    kill $TEST_PID 2>/dev/null
+else
+    echo "✗ Application test failed"
+    echo "Checking for missing modules..."
+    sudo -u www-data NODE_ENV=production PORT=3333 node -e "console.log('Node.js works'); require('./bin/server.js')" 2>&1 | head -20
+    exit 1
+fi
+
+cd $APP_DIR
 
 # Create systemd service
 echo "Creating systemd service..."
@@ -131,8 +163,24 @@ systemctl start $SERVICE_NAME
 # Wait and check service
 sleep 10
 if ! systemctl is-active --quiet $SERVICE_NAME; then
-    echo "Service failed to start! Logs:"
-    journalctl -u $SERVICE_NAME --no-pager -n 20
+    echo "Service failed to start! Full logs:"
+    journalctl -u $SERVICE_NAME --no-pager -n 50
+    echo ""
+    echo "Checking .env file in build directory:"
+    cat build/.env | head -10
+    echo ""
+    echo "Manual test from build directory:"
+    cd build
+    sudo -u www-data NODE_ENV=production node bin/server.js &
+    MANUAL_PID=$!
+    sleep 5
+    if kill -0 $MANUAL_PID 2>/dev/null; then
+        echo "Manual start works! Stopping..."
+        kill $MANUAL_PID
+        echo "Issue might be with systemd configuration"
+    else
+        echo "Manual start also fails"
+    fi
     exit 1
 fi
 
