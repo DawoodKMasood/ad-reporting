@@ -260,8 +260,22 @@ export default class IntegrationsController {
       const user = auth.getUserOrFail()
       const payload = await request.validateUsing(disconnectValidator)
       
+      // Get ID from payload or route params
+      const accountId = payload.id || parseInt(params.id, 10)
+      
+      if (!accountId || isNaN(accountId)) {
+        const isApiRequest = request.header('Accept')?.includes('application/json')
+        if (isApiRequest) {
+          return response.badRequest({
+            error: 'Invalid account ID',
+            message: 'Account ID must be a valid number'
+          })
+        }
+        return response.redirect().back()
+      }
+      
       const connectedAccount = await ConnectedAccount.query()
-        .where('id', payload.id || params.id)
+        .where('id', accountId)
         .where('user_id', user.id)
         .firstOrFail()
       
@@ -301,8 +315,22 @@ export default class IntegrationsController {
       const user = auth.getUserOrFail()
       const payload = await request.validateUsing(syncValidator)
       
+      // Get ID from payload or route params
+      const accountId = payload.id || parseInt(params.id, 10)
+      
+      if (!accountId || isNaN(accountId)) {
+        const isApiRequest = request.header('Accept')?.includes('application/json')
+        if (isApiRequest) {
+          return response.badRequest({
+            error: 'Invalid account ID',
+            message: 'Account ID must be a valid number'
+          })
+        }
+        return response.redirect().back()
+      }
+      
       const connectedAccount = await ConnectedAccount.query()
-        .where('id', payload.id || params.id)
+        .where('id', accountId)
         .where('user_id', user.id)
         .firstOrFail()
       

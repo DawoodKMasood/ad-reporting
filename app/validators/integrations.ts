@@ -14,7 +14,7 @@ export const connectValidator = vine.compile(
  */
 export const disconnectValidator = vine.compile(
   vine.object({
-    id: vine.number().positive(),
+    id: vine.number().positive().optional(),
   })
 )
 
@@ -23,6 +23,6 @@ export const disconnectValidator = vine.compile(
  */
 export const syncValidator = vine.compile(
   vine.object({
-    id: vine.number().positive(),
+    id: vine.number().positive().optional(),
   })
 )
