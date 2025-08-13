@@ -22,10 +22,22 @@ export class GoogleAdsService {
 
   constructor() {
     // Initialize the Google Ads API client with credentials from environment variables
+    logger.info('Initializing Google Ads API client', {
+      clientId: env.get('GOOGLE_ADS_CLIENT_ID'),
+      hasClientId: !!env.get('GOOGLE_ADS_CLIENT_ID'),
+      hasClientSecret: !!env.get('GOOGLE_ADS_CLIENT_SECRET'),
+      hasDeveloperToken: !!env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
+    })
+    
     this.googleAdsClient = new GoogleAdsApi({
       client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
       client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
       developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
+    })
+    
+    logger.info('Google Ads API client initialized', {
+      hasGoogleAdsClient: !!this.googleAdsClient,
+      clientType: typeof this.googleAdsClient
     })
   }
 
@@ -64,10 +76,21 @@ export class GoogleAdsService {
       }
       
       // Set up the Google Ads client with the authenticated credentials
+      logger.info('Creating Google Ads customer client', {
+        customerId: connectedAccount.accountId,
+        hasGoogleAdsClient: !!this.googleAdsClient,
+        hasCustomerMethod: !!(this.googleAdsClient && typeof this.googleAdsClient.Customer === 'function')
+      })
+      
       const customer = this.googleAdsClient.Customer({
         customer_id: connectedAccount.accountId,
         login_customer_id: env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID'),
         refresh_token: decryptedTokens.refreshToken
+      })
+      
+      logger.info('Google Ads customer client created', {
+        hasCustomer: !!customer,
+        customerType: typeof customer
       })
       
       // Calculate date range
@@ -172,13 +195,45 @@ export class GoogleAdsService {
    */
   private async executePaginatedQuery(customer: any, query: string, pageSize: number = this.pageSize): Promise<any[]> {
     try {
+      // Add diagnostic logging to check if customer object is properly initialized
+      logger.info('Executing paginated query', {
+        hasCustomer: !!customer,
+        customerType: typeof customer,
+        hasQueryMethod: !!(customer && typeof customer.query === 'function')
+      })
+      
+      // Check if customer object is undefined
+      if (!customer) {
+        throw new Error('Customer object is undefined in executePaginatedQuery')
+      }
+      
+      // Check if customer.query method exists
+      if (!customer.query || typeof customer.query !== 'function') {
+        throw new Error('Customer.query method is not available or not a function')
+      }
+      
       const allResults: any[] = []
       let nextPageToken: string | undefined
       
       do {
+        logger.info('Executing Google Ads query', {
+          query: query.substring(0, 200) + (query.length > 200 ? '...' : ''),
+          pageSize,
+          nextPageToken: !!nextPageToken
+        })
+        
         const response: any = await customer.query(query, {
           page_size: pageSize,
           page_token: nextPageToken
+        }).catch((error: any) => {
+          logger.error('Error executing Google Ads query:', {
+            error: error.message,
+            stack: error.stack,
+            code: error.code,
+            details: error.details,
+            query: query.substring(0, 200) + (query.length > 200 ? '...' : '')
+          })
+          throw error
         })
         
         if (response.results) {
