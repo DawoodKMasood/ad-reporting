@@ -29,24 +29,35 @@ export class GoogleAdsOAuthService {
     logger.info('Initializing Google Ads OAuth service', {
       clientId: env.get('GOOGLE_ADS_CLIENT_ID'),
       clientSecret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
+      appUrl: env.get('APP_URL'),
       host: env.get('HOST'),
-      port: env.get('PORT')
+      port: env.get('PORT'),
+      nodeEnv: env.get('NODE_ENV')
     })
     
-    // Construct the redirect URI with proper protocol
-    const host = env.get('HOST')
-    const port = env.get('PORT')
+    // Construct the redirect URI properly based on environment
     let redirectUri = ''
     
-    if (host === 'localhost' || host === '127.0.0.1') {
-      // For localhost, use http
-      redirectUri = `http://${host}:${port}/integrations/callback/google_ads`
+    const appUrl = env.get('APP_URL')
+    const nodeEnv = env.get('NODE_ENV')
+    const host = env.get('HOST')
+    const port = env.get('PORT')
+    
+    if (appUrl) {
+      // Use APP_URL if provided (production)
+      redirectUri = `${appUrl}/integrations/callback/google_ads`
+    } else if (nodeEnv === 'development' || host === 'localhost' || host === '127.0.0.1') {
+      // For development/localhost
+      const protocol = 'http'
+      const portSuffix = port && port !== 80 && port !== 443 ? `:${port}` : ''
+      redirectUri = `${protocol}://${host}${portSuffix}/integrations/callback/google_ads`
     } else {
-      // For production, use https
-      redirectUri = `https://${host}:${port}/integrations/callback/google_ads`
+      // Fallback for production without APP_URL
+      const protocol = 'https'
+      redirectUri = `${protocol}://${host}/integrations/callback/google_ads`
     }
     
-    logger.info('OAuth redirect URI', { redirectUri })
+    logger.info('OAuth redirect URI constructed', { redirectUri, appUrl, nodeEnv, host, port })
     
     this.oauth2Client = new google.auth.OAuth2(
       env.get('GOOGLE_ADS_CLIENT_ID'),
