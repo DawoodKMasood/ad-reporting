@@ -16,7 +16,7 @@
           )
           <div class="ml-4">
             <h1 class="text-2xl font-bold text-gray-900">
-              {{ connectedAccount.platform.replace('_', ' ') }} Account
+              {{ user.fullName }}'s {{ connectedAccount.platform === 'google_ads' ? 'Google Ads' : connectedAccount.platform === 'meta_ads' ? 'Meta Ads' : connectedAccount.platform === 'tiktok_ads' ? 'TikTok Ads' : connectedAccount.platform.replace('_', ' ') }} Account
             </h1>
             <p class="text-gray-600">
               {{ connectedAccount.accountId }}
@@ -24,30 +24,20 @@
           </div>
         </div>
         <div class="flex space-x-3">
-          <form method="POST" action="{{ route('integrations.sync', { id: connectedAccount.id }) }}" id="syncForm">
-            {{ csrfField() }}
-            <button
-              type="button"
-              data-action="sync-account"
-              data-account-id="{{ connectedAccount.id }}"
-              class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <i class="fas fa-sync-alt mr-2"></i>
-              Sync Now
-            </button>
-          </form>
-          <form method="POST" action="{{ route('integrations.disconnect', { id: connectedAccount.id }) }}" id="disconnectForm">
-            {{ csrfField() }}
-            <button
-              type="button"
-              data-action="disconnect-account"
-              data-account-id="{{ connectedAccount.id }}"
-              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              <i class="fas fa-unlink mr-2"></i>
-              Disconnect
-            </button>
-          </form>
+          <button
+            onclick="syncAccount('{{ connectedAccount.id }}')"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <i class="fas fa-sync-alt mr-2"></i>
+            Sync Now
+          </button>
+          <button
+            onclick="disconnectAccount('{{ connectedAccount.id }}')"
+            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            <i class="fas fa-unlink mr-2"></i>
+            Disconnect
+          </button>
         </div>
       </div>
     </div>
@@ -183,6 +173,12 @@
   </div>
 
   <script>
+    // Using global functions from integrations-helper.js
+    // Custom disconnect function that redirects to integrations page
+    function disconnectAccount(accountId) {
+      window.integrationsHelper.disconnectAccount(accountId, '/integrations');
+    }
+
     // Auto-hide flash messages after 5 seconds
     setTimeout(() => {
       const alerts = document.querySelectorAll('[class*="fixed top-4"]');

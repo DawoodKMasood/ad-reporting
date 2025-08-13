@@ -6,6 +6,7 @@
     <title>{{ title || 'Ad Reporting Tool' }}</title>
     <meta name="csrf-token" content="{{ csrfToken }}">
     @vite(['resources/js/app.js'])
+    <script src="{{ asset('js/integrations-helper.js') }}"></script>
     <link href="/css/fontawesome.css" rel="stylesheet" />
     @if ($slots.meta)
       {{{ await $slots.meta() }}}

@@ -20,15 +20,19 @@
         Connected
       </span>
     @else
-      <button
-        type="button"
-        data-action="connect-platform"
-        data-platform="{{ platform.name }}"
-        class="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 {{ platform.disabled ? 'opacity-50 cursor-not-allowed' : '' }}"
-        {{ platform.disabled ? 'disabled' : '' }}
-      >
-        {{ platform.disabled ? 'Coming Soon' : 'Connect' }}
-      </button>
+      @if(platform.disabled)
+        <span class="px-3 py-1 text-xs font-medium text-gray-400 border border-gray-300 rounded-md opacity-50 cursor-not-allowed">
+          Coming Soon
+        </span>
+      @else
+        <button
+          type="button"
+          onclick="connectPlatform('{{ platform.name }}')"
+          class="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+        >
+          Connect
+        </button>
+      @end
     @endif
   </div>
 </div>

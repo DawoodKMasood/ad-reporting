@@ -90,10 +90,35 @@ export default class DashboardController {
         )
       }
 
+      // Define available platforms with connection status
+      const availablePlatforms = [
+        {
+          name: 'google_ads',
+          displayName: 'Google Ads',
+          description: 'Connect your Google Ads account to track campaign performance',
+          connected: connectedAccounts.some((account) => account.platform === 'google_ads'),
+        },
+        {
+          name: 'meta_ads',
+          displayName: 'Meta Ads',
+          description: 'Connect Facebook & Instagram ads (Coming Soon)',
+          connected: connectedAccounts.some((account) => account.platform === 'meta_ads'),
+          disabled: true,
+        },
+        {
+          name: 'tiktok_ads',
+          displayName: 'TikTok Ads',
+          description: 'Connect your TikTok for Business (Coming Soon)',
+          connected: connectedAccounts.some((account) => account.platform === 'tiktok_ads'),
+          disabled: true,
+        },
+      ]
+
       return view.render('pages/dashboard/index', {
         user,
         stats,
         connectedAccounts,
+        availablePlatforms,
         formatNumber: this.formatNumber.bind(this),
       })
     } catch (error) {
@@ -101,6 +126,30 @@ export default class DashboardController {
       
       // Return fallback data in case of error
       const user = auth.getUserOrFail()
+      // Define available platforms with connection status (fallback)
+      const availablePlatforms = [
+        {
+          name: 'google_ads',
+          displayName: 'Google Ads',
+          description: 'Connect your Google Ads account to track campaign performance',
+          connected: false,
+        },
+        {
+          name: 'meta_ads',
+          displayName: 'Meta Ads',
+          description: 'Connect Facebook & Instagram ads (Coming Soon)',
+          connected: false,
+          disabled: true,
+        },
+        {
+          name: 'tiktok_ads',
+          displayName: 'TikTok Ads',
+          description: 'Connect your TikTok for Business (Coming Soon)',
+          connected: false,
+          disabled: true,
+        },
+      ]
+
       return view.render('pages/dashboard/index', {
         user,
         stats: {
@@ -110,6 +159,7 @@ export default class DashboardController {
           totalConversions: 0,
         },
         connectedAccounts: [],
+        availablePlatforms,
         error: 'Failed to load dashboard data',
         formatNumber: this.formatNumber.bind(this),
       })

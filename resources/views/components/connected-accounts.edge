@@ -1,0 +1,92 @@
+<!-- Connected Accounts Component -->
+<div class="bg-white rounded-lg shadow-sm border border-gray-200">
+  <div class="p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-lg font-semibold text-gray-900">
+        <i class="fas fa-link mr-2 text-blue-600"></i>
+        Connected Accounts
+      </h2>
+      <span class="text-sm text-gray-500">{{ connectedAccounts.length || 0 }} accounts</span>
+    </div>
+    
+    @if(!connectedAccounts || connectedAccounts.length === 0)
+      <div class="text-center py-8">
+        <i class="fas fa-unlink text-4xl text-gray-300 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Connected Accounts</h3>
+        <p class="text-gray-500 mb-4">Connect your advertising accounts to start tracking performance</p>
+        <a href="{{ route('integrations.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          <i class="fas fa-plus mr-2"></i>
+          Connect Account
+        </a>
+      </div>
+    @else
+      <div class="space-y-4">
+        @each(account in connectedAccounts)
+          <a href="{{ route('integrations.show', { id: account.id }) }}" class="block">
+            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all duration-200 cursor-pointer group">
+              <div class="flex items-center flex-1">
+                <div class="flex-shrink-0">
+                  @!component('components/platform-logo', { 
+                    platform: account.platform, 
+                    size: 'md' 
+                  })
+                </div>
+                <div class="ml-4 flex-1">
+                  <h3 class="text-sm font-medium text-gray-900">
+                    {{ user.fullName }}'s {{ account.platform === 'google_ads' ? 'Google Ads' : account.platform === 'meta_ads' ? 'Meta Ads' : account.platform === 'tiktok_ads' ? 'TikTok Ads' : account.platform.replace('_', ' ') }} Account
+                  </h3>
+                  <p class="text-xs text-gray-500 mt-1">
+                    {{ account.accountId }}
+                  </p>
+                  <div class="flex items-center mt-2">
+                    @if(account.isActive)
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <i class="fas fa-check-circle mr-1"></i>
+                        Active
+                      </span>
+                    @else
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                        <i class="fas fa-exclamation-circle mr-1"></i>
+                        Inactive
+                      </span>
+                    @end
+                    <span class="ml-2 text-xs text-gray-500">
+                      @if(account.updatedAt)
+                        Updated {{ account.updatedAt.toRelative() }}
+                      @else
+                        Connected {{ account.createdAt.toRelative() }}
+                      @end
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button 
+                  onclick="event.preventDefault(); event.stopPropagation(); syncAccount('{{ account.id }}')"
+                  class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  title="Sync Account"
+                >
+                  <i class="fas fa-sync-alt mr-1"></i>
+                  Sync
+                </button>
+                <button 
+                  onclick="event.preventDefault(); event.stopPropagation(); disconnectAccount('{{ account.id }}')"
+                  class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-red-50 hover:border-red-300 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
+                  title="Disconnect Account"
+                >
+                  <i class="fas fa-unlink mr-1"></i>
+                  Disconnect
+                </button>
+                <div class="flex-shrink-0">
+                  <i class="fas fa-chevron-right text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+                </div>
+              </div>
+            </div>
+          </a>
+        @end
+      </div>
+    @end
+  </div>
+</div>
+
+<!-- JavaScript functions are loaded globally via integrations-helper.js -->

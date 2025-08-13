@@ -17,28 +17,28 @@ export default class IntegrationsController {
       .orderBy('created_at', 'desc')
     
     // Available platforms (could be moved to a config file)
-        const availablePlatforms = [
-          {
-            name: 'google_ads',
-            displayName: 'Google Ads',
-            description: 'Connect your Google Ads account to track campaign performance',
-            connected: connectedAccounts.some((account) => account.platform === 'google_ads'),
-          },
-          {
-            name: 'meta_ads',
-            displayName: 'Meta Ads',
-            description: 'Connect Facebook & Instagram ads (Coming Soon)',
-            connected: connectedAccounts.some((account) => account.platform === 'meta_ads'),
-            disabled: true,
-          },
-          {
-            name: 'tiktok_ads',
-            displayName: 'TikTok Ads',
-            description: 'Connect your TikTok for Business (Coming Soon)',
-            connected: connectedAccounts.some((account) => account.platform === 'tiktok_ads'),
-            disabled: true,
-          },
-        ]
+    const availablePlatforms = [
+      {
+        name: 'google_ads',
+        displayName: 'Google Ads',
+        description: 'Connect your Google Ads account to track campaign performance',
+        connected: connectedAccounts.some((account) => account.platform === 'google_ads'),
+      },
+      {
+        name: 'meta_ads',
+        displayName: 'Meta Ads',
+        description: 'Connect Facebook & Instagram ads (Coming Soon)',
+        connected: connectedAccounts.some((account) => account.platform === 'meta_ads'),
+        disabled: true,
+      },
+      {
+        name: 'tiktok_ads',
+        displayName: 'TikTok Ads',
+        description: 'Connect your TikTok for Business (Coming Soon)',
+        connected: connectedAccounts.some((account) => account.platform === 'tiktok_ads'),
+        disabled: true,
+      },
+    ]
     
     return view.render('pages/integrations/index', {
       user,

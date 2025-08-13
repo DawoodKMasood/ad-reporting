@@ -15,94 +15,18 @@
 
     <!-- Connected Accounts Section -->
     <div class="mb-8">
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-gray-900">
-            <i class="fas fa-link mr-2 text-blue-600"></i>
-            Connected Accounts
-          </h2>
-          <span class="text-sm text-gray-500">{{ connectedAccounts.length || 0 }} accounts</span>
-        </div>
-
-        @if(!connectedAccounts || connectedAccounts.length === 0)
-          <div class="text-center py-8">
-            <i class="fas fa-link text-4xl text-gray-300 mb-4"></i>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">No Connected Accounts</h3>
-            <p class="text-gray-500">Connect your advertising accounts to start tracking performance</p>
-          </div>
-        @else
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @each(account in connectedAccounts)
-              @include('components/account-summary')
-            @end
-          </div>
-        @end
-      </div>
+      @!component('components/connected-accounts', { 
+        connectedAccounts: connectedAccounts,
+        user: user
+      })
     </div>
 
     <!-- Available Platforms Section -->
     <div class="mb-8">
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h2 class="text-lg font-semibold text-gray-900">
-            <i class="fas fa-th-large mr-2 text-purple-600"></i>
-            Available Platforms
-          </h2>
-        </div>
-
-        <div class="space-y-4">
-          @if(availablePlatforms)
-            @each(platform in availablePlatforms)
-              @include('components/integration-card')
-            @end
-          @else
-            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <div class="flex items-center">
-                <div class="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                  <i class="fab fa-google text-red-600"></i>
-                </div>
-                <div class="ml-3">
-                  <h3 class="text-sm font-medium text-gray-900">Google Ads</h3>
-                  <p class="text-xs text-gray-500">Connect your Google Ads account</p>
-                </div>
-              </div>
-              <button class="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50">
-                Connect
-              </button>
-            </div>
-            
-            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <div class="flex items-center">
-                <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <i class="fab fa-facebook text-blue-600"></i>
-                </div>
-                <div class="ml-3">
-                  <h3 class="text-sm font-medium text-gray-900">Meta Ads</h3>
-                  <p class="text-xs text-gray-500">Connect Facebook & Instagram ads</p>
-                </div>
-              </div>
-              <button class="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50">
-                Connect
-              </button>
-            </div>
-            
-            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-              <div class="flex items-center">
-                <div class="w-10 h-10 bg-black rounded-lg flex items-center justify-center">
-                  <i class="fab fa-tiktok text-white"></i>
-                </div>
-                <div class="ml-3">
-                  <h3 class="text-sm font-medium text-gray-900">TikTok Ads</h3>
-                  <p class="text-xs text-gray-500">Connect your TikTok for Business</p>
-                </div>
-              </div>
-              <button class="px-3 py-1 text-xs font-medium text-blue-600 border border-blue-600 rounded-md hover:bg-blue-50">
-                Connect
-              </button>
-            </div>
-          @end
-        </div>
-      </div>
+      @!component('components/available-integrations', { 
+        connectedAccounts: connectedAccounts,
+        availablePlatforms: availablePlatforms
+      })
     </div>
 
     <!-- Integration Guide -->
