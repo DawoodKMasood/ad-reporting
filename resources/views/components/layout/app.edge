@@ -72,7 +72,8 @@
     <script>
       // Integration helper functions
       window.syncAccount = function(accountId) {
-        if (confirm('Are you sure you want to sync this account? This may take a few moments.')) {
+        // Set up the confirmation callback
+        window['sync-account-modal_onConfirm'] = function() {
           const button = event.target.closest('button');
           const originalContent = button.innerHTML;
           button.disabled = true;
@@ -91,22 +92,31 @@
             if (data.success) {
               window.location.reload();
             } else {
-              alert('Failed to sync account: ' + (data.message || 'Unknown error'));
+              // Show error modal with specific message
+              const errorMessage = 'Failed to sync account: ' + (data.message || 'Unknown error');
+              document.getElementById('sync-error-modal-description').textContent = errorMessage;
+              window['sync-error-modal_show']();
               button.disabled = false;
               button.innerHTML = originalContent;
             }
           })
           .catch(error => {
             console.error('Error:', error);
-            alert('Failed to sync account. Please try again.');
+            // Show generic error modal
+            document.getElementById('sync-error-modal').querySelector('#sync-error-modal-description').textContent = 'Failed to sync account. Please try again.';
+            window['sync-error-modal_show']();
             button.disabled = false;
             button.innerHTML = originalContent;
           });
-        }
+        };
+        
+        // Show the confirmation modal
+        window['sync-account-modal_show']();
       };
 
       window.disconnectAccount = function(accountId, redirectTo = null) {
-        if (confirm('Are you sure you want to disconnect this account? This will stop data synchronization.')) {
+        // Set up the confirmation callback
+        window['disconnect-account-modal_onConfirm'] = function() {
           const button = event.target.closest('button');
           const originalContent = button.innerHTML;
           button.disabled = true;
@@ -129,18 +139,26 @@
                 window.location.reload();
               }
             } else {
-              alert('Failed to disconnect account: ' + (data.message || 'Unknown error'));
+              // Show error modal with specific message
+              const errorMessage = 'Failed to disconnect account: ' + (data.message || 'Unknown error');
+              document.getElementById('disconnect-error-modal').querySelector('#disconnect-error-modal-description').textContent = errorMessage;
+              window['disconnect-error-modal_show']();
               button.disabled = false;
               button.innerHTML = originalContent;
             }
           })
           .catch(error => {
             console.error('Error:', error);
-            alert('Failed to disconnect account. Please try again.');
+            // Show generic error modal
+            document.getElementById('disconnect-error-modal').querySelector('#disconnect-error-modal-description').textContent = 'Failed to disconnect account. Please try again.';
+            window['disconnect-error-modal_show']();
             button.disabled = false;
             button.innerHTML = originalContent;
           });
-        }
+        };
+        
+        // Show the confirmation modal
+        window['disconnect-account-modal_show']();
       };
 
       window.connectPlatform = function(platformName) {
@@ -166,18 +184,64 @@
             // Redirect to OAuth URL
             window.location.href = data.redirectUrl;
           } else {
-            alert('Failed to initiate connection: ' + (data.message || 'Unknown error'));
+            // Show error modal with specific message
+            const errorMessage = 'Failed to initiate connection: ' + (data.message || 'Unknown error');
+            document.getElementById('connection-error-modal').querySelector('#connection-error-modal-description').textContent = errorMessage;
+            window['connection-error-modal_show']();
             button.innerHTML = originalText;
             button.disabled = false;
           }
         })
         .catch(error => {
           console.error('Error:', error);
-          alert('Failed to connect platform. Please try again.');
+          // Show generic error modal
+          document.getElementById('connection-error-modal').querySelector('#connection-error-modal-description').textContent = 'Failed to connect platform. Please try again.';
+          window['connection-error-modal_show']();
           button.innerHTML = originalText;
           button.disabled = false;
         });
       };
     </script>
+    
+    <!-- Confirmation Modals -->
+    @include('components/confirmation-modal', {
+      id: 'sync-account-modal',
+      title: 'Sync Account',
+      message: 'Are you sure you want to sync this account? This may take a few moments.',
+      confirmButtonText: 'Sync Account',
+      cancelButtonText: 'Cancel'
+    })
+    
+    @include('components/confirmation-modal', {
+      id: 'sync-error-modal',
+      title: 'Sync Failed',
+      message: 'Failed to sync account.',
+      confirmButtonText: 'OK',
+      cancelButtonText: 'Close'
+    })
+    
+    @include('components/confirmation-modal', {
+      id: 'disconnect-account-modal',
+      title: 'Disconnect Account',
+      message: 'Are you sure you want to disconnect this account? This will stop data synchronization.',
+      confirmButtonText: 'Disconnect',
+      cancelButtonText: 'Cancel'
+    })
+    
+    @include('components/confirmation-modal', {
+      id: 'disconnect-error-modal',
+      title: 'Disconnect Failed',
+      message: 'Failed to disconnect account.',
+      confirmButtonText: 'OK',
+      cancelButtonText: 'Close'
+    })
+    
+    @include('components/confirmation-modal', {
+      id: 'connection-error-modal',
+      title: 'Connection Failed',
+      message: 'Failed to initiate connection.',
+      confirmButtonText: 'OK',
+      cancelButtonText: 'Close'
+    })
   </body>
 </html>
