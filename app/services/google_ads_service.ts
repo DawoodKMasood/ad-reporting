@@ -7,26 +7,19 @@ import logger from '@adonisjs/core/services/logger'
 import { DateTime } from 'luxon'
 
 export class GoogleAdsService {
-  private googleAdsClient: GoogleAdsApi
   private cache: Map<string, any> = new Map()
   private cacheExpiry: Map<string, DateTime> = new Map()
   private cacheTtl: number = 10
 
-  constructor() {
-    this.googleAdsClient = new GoogleAdsApi({
-      client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
-      client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
-      developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
-    })
-  }
-
   private async getCustomerClient(connectedAccountId: number, userId: number) {
     const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
-    const tokens = await googleAdsOAuthService.retrieveTokens(connectedAccountId, userId)
+    
+    // Get the properly configured Google Ads client and auth from the OAuth service
+    const { client, auth } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
     
     const config: CustomerOptions = {
       customer_id: connectedAccount.accountId,
-      refresh_token: tokens.refreshToken!
+      auth: auth
     }
 
     const loginCustomerId = env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID')
@@ -34,14 +27,18 @@ export class GoogleAdsService {
       config.login_customer_id = loginCustomerId
     }
 
-    return this.googleAdsClient.Customer(config)
+    return client.Customer(config)
   }
 
   public async getAccessibleCustomers(connectedAccountId: number, userId: number) {
     try {
-      const customer = await this.getCustomerClient(connectedAccountId, userId)
-      const result = await customer.listAccessibleCustomers()
-      return result.resourceNames || []
+      const { client, auth } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
+      
+      const result = await client.listAccessibleCustomers({
+        auth: auth
+      })
+      
+      return result.resource_names || []
     } catch (error: any) {
       logger.error('Error fetching accessible customers:', error)
       throw new Error(`Failed to fetch accessible customers: ${error.message}`)

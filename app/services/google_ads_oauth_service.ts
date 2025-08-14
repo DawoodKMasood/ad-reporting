@@ -12,7 +12,6 @@ const tokenAccessAttempts: Map<string, { count: number; timestamp: number }> = n
 
 export class GoogleAdsOAuthService {
   private oauth2Client: any
-  private googleAdsClient: GoogleAdsApi
   private static readonly MAX_ACCESS_ATTEMPTS = 5
   private static readonly ACCESS_WINDOW_MS = 60000
 
@@ -24,12 +23,6 @@ export class GoogleAdsOAuthService {
       env.get('GOOGLE_ADS_CLIENT_SECRET'),
       redirectUri
     )
-
-    this.googleAdsClient = new GoogleAdsApi({
-      client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
-      client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
-      developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
-    })
   }
 
   private buildRedirectUri(): string {
@@ -91,191 +84,86 @@ export class GoogleAdsOAuthService {
         throw new Error('Both access token and refresh token are required')
       }
 
-      let lastError: any = null
+      // Set up OAuth2 client with the refresh token
+      this.oauth2Client.setCredentials({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      })
 
-      // Method 1: Use the correct google-ads-api approach
-      try {
-        console.log('🔄 Method 1: Using correct google-ads-api listAccessibleCustomers...')
-        
-        // The correct way to use google-ads-api for listing customers
-        const customer = this.googleAdsClient.Customer({
-          refresh_token: refreshToken
-        })
+      // Create GoogleAdsApi client with OAuth2 authentication
+      const client = new GoogleAdsApi({
+        client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
+        client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
+        developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
+      })
 
-        console.log('📱 Customer client created, calling the correct method...')
-        
-        // Use the CustomerService to list accessible customers
-        const customerService = customer.services.CustomerService
-        const request = {}
-        
-        console.log('📡 Calling CustomerService.listAccessibleCustomers...')
-        const accessibleCustomers = await customerService.listAccessibleCustomers(request)
-        
-        console.log('📊 listAccessibleCustomers result:', accessibleCustomers)
+      console.log('🔄 Created GoogleAdsApi client, attempting to list accessible customers...')
 
-        if (accessibleCustomers && accessibleCustomers.resourceNames && accessibleCustomers.resourceNames.length > 0) {
-          const resourceName = accessibleCustomers.resourceNames[0]
-          const customerId = resourceName.split('/')[1]
-          
-          if (!/^\d{10}$/.test(customerId)) {
-            throw new Error(`Invalid customer ID format: ${customerId}`)
-          }
+      // Use the OAuth2 client as auth for the Google Ads API call
+      const accessibleCustomers = await client.listAccessibleCustomers({
+        auth: this.oauth2Client
+      })
 
-          console.log('✅ Customer ID retrieved successfully via google-ads-api service:', customerId)
-          return customerId
-        } else {
-          throw new Error('No accessible customers found in response')
-        }
-      } catch (apiError: any) {
-        lastError = apiError
-        console.error('❌ Method 1 failed with error:', {
-          message: apiError?.message,
-          stack: apiError?.stack,
-          code: apiError?.code,
-          status: apiError?.status,
-          name: apiError?.name,
-          details: apiError?.details,
-          response: apiError?.response,
-          toString: apiError?.toString(),
-          fullError: apiError
-        })
+      console.log('📊 listAccessibleCustomers result:', accessibleCustomers)
+
+      if (!accessibleCustomers || !accessibleCustomers.resource_names || accessibleCustomers.resource_names.length === 0) {
+        throw new Error('No accessible customers found. Make sure you have at least one Google Ads account associated with your Google account.')
       }
 
-      // Method 2: Try using the customer's listAccessibleCustomers method directly
-      try {
-        console.log('🔄 Method 2: Trying direct customer method...')
-        
-        const customer = this.googleAdsClient.Customer({
-          refresh_token: refreshToken
-        })
-
-        console.log('📱 Customer client created, trying direct method...')
-        
-        // Check if the customer object has the method
-        console.log('🔍 Available customer methods:', Object.getOwnPropertyNames(customer))
-        console.log('🔍 Customer prototype methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(customer)))
-        
-        // Try the direct method if it exists
-        if (typeof customer.listAccessibleCustomers === 'function') {
-          console.log('📡 Found listAccessibleCustomers method, calling it...')
-          const result = await customer.listAccessibleCustomers()
-          console.log('📊 Direct method result:', result)
-          
-          if (result && result.resourceNames && result.resourceNames.length > 0) {
-            const resourceName = result.resourceNames[0]
-            const customerId = resourceName.split('/')[1]
-            
-            if (!/^\d{10}$/.test(customerId)) {
-              throw new Error(`Invalid customer ID format: ${customerId}`)
-            }
-
-            console.log('✅ Customer ID retrieved successfully via direct method:', customerId)
-            return customerId
-          }
-        } else {
-          throw new Error('listAccessibleCustomers method not found on customer object')
-        }
-      } catch (directError: any) {
-        lastError = directError
-        console.error('❌ Method 2 failed with error:', {
-          message: directError?.message,
-          stack: directError?.stack,
-          code: directError?.code,
-          status: directError?.status,
-          name: directError?.name,
-          details: directError?.details,
-          response: directError?.response,
-          toString: directError?.toString(),
-          fullError: directError
-        })
-      }
-
-      // Method 3: Use the library's top-level method
-      try {
-        console.log('🔄 Method 3: Trying top-level library method...')
-        
-        // Some versions of the library have it at the top level
-        console.log('🔍 Available googleAdsClient methods:', Object.getOwnPropertyNames(this.googleAdsClient))
-        console.log('🔍 GoogleAdsClient prototype methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(this.googleAdsClient)))
-        
-        if (typeof this.googleAdsClient.listAccessibleCustomers === 'function') {
-          console.log('📡 Found top-level listAccessibleCustomers method...')
-          const result = await this.googleAdsClient.listAccessibleCustomers({
-            refresh_token: refreshToken
-          })
-          console.log('📊 Top-level method result:', result)
-          
-          if (result && result.resourceNames && result.resourceNames.length > 0) {
-            const resourceName = result.resourceNames[0]
-            const customerId = resourceName.split('/')[1]
-            
-            if (!/^\d{10}$/.test(customerId)) {
-              throw new Error(`Invalid customer ID format: ${customerId}`)
-            }
-
-            console.log('✅ Customer ID retrieved successfully via top-level method:', customerId)
-            return customerId
-          }
-        } else {
-          throw new Error('No listAccessibleCustomers method found at library level')
-        }
-      } catch (topLevelError: any) {
-        lastError = topLevelError
-        console.error('❌ Method 3 failed with error:', {
-          message: topLevelError?.message,
-          stack: topLevelError?.stack,
-          code: topLevelError?.code,
-          status: topLevelError?.status,
-          name: topLevelError?.name,
-          details: topLevelError?.details,
-          response: topLevelError?.response,
-          toString: topLevelError?.toString(),
-          fullError: topLevelError
-        })
-      }
-
-      // If all google-ads-api methods fail, provide instructions
-      console.error('❌ All google-ads-api methods failed.')
+      // Extract customer ID from the first resource name
+      const resourceName = accessibleCustomers.resource_names[0]
+      const customerId = resourceName.split('/')[1]
       
-      // Check if the main error is about API not being enabled
-      const lastErrorMessage = lastError?.message || lastError?.toString() || ''
-      if (lastErrorMessage.includes('Google Ads API has not been used in project') || 
-          lastErrorMessage.includes('is disabled')) {
-        throw new Error(`Google Ads API is not enabled in your Google Cloud Project. Please:
-
-1. Go to: https://console.developers.google.com/apis/api/googleads.googleapis.com/overview?project=197707664885
-2. Click "Enable API"
-3. Wait a few minutes for the changes to take effect
-4. Try connecting your account again
-
-Alternative: If you have a different Google Cloud Project, update your OAuth2 credentials to use that project instead.`)
+      if (!/^\d{10}$/.test(customerId)) {
+        throw new Error(`Invalid customer ID format: ${customerId}`)
       }
 
-      // For other errors, provide the last error message
-      const errorMessage = lastError?.message || lastError?.toString() || 'Unknown error'
-      throw new Error(`All methods failed to retrieve customer ID. Error: ${errorMessage}
-
-This could be due to:
-1. Google Ads API not enabled in your Google Cloud Project
-2. Incorrect API version or library usage
-3. Missing permissions or developer token issues
-4. No Google Ads accounts associated with the authenticated user`)
+      console.log('✅ Customer ID retrieved successfully:', customerId)
+      return customerId
 
     } catch (error: any) {
-      console.error('❌ Final error in getCustomerId:', {
+      console.error('❌ Error in getCustomerId:', {
         message: error?.message,
         stack: error?.stack,
         code: error?.code,
         status: error?.status,
         name: error?.name,
+        details: error?.details,
+        response: error?.response,
         toString: error?.toString(),
         fullError: error
       })
       
-      logger.error('Final error in getCustomerId', error)
+      logger.error('Error in getCustomerId', error)
       
-      // Re-throw the error as-is since we've already formatted it above
-      throw error
+      // Provide specific error messages based on the error type
+      const errorMessage = error?.message || error?.toString() || 'Unknown error'
+      
+      if (errorMessage.includes('invalid_request') || errorMessage.includes('Getting metadata from plugin failed')) {
+        throw new Error(`Google Ads API authentication failed. This could be due to:
+
+1. Google Ads API not enabled in your Google Cloud Project
+2. Invalid or expired OAuth2 credentials
+3. Missing Google Ads developer token permissions
+4. No Google Ads accounts associated with the authenticated user
+
+Please ensure:
+- Google Ads API is enabled in your Google Cloud Console
+- Your developer token is approved and active
+- The authenticated Google account has access to Google Ads accounts`)
+      }
+      
+      if (errorMessage.includes('Google Ads API has not been used in project') || 
+          errorMessage.includes('is disabled')) {
+        throw new Error(`Google Ads API is not enabled in your Google Cloud Project. Please:
+
+1. Go to Google Cloud Console
+2. Enable the Google Ads API
+3. Wait a few minutes for the changes to take effect
+4. Try connecting your account again`)
+      }
+
+      throw new Error(`Failed to retrieve customer ID: ${errorMessage}`)
     }
   }
 
@@ -406,6 +294,34 @@ This could be due to:
     })
     
     return this.oauth2Client
+  }
+
+  public async getGoogleAdsClient(connectedAccountId: number, userId?: number) {
+    const { accessToken, refreshToken } = await this.retrieveTokens(connectedAccountId, userId)
+    
+    if (!refreshToken) {
+      throw new Error('Refresh token required for Google Ads API access')
+    }
+    
+    // Set up OAuth2 client
+    const oauthClient = new google.auth.OAuth2(
+      env.get('GOOGLE_ADS_CLIENT_ID'),
+      env.get('GOOGLE_ADS_CLIENT_SECRET')
+    )
+    
+    oauthClient.setCredentials({
+      access_token: accessToken,
+      refresh_token: refreshToken
+    })
+    
+    return {
+      client: new GoogleAdsApi({
+        client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
+        client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
+        developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
+      }),
+      auth: oauthClient
+    }
   }
 
   public isTokenRevoked(tokenHash: string): boolean {
