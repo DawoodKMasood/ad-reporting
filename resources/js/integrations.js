@@ -142,6 +142,7 @@ class IntegrationManager {
     
     const url = `/integrations/connect/${platform}`;
     console.log('Connecting to platform:', platform, 'URL:', url);
+    console.log('connectPlatform called', platform, url);
     
     // Show loading state
     const originalText = button.innerHTML;
@@ -277,6 +278,7 @@ class IntegrationManager {
   }
 
   showNotification(message, type = 'info') {
+    console.log('showNotification called', message, type);
     // Create notification element
     const notification = document.createElement('div');
     notification.className = `fixed top-4 left-1/2 transform -translate-x-1/2 px-6 py-4 rounded-lg shadow-lg z-50 max-w-md transition-opacity duration-300 ${

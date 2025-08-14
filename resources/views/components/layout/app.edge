@@ -110,8 +110,9 @@
           });
         };
         
-        // Show the confirmation modal
-        window['sync-account-modal_show']();
+                // Show the confirmation modal
+                console.log('sync-account-modal_show called');
+                window['sync-account-modal_show']();
       };
 
       window.disconnectAccount = function(accountId, redirectTo = null) {
@@ -158,6 +159,7 @@
         };
         
         // Show the confirmation modal
+        console.log('showModal called disconnect-account-modal');
         window['disconnect-account-modal_show']();
       };
 
