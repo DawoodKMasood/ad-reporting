@@ -40,6 +40,36 @@ export default class ConnectedAccount extends BaseModel {
   @column()
   declare isActive: boolean
 
+  @column()
+  declare displayName: string | null
+
+  @column()
+  declare isManagerAccount: boolean
+
+  @column()
+  declare parentAccountId: string | null
+
+  @column({
+    consume: (value: string | null) => {
+      if (!value) return null;
+      try {
+        return typeof value === 'string' ? JSON.parse(value) : value;
+      } catch {
+        return null;
+      }
+    }
+  })
+  declare accessibleCustomers: string[] | null
+
+  @column()
+  declare accountName: string | null
+
+  @column()
+  declare accountTimezone: string | null
+
+  @column()
+  declare isTestAccount: boolean
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 
@@ -181,5 +211,38 @@ export default class ConnectedAccount extends BaseModel {
     if (this.refreshToken && this.isRefreshTokenEncrypted()) {
       this.refreshToken = databaseSecurityService.decryptField(this.refreshToken, 'refresh_token')
     }
+  }
+
+  /**
+   * Format customer ID to XXX-XXX-XXXX format
+   */
+  get formattedAccountId(): string {
+    if (!this.accountId || this.accountId.length !== 10) {
+      return this.accountId
+    }
+    return `${this.accountId.slice(0, 3)}-${this.accountId.slice(3, 6)}-${this.accountId.slice(6)}`
+  }
+
+  /**
+   * Get display name for the account
+   */
+  get accountDisplayName(): string {
+    if (this.displayName) {
+      return this.displayName
+    }
+    if (this.accountName) {
+      return this.accountName
+    }
+    return `${this.platform.replace('_', ' ')} Account`
+  }
+
+  /**
+   * Static method to format any customer ID
+   */
+  static formatCustomerId(customerId: string): string {
+    if (!customerId || customerId.length !== 10) {
+      return customerId
+    }
+    return `${customerId.slice(0, 3)}-${customerId.slice(3, 6)}-${customerId.slice(6)}`
   }
 }

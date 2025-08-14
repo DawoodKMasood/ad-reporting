@@ -143,9 +143,14 @@ export default class IntegrationsController {
       
       const tokens = await googleAdsOAuthService.exchangeCodeForTokens(code)
       
-      let accountId: string
+      let connectedAccounts: any[]
       try {
-        accountId = await googleAdsOAuthService.getCustomerId(tokens.accessToken, tokens.refreshToken!)
+        connectedAccounts = await googleAdsOAuthService.storeTokensForAllCustomers(
+          user.id,
+          tokens.accessToken,
+          tokens.refreshToken!,
+          tokens.expiryDate
+        )
       } catch (customerIdError: any) {
         const isApiRequest = request.header('Accept')?.includes('application/json')
         if (isApiRequest) {
@@ -158,20 +163,12 @@ export default class IntegrationsController {
         return response.redirect().toRoute('integrations.index')
       }
       
-      const connectedAccount = await googleAdsOAuthService.storeTokens(
-        user.id,
-        accountId,
-        tokens.accessToken,
-        tokens.refreshToken,
-        tokens.expiryDate
-      )
-      
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return {
           success: true,
-          account: connectedAccount,
-          message: 'Account connected successfully'
+          accounts: connectedAccounts,
+          message: `${connectedAccounts.length} account(s) connected successfully`
         }
       }
       
@@ -292,6 +289,101 @@ export default class IntegrationsController {
       }
       
       return response.redirect().back()
+    }
+  }
+
+  async updateAccountName({ params, request, auth, response }: HttpContext) {
+    try {
+      const user = auth.getUserOrFail()
+      const { displayName } = request.body()
+      
+      const accountId = parseInt(params.id, 10)
+      
+      if (!accountId || isNaN(accountId)) {
+        const isApiRequest = request.header('Accept')?.includes('application/json')
+        if (isApiRequest) {
+          return response.badRequest({
+            error: 'Invalid account ID',
+            message: 'Account ID must be a valid number'
+          })
+        }
+        return response.redirect().back()
+      }
+      
+      const connectedAccount = await ConnectedAccount.query()
+        .where('id', accountId)
+        .where('user_id', user.id)
+        .firstOrFail()
+      
+      connectedAccount.displayName = displayName
+      await connectedAccount.save()
+      
+      const isApiRequest = request.header('Accept')?.includes('application/json')
+      if (isApiRequest) {
+        return {
+          success: true,
+          message: 'Account name updated successfully',
+          account: connectedAccount
+        }
+      }
+      
+      return response.redirect().back()
+    } catch (error) {
+      logger.error('Error updating account name:', error)
+      
+      const isApiRequest = request.header('Accept')?.includes('application/json')
+      if (isApiRequest) {
+        return response.badRequest({
+          error: 'Failed to update account name',
+          message: error.message
+        })
+      }
+      
+      return response.redirect().back()
+    }
+  }
+
+  async getAccessibleCustomers({ auth, response }: HttpContext) {
+    try {
+      const user = auth.getUserOrFail()
+      
+      // Get all Google Ads connected accounts for this user
+      const connectedAccounts = await ConnectedAccount.query()
+        .where('user_id', user.id)
+        .where('platform', 'google_ads')
+        .orderBy('created_at', 'desc')
+      
+      if (connectedAccounts.length === 0) {
+        return response.badRequest({
+          error: 'No connected accounts found',
+          message: 'Please connect a Google Ads account first'
+        })
+      }
+      
+      // Use the first account to get accessible customers
+      const firstAccount = connectedAccounts[0]
+      const accessibleCustomers = await googleAdsService.getAccessibleCustomers(firstAccount.id, user.id)
+      
+      return {
+        success: true,
+        data: accessibleCustomers,
+        connectedAccounts: connectedAccounts.map(account => ({
+          id: account.id,
+          accountId: account.accountId,
+          formattedAccountId: account.formattedAccountId,
+          accountName: account.accountName,
+          displayName: account.displayName,
+          isActive: account.isActive,
+          isTestAccount: account.isTestAccount,
+          isManagerAccount: account.isManagerAccount
+        }))
+      }
+    } catch (error) {
+      logger.error('Error fetching accessible customers:', error)
+      return response.badRequest({
+        error: 'Failed to fetch accessible customers',
+        message: error.message
+      })
     }
   }
 }

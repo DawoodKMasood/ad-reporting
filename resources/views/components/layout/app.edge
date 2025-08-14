@@ -74,7 +74,12 @@
       window.syncAccount = function(accountId) {
         // Set up the confirmation callback
         window['sync-account-modal_onConfirm'] = function() {
-          const button = event.target.closest('button');
+          const button = event?.target?.closest('button');
+          if (!button) {
+            console.error('Button element not found for sync action');
+            return;
+          }
+          
           const originalContent = button.innerHTML;
           button.disabled = true;
           button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Syncing...';
@@ -84,7 +89,7 @@
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
           })
           .then(response => response.json())
@@ -94,8 +99,13 @@
             } else {
               // Show error modal with specific message
               const errorMessage = 'Failed to sync account: ' + (data.message || 'Unknown error');
-              document.getElementById('sync-error-modal-description').textContent = errorMessage;
-              window['sync-error-modal_show']();
+              const errorElement = document.getElementById('sync-error-modal-description');
+              if (errorElement) {
+                errorElement.textContent = errorMessage;
+              }
+              if (window['sync-error-modal_show']) {
+                window['sync-error-modal_show']();
+              }
               button.disabled = false;
               button.innerHTML = originalContent;
             }
@@ -103,22 +113,36 @@
           .catch(error => {
             console.error('Error:', error);
             // Show generic error modal
-            document.getElementById('sync-error-modal-description').textContent = 'Failed to sync account. Please try again.';
-            window['sync-error-modal_show']();
+            const errorElement = document.getElementById('sync-error-modal-description');
+            if (errorElement) {
+              errorElement.textContent = 'Failed to sync account. Please try again.';
+            }
+            if (window['sync-error-modal_show']) {
+              window['sync-error-modal_show']();
+            }
             button.disabled = false;
             button.innerHTML = originalContent;
           });
         };
         
-                // Show the confirmation modal
-                console.log('sync-account-modal_show called');
-                window['sync-account-modal_show']();
+        // Show the confirmation modal
+        console.log('sync-account-modal_show called');
+        if (window['sync-account-modal_show']) {
+          window['sync-account-modal_show']();
+        } else {
+          console.error('sync-account-modal_show function not found');
+        }
       };
 
       window.disconnectAccount = function(accountId, redirectTo = null) {
         // Set up the confirmation callback
         window['disconnect-account-modal_onConfirm'] = function() {
-          const button = event.target.closest('button');
+          const button = event?.target?.closest('button');
+          if (!button) {
+            console.error('Button element not found for disconnect action');
+            return;
+          }
+          
           const originalContent = button.innerHTML;
           button.disabled = true;
           button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Disconnecting...';
@@ -128,7 +152,7 @@
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
             }
           })
           .then(response => response.json())
@@ -142,8 +166,13 @@
             } else {
               // Show error modal with specific message
               const errorMessage = 'Failed to disconnect account: ' + (data.message || 'Unknown error');
-              document.getElementById('disconnect-error-modal-description').textContent = errorMessage;
-              window['disconnect-error-modal_show']();
+              const errorElement = document.getElementById('disconnect-error-modal-description');
+              if (errorElement) {
+                errorElement.textContent = errorMessage;
+              }
+              if (window['disconnect-error-modal_show']) {
+                window['disconnect-error-modal_show']();
+              }
               button.disabled = false;
               button.innerHTML = originalContent;
             }
@@ -151,8 +180,13 @@
           .catch(error => {
             console.error('Error:', error);
             // Show generic error modal
-            document.getElementById('disconnect-error-modal-description').textContent = 'Failed to disconnect account. Please try again.';
-            window['disconnect-error-modal_show']();
+            const errorElement = document.getElementById('disconnect-error-modal-description');
+            if (errorElement) {
+              errorElement.textContent = 'Failed to disconnect account. Please try again.';
+            }
+            if (window['disconnect-error-modal_show']) {
+              window['disconnect-error-modal_show']();
+            }
             button.disabled = false;
             button.innerHTML = originalContent;
           });
@@ -160,11 +194,20 @@
         
         // Show the confirmation modal
         console.log('showModal called disconnect-account-modal');
-        window['disconnect-account-modal_show']();
+        if (window['disconnect-account-modal_show']) {
+          window['disconnect-account-modal_show']();
+        } else {
+          console.error('disconnect-account-modal_show function not found');
+        }
       };
 
       window.connectPlatform = function(platformName) {
-        const button = event.target;
+        const button = event?.target;
+        if (!button) {
+          console.error('Button element not found for connect action');
+          return;
+        }
+        
         const originalText = button.innerHTML;
         button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Connecting...';
         button.disabled = true;
@@ -174,7 +217,7 @@
           headers: {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
           },
           body: JSON.stringify({
             platform: platformName
@@ -188,8 +231,13 @@
           } else {
             // Show error modal with specific message
             const errorMessage = 'Failed to initiate connection: ' + (data.message || 'Unknown error');
-            document.getElementById('connection-error-modal-description').textContent = errorMessage;
-            window['connection-error-modal_show']();
+            const errorElement = document.getElementById('connection-error-modal-description');
+            if (errorElement) {
+              errorElement.textContent = errorMessage;
+            }
+            if (window['connection-error-modal_show']) {
+              window['connection-error-modal_show']();
+            }
             button.innerHTML = originalText;
             button.disabled = false;
           }
@@ -197,8 +245,13 @@
         .catch(error => {
           console.error('Error:', error);
           // Show generic error modal
-          document.getElementById('connection-error-modal-description').textContent = 'Failed to connect platform. Please try again.';
-          window['connection-error-modal_show']();
+          const errorElement = document.getElementById('connection-error-modal-description');
+          if (errorElement) {
+            errorElement.textContent = 'Failed to connect platform. Please try again.';
+          }
+          if (window['connection-error-modal_show']) {
+            window['connection-error-modal_show']();
+          }
           button.innerHTML = originalText;
           button.disabled = false;
         });

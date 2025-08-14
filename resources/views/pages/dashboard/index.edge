@@ -3,17 +3,35 @@
 @slot('main')
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto py-6">
-    <!-- Page Header -->
+    <!-- Page Header with Account Switcher -->
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-900">
-        Dashboard
-      </h1>
-      <p class="mt-2 text-gray-600">
-        Welcome back, {{ user.fullName }}! Here's your advertising performance overview.
-      </p>
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">
+            Dashboard
+          </h1>
+          <p class="mt-2 text-gray-600">
+            Welcome back, {{ user.fullName }}! Here's your advertising performance overview.
+          </p>
+        </div>
+        
+        <!-- Account Switcher (only show if multiple Google Ads accounts) -->
+        @if(connectedAccounts && connectedAccounts.filter(account => account.platform === 'google_ads').length > 1)
+          <div class="hidden md:block">
+            @!component('components/account-switcher', { currentAccount: null })
+          </div>
+        @end
+      </div>
     </div>
 
-    <!-- Stats Cards -->
+    <!-- Multi-Account Dashboard (for Google Ads accounts) -->
+    @if(connectedAccounts && connectedAccounts.filter(account => account.platform === 'google_ads').length > 0)
+      <div class="mb-8">
+        @!component('components/multi-account-dashboard')
+      </div>
+    @end
+
+    <!-- Overall Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
       <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
         <div class="flex items-center">
@@ -109,7 +127,14 @@
           <div class="text-center py-8">
             <i class="fas fa-chart-bar text-4xl text-gray-300 mb-4"></i>
             <h3 class="text-lg font-medium text-gray-900 mb-2">No Campaign Data</h3>
-            <p class="text-gray-500">Connect your advertising accounts to view campaign performance</p>
+            <p class="text-gray-500 mb-4">Connect your advertising accounts to view campaign performance</p>
+            <a 
+              href="{{ route('integrations.index') }}"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <i class="fas fa-plus mr-2"></i>
+              Connect Account
+            </a>
           </div>
         </div>
       @end
@@ -138,12 +163,16 @@
   <script>
     function toggleDropdown() {
       const dropdown = document.getElementById("userDropdown");
-      dropdown.classList.toggle("hidden");
+      if (dropdown) {
+        dropdown.classList.toggle("hidden");
+      }
     }
     
     // Close dropdown when clicking outside
     document.addEventListener("click", function(event) {
       const dropdown = document.getElementById("userDropdown");
+      if (!dropdown) return;
+      
       const button = event.target.closest("button");
       if (!button || !button.getAttribute("onclick")) {
         dropdown.classList.add("hidden");
@@ -154,9 +183,15 @@
     setTimeout(() => {
       const alerts = document.querySelectorAll('[class*="fixed top-4"]');
       alerts.forEach(alert => {
-        alert.style.transition = "opacity 0.5s ease-out";
-        alert.style.opacity = "0";
-        setTimeout(() => alert.remove(), 500);
+        if (alert && alert.style) {
+          alert.style.transition = "opacity 0.5s ease-out";
+          alert.style.opacity = "0";
+          setTimeout(() => {
+            if (alert && alert.remove) {
+              alert.remove();
+            }
+          }, 500);
+        }
       });
     }, 5000);
   </script>

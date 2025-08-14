@@ -176,208 +176,249 @@ export class GoogleAdsService {
   public async getCampaigns(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
+    const query = `
+      SELECT 
+        campaign.id,
+        campaign.name,
+        campaign.status,
+        campaign.advertising_channel_type,
+        campaign.advertising_channel_sub_type,
+        campaign.start_date,
+        campaign.end_date,
+        segments.date,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions,
+        metrics.ctr,
+        metrics.average_cpc
+      FROM campaign
+      WHERE segments.date DURING LAST_30_DAYS
+      AND campaign.status != 'REMOVED'
+      ORDER BY campaign.id
+    `
+    
     return await customer.report({
-      entity: 'campaign',
-      attributes: [
-        'campaign.id',
-        'campaign.name',
-        'campaign.status',
-        'campaign.advertising_channel_type',
-        'campaign.advertising_channel_sub_type',
-        'campaign.start_date',
-        'campaign.end_date'
-      ],
-      metrics: [
-        'metrics.impressions',
-        'metrics.clicks',
-        'metrics.cost_micros',
-        'metrics.conversions',
-        'metrics.ctr',
-        'metrics.average_cpc'
-      ],
-      segments: ['segments.date'],
-      date_constant: enums.ReportingDateRangeType.LAST_30_DAYS
+      query,
+      page_size: 1000
     })
   }
 
   public async getAdGroups(connectedAccountId: number, userId: number, campaignId?: string) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
-    const where = campaignId ? [`campaign.id = ${campaignId}`] : []
+    const whereClause = campaignId ? `AND campaign.id = ${campaignId}` : ''
+    
+    const query = `
+      SELECT 
+        ad_group.id,
+        ad_group.name,
+        ad_group.status,
+        ad_group.type,
+        campaign.id,
+        campaign.name,
+        segments.date,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions
+      FROM ad_group
+      WHERE segments.date DURING LAST_7_DAYS
+      AND ad_group.status != 'REMOVED'
+      ${whereClause}
+      ORDER BY ad_group.id
+    `
     
     return await customer.report({
-      entity: 'ad_group',
-      attributes: [
-        'ad_group.id',
-        'ad_group.name',
-        'ad_group.status',
-        'ad_group.type',
-        'campaign.id',
-        'campaign.name'
-      ],
-      metrics: [
-        'metrics.impressions',
-        'metrics.clicks',
-        'metrics.cost_micros',
-        'metrics.conversions'
-      ],
-      where,
-      date_constant: enums.ReportingDateRangeType.LAST_7_DAYS
+      query,
+      page_size: 1000
     })
   }
 
   public async getKeywords(connectedAccountId: number, userId: number, adGroupId?: string) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
-    const where = adGroupId ? [`ad_group.id = ${adGroupId}`] : []
+    const whereClause = adGroupId ? `AND ad_group.id = ${adGroupId}` : ''
+    
+    const query = `
+      SELECT 
+        keyword_view.resource_name,
+        ad_group_criterion.keyword.text,
+        ad_group_criterion.keyword.match_type,
+        ad_group_criterion.status,
+        ad_group.id,
+        ad_group.name,
+        campaign.id,
+        campaign.name,
+        segments.date,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions,
+        metrics.ctr,
+        metrics.average_cpc,
+        metrics.quality_score
+      FROM keyword_view
+      WHERE segments.date DURING LAST_7_DAYS
+      AND ad_group_criterion.status != 'REMOVED'
+      ${whereClause}
+      ORDER BY ad_group.id
+    `
     
     return await customer.report({
-      entity: 'keyword_view',
-      attributes: [
-        'keyword_view.resource_name',
-        'ad_group_criterion.keyword.text',
-        'ad_group_criterion.keyword.match_type',
-        'ad_group_criterion.status',
-        'ad_group.id',
-        'ad_group.name',
-        'campaign.id',
-        'campaign.name'
-      ],
-      metrics: [
-        'metrics.impressions',
-        'metrics.clicks',
-        'metrics.cost_micros',
-        'metrics.conversions',
-        'metrics.ctr',
-        'metrics.average_cpc',
-        'metrics.quality_score'
-      ],
-      where,
-      date_constant: enums.ReportingDateRangeType.LAST_7_DAYS
+      query,
+      page_size: 1000
     })
   }
 
   public async getAds(connectedAccountId: number, userId: number, adGroupId?: string) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
-    const where = adGroupId ? [`ad_group.id = ${adGroupId}`] : []
+    const whereClause = adGroupId ? `AND ad_group.id = ${adGroupId}` : ''
+    
+    const query = `
+      SELECT 
+        ad_group_ad.ad.id,
+        ad_group_ad.ad.type,
+        ad_group_ad.status,
+        ad_group_ad.ad.expanded_text_ad.headline_part1,
+        ad_group_ad.ad.expanded_text_ad.headline_part2,
+        ad_group_ad.ad.expanded_text_ad.description,
+        ad_group.id,
+        ad_group.name,
+        campaign.id,
+        campaign.name,
+        segments.date,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions,
+        metrics.ctr
+      FROM ad_group_ad
+      WHERE segments.date DURING LAST_7_DAYS
+      AND ad_group_ad.status != 'REMOVED'
+      ${whereClause}
+      ORDER BY ad_group.id
+    `
     
     return await customer.report({
-      entity: 'ad_group_ad',
-      attributes: [
-        'ad_group_ad.ad.id',
-        'ad_group_ad.ad.type',
-        'ad_group_ad.status',
-        'ad_group_ad.ad.expanded_text_ad.headline_part1',
-        'ad_group_ad.ad.expanded_text_ad.headline_part2',
-        'ad_group_ad.ad.expanded_text_ad.description',
-        'ad_group.id',
-        'ad_group.name',
-        'campaign.id',
-        'campaign.name'
-      ],
-      metrics: [
-        'metrics.impressions',
-        'metrics.clicks',
-        'metrics.cost_micros',
-        'metrics.conversions',
-        'metrics.ctr'
-      ],
-      where,
-      date_constant: enums.ReportingDateRangeType.LAST_7_DAYS
+      query,
+      page_size: 1000
     })
   }
 
   public async getConversionActions(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
+    const query = `
+      SELECT 
+        conversion_action.id,
+        conversion_action.name,
+        conversion_action.type,
+        conversion_action.status,
+        conversion_action.category
+      FROM conversion_action
+      WHERE conversion_action.status != 'REMOVED'
+      ORDER BY conversion_action.id
+    `
+    
     return await customer.report({
-      entity: 'conversion_action',
-      attributes: [
-        'conversion_action.id',
-        'conversion_action.name',
-        'conversion_action.type',
-        'conversion_action.status',
-        'conversion_action.category'
-      ]
+      query,
+      page_size: 1000
     })
   }
 
   public async getAudienceInsights(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
+    const query = `
+      SELECT 
+        age_range_view.resource_name,
+        ad_group_criterion.age_range.type,
+        segments.date,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros
+      FROM age_range_view
+      WHERE segments.date DURING LAST_30_DAYS
+      ORDER BY metrics.impressions DESC
+    `
+    
     return await customer.report({
-      entity: 'age_range_view',
-      attributes: [
-        'age_range_view.resource_name',
-        'ad_group_criterion.age_range.type'
-      ],
-      metrics: [
-        'metrics.impressions',
-        'metrics.clicks',
-        'metrics.cost_micros'
-      ],
-      date_constant: enums.ReportingDateRangeType.LAST_30_DAYS
+      query,
+      page_size: 1000
     })
   }
 
   public async getGenderInsights(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
+    const query = `
+      SELECT 
+        gender_view.resource_name,
+        ad_group_criterion.gender.type,
+        segments.date,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros
+      FROM gender_view
+      WHERE segments.date DURING LAST_30_DAYS
+      ORDER BY metrics.impressions DESC
+    `
+    
     return await customer.report({
-      entity: 'gender_view',
-      attributes: [
-        'gender_view.resource_name',
-        'ad_group_criterion.gender.type'
-      ],
-      metrics: [
-        'metrics.impressions',
-        'metrics.clicks',
-        'metrics.cost_micros'
-      ],
-      date_constant: enums.ReportingDateRangeType.LAST_30_DAYS
+      query,
+      page_size: 1000
     })
   }
 
   public async getLocationInsights(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
+    const query = `
+      SELECT 
+        location_view.resource_name,
+        location_view.location_type,
+        segments.date,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros
+      FROM location_view
+      WHERE segments.date DURING LAST_30_DAYS
+      ORDER BY metrics.impressions DESC
+    `
+    
     return await customer.report({
-      entity: 'location_view',
-      attributes: [
-        'location_view.resource_name',
-        'location_view.location_type'
-      ],
-      metrics: [
-        'metrics.impressions',
-        'metrics.clicks',
-        'metrics.cost_micros'
-      ],
-      date_constant: enums.ReportingDateRangeType.LAST_30_DAYS
+      query,
+      page_size: 1000
     })
   }
 
   public async getSearchTerms(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
+    const query = `
+      SELECT 
+        search_term_view.resource_name,
+        search_term_view.search_term,
+        search_term_view.status,
+        ad_group.id,
+        ad_group.name,
+        campaign.id,
+        campaign.name,
+        segments.date,
+        metrics.impressions,
+        metrics.clicks,
+        metrics.cost_micros,
+        metrics.conversions
+      FROM search_term_view
+      WHERE segments.date DURING LAST_7_DAYS
+      ORDER BY metrics.impressions DESC
+    `
+    
     return await customer.report({
-      entity: 'search_term_view',
-      attributes: [
-        'search_term_view.resource_name',
-        'search_term_view.search_term',
-        'search_term_view.status',
-        'ad_group.id',
-        'ad_group.name',
-        'campaign.id',
-        'campaign.name'
-      ],
-      metrics: [
-        'metrics.impressions',
-        'metrics.clicks',
-        'metrics.cost_micros',
-        'metrics.conversions'
-      ],
-      date_constant: enums.ReportingDateRangeType.LAST_7_DAYS
+      query,
+      page_size: 1000
     })
   }
 
@@ -532,46 +573,63 @@ export class GoogleAdsService {
   public async getBiddingStrategies(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
+    const query = `
+      SELECT 
+        bidding_strategy.id,
+        bidding_strategy.name,
+        bidding_strategy.type,
+        bidding_strategy.status
+      FROM bidding_strategy
+      WHERE bidding_strategy.status != 'REMOVED'
+      ORDER BY bidding_strategy.id
+    `
+    
     return await customer.report({
-      entity: 'bidding_strategy',
-      attributes: [
-        'bidding_strategy.id',
-        'bidding_strategy.name',
-        'bidding_strategy.type',
-        'bidding_strategy.status'
-      ]
+      query,
+      page_size: 1000
     })
   }
 
   public async getAccountHierarchy(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
+    const query = `
+      SELECT 
+        customer_client.client_customer,
+        customer_client.level,
+        customer_client.time_zone,
+        customer_client.test_account,
+        customer_client.manager,
+        customer_client.descriptive_name
+      FROM customer_client
+      ORDER BY customer_client.level
+    `
+    
     return await customer.report({
-      entity: 'customer_client',
-      attributes: [
-        'customer_client.client_customer',
-        'customer_client.level',
-        'customer_client.time_zone',
-        'customer_client.test_account',
-        'customer_client.manager',
-        'customer_client.descriptive_name'
-      ]
+      query,
+      page_size: 1000
     })
   }
 
   public async getExtensions(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
     
+    const query = `
+      SELECT 
+        extension_feed_item.id,
+        extension_feed_item.extension_type,
+        extension_feed_item.status,
+        extension_feed_item.sitelink_feed_item.link_text,
+        extension_feed_item.sitelink_feed_item.line1,
+        extension_feed_item.sitelink_feed_item.line2
+      FROM extension_feed_item
+      WHERE extension_feed_item.status != 'REMOVED'
+      ORDER BY extension_feed_item.id
+    `
+    
     return await customer.report({
-      entity: 'extension_feed_item',
-      attributes: [
-        'extension_feed_item.id',
-        'extension_feed_item.extension_type',
-        'extension_feed_item.status',
-        'extension_feed_item.sitelink_feed_item.link_text',
-        'extension_feed_item.sitelink_feed_item.line1',
-        'extension_feed_item.sitelink_feed_item.line2'
-      ]
+      query,
+      page_size: 1000
     })
   }
 

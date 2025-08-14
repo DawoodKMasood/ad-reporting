@@ -1,0 +1,318 @@
+<!-- Multi-Account Dashboard Component -->
+<div class="space-y-6" x-data="multiAccountDashboard()" x-init="init()">
+  <!-- Account Switcher Header -->
+  <div class="flex items-center justify-between">
+    <div class="flex items-center space-x-4">
+      <h2 class="text-lg font-semibold text-gray-900">
+        <i class="fas fa-chart-line mr-2 text-blue-600"></i>
+        Account Performance
+      </h2>
+      <div class="text-sm text-gray-500" x-show="lastUpdated">
+        Last updated: <span x-text="lastUpdated"></span>
+      </div>
+    </div>
+    
+    <!-- Account Switcher -->
+    @!component('components/account-switcher', { currentAccount: null })
+  </div>
+
+  <!-- Current Account Overview -->
+  <div x-show="currentAccount" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="flex items-center justify-between mb-4">
+      <div class="flex items-center">
+        @!component('components/platform-logo', { 
+          platform: 'google_ads', 
+          size: 'md' 
+        })
+        <div class="ml-3">
+          <h3 class="text-lg font-medium text-gray-900" x-text="currentAccount?.displayName || 'Account'"></h3>
+          <p class="text-sm text-gray-500">
+            ID: <span x-text="currentAccount?.formattedAccountId || currentAccount?.accountId"></span>
+            <span x-show="currentAccount?.accountTimezone" x-text="'· ' + currentAccount?.accountTimezone"></span>
+          </p>
+          <div class="flex items-center mt-1 space-x-2">
+            <span 
+              x-show="currentAccount?.isTestAccount" 
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
+            >
+              <i class="fas fa-flask mr-1"></i>
+              Test Account
+            </span>
+            <span 
+              x-show="currentAccount?.isManagerAccount" 
+              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+            >
+              <i class="fas fa-users mr-1"></i>
+              Manager Account
+            </span>
+          </div>
+        </div>
+      </div>
+      <button 
+        @click="refreshMetrics()" 
+        :disabled="loading"
+        class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+      >
+        <i class="fas fa-sync-alt mr-2" :class="{ 'fa-spin': loading }"></i>
+        Refresh
+      </button>
+    </div>
+
+    <!-- Metrics Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" x-show="metrics">
+      <!-- Total Spend -->
+      <div class="bg-gradient-to-r from-green-50 to-green-100 rounded-lg p-4">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+              <i class="fas fa-dollar-sign text-white text-sm"></i>
+            </div>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-green-800">Total Spend</p>
+            <p class="text-xl font-bold text-green-900" x-text="formatCurrency(metrics?.spend || 0)"></p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Total Impressions -->
+      <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+              <i class="fas fa-eye text-white text-sm"></i>
+            </div>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-blue-800">Impressions</p>
+            <p class="text-xl font-bold text-blue-900" x-text="formatNumber(metrics?.impressions || 0)"></p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Total Clicks -->
+      <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center">
+              <i class="fas fa-mouse-pointer text-white text-sm"></i>
+            </div>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-purple-800">Clicks</p>
+            <p class="text-xl font-bold text-purple-900" x-text="formatNumber(metrics?.clicks || 0)"></p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Total Conversions -->
+      <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-4">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+              <i class="fas fa-trophy text-white text-sm"></i>
+            </div>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm font-medium text-orange-800">Conversions</p>
+            <p class="text-xl font-bold text-orange-900" x-text="formatNumber(metrics?.conversions || 0)"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Secondary Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4" x-show="metrics">
+      <div class="text-center p-3 bg-gray-50 rounded-lg">
+        <p class="text-sm text-gray-600">CTR</p>
+        <p class="text-lg font-semibold text-gray-900" x-text="formatPercentage(metrics?.ctr || 0)"></p>
+      </div>
+      <div class="text-center p-3 bg-gray-50 rounded-lg">
+        <p class="text-sm text-gray-600">CPC</p>
+        <p class="text-lg font-semibold text-gray-900" x-text="formatCurrency(metrics?.cpc || 0)"></p>
+      </div>
+      <div class="text-center p-3 bg-gray-50 rounded-lg">
+        <p class="text-sm text-gray-600">Campaigns</p>
+        <p class="text-lg font-semibold text-gray-900" x-text="formatNumber(metrics?.campaignCount || 0)"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div x-show="loading && !metrics" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="animate-pulse">
+      <!-- Header Skeleton -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center">
+          <div class="w-8 h-8 bg-gray-200 rounded-full"></div>
+          <div class="ml-3">
+            <div class="h-4 bg-gray-200 rounded w-32 mb-2"></div>
+            <div class="h-3 bg-gray-200 rounded w-24"></div>
+          </div>
+        </div>
+        <div class="h-8 bg-gray-200 rounded w-20"></div>
+      </div>
+      
+      <!-- Metrics Grid Skeleton -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+        <div class="bg-gray-100 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-gray-200 rounded-lg"></div>
+            <div class="ml-3 flex-1">
+              <div class="h-3 bg-gray-200 rounded w-16 mb-2"></div>
+              <div class="h-6 bg-gray-200 rounded w-20"></div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-100 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-gray-200 rounded-lg"></div>
+            <div class="ml-3 flex-1">
+              <div class="h-3 bg-gray-200 rounded w-16 mb-2"></div>
+              <div class="h-6 bg-gray-200 rounded w-20"></div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-100 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-gray-200 rounded-lg"></div>
+            <div class="ml-3 flex-1">
+              <div class="h-3 bg-gray-200 rounded w-16 mb-2"></div>
+              <div class="h-6 bg-gray-200 rounded w-20"></div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-100 rounded-lg p-4">
+          <div class="flex items-center">
+            <div class="w-8 h-8 bg-gray-200 rounded-lg"></div>
+            <div class="ml-3 flex-1">
+              <div class="h-3 bg-gray-200 rounded w-16 mb-2"></div>
+              <div class="h-6 bg-gray-200 rounded w-20"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Secondary Metrics Skeleton -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-gray-100 rounded-lg p-3">
+          <div class="h-3 bg-gray-200 rounded w-8 mx-auto mb-2"></div>
+          <div class="h-5 bg-gray-200 rounded w-16 mx-auto"></div>
+        </div>
+        <div class="bg-gray-100 rounded-lg p-3">
+          <div class="h-3 bg-gray-200 rounded w-8 mx-auto mb-2"></div>
+          <div class="h-5 bg-gray-200 rounded w-16 mx-auto"></div>
+        </div>
+        <div class="bg-gray-100 rounded-lg p-3">
+          <div class="h-3 bg-gray-200 rounded w-12 mx-auto mb-2"></div>
+          <div class="h-5 bg-gray-200 rounded w-8 mx-auto"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- No Account Selected -->
+  <div x-show="!currentAccount && !loading" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div class="text-center">
+      <div class="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+        <i class="fas fa-users text-2xl text-gray-400"></i>
+      </div>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">Select a Google Ads Account</h3>
+      <p class="text-gray-500 mb-4">Choose an account from the dropdown above to view its performance metrics</p>
+      <div class="flex items-center justify-center text-sm text-gray-400">
+        <i class="fas fa-arrow-up mr-2"></i>
+        <span>Click "Select Account" to get started</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function multiAccountDashboard() {
+  return {
+    currentAccount: null,
+    metrics: null,
+    loading: false,
+    lastUpdated: null,
+    
+    init() {
+      // Listen for account changes
+      window.addEventListener('accountChanged', (event) => {
+        this.currentAccount = event.detail.account;
+        this.loadMetrics();
+      });
+      
+      // Load current account from localStorage
+      this.loadCurrentAccount();
+      if (this.currentAccount) {
+        this.loadMetrics();
+      }
+    },
+    
+    loadCurrentAccount() {
+      const saved = localStorage.getItem('current_google_ads_account');
+      if (saved) {
+        try {
+          this.currentAccount = JSON.parse(saved);
+        } catch (e) {
+          localStorage.removeItem('current_google_ads_account');
+        }
+      }
+    },
+    
+    async loadMetrics() {
+      if (!this.currentAccount) return;
+      
+      this.loading = true;
+      try {
+        const response = await fetch(`/integrations/accounts/${this.currentAccount.id}/metrics`, {
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to load metrics');
+        }
+        
+        const data = await response.json();
+        if (data.success) {
+          this.metrics = data.metrics;
+          this.lastUpdated = new Date().toLocaleString();
+        }
+      } catch (error) {
+        console.error('Error loading metrics:', error);
+        if (window.integrationManager) {
+          window.integrationManager.showNotification('Failed to load account metrics', 'error');
+        }
+      } finally {
+        this.loading = false;
+      }
+    },
+    
+    async refreshMetrics() {
+      await this.loadMetrics();
+      if (window.integrationManager) {
+        window.integrationManager.showNotification('Metrics refreshed successfully', 'success');
+      }
+    },
+    
+    formatCurrency(value) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2
+      }).format(value);
+    },
+    
+    formatNumber(value) {
+      return new Intl.NumberFormat('en-US').format(value);
+    },
+    
+    formatPercentage(value) {
+      return (value || 0).toFixed(2) + '%';
+    }
+  };
+}
+</script>

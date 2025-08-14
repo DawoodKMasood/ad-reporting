@@ -171,6 +171,21 @@ class IntegrationManager {
         setTimeout(() => {
           window.location.href = data.redirectUrl;
         }, 1500);
+      } else if (data.success && data.accounts) {
+        // Handle multiple accounts connected
+        this.showNotification(`${data.accounts.length} account(s) connected successfully!`, 'success');
+        
+        // Show account selection modal if multiple accounts
+        if (data.accounts.length > 1) {
+          setTimeout(() => {
+            this.showAccountSelection(data.accounts);
+          }, 1500);
+        } else {
+          // Redirect to integrations page
+          setTimeout(() => {
+            window.location.href = '/integrations';
+          }, 1500);
+        }
       } else if (data.error) {
         this.showNotification('Connection failed: ' + data.message, 'error');
         // Restore button state
@@ -310,7 +325,82 @@ class IntegrationManager {
     // Initialize any tooltips if needed
     // This is a placeholder for future tooltip implementation
   }
+
+  formatCustomerId(customerId) {
+    if (!customerId || customerId.length !== 10) {
+      return customerId;
+    }
+    return `${customerId.slice(0, 3)}-${customerId.slice(3, 6)}-${customerId.slice(6)}`;
+  }
+
+  showAccountSelection(accounts) {
+    // Create account selection modal
+    const modal = document.createElement('div');
+    modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+    modal.innerHTML = `
+      <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-lg shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+          <h3 class="text-lg font-medium text-gray-900 text-center mb-4">
+            <i class="fas fa-check-circle text-green-600 mr-2"></i>
+            Multiple Google Ads Accounts Found
+          </h3>
+          <div class="mt-4">
+            <p class="text-sm text-gray-500 mb-4">We found ${accounts.length} Google Ads accounts. All accounts have been connected successfully.</p>
+            <div class="space-y-3 max-h-64 overflow-y-auto">
+              ${accounts.map(account => `
+                <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                  <div class="flex-1">
+                    <h4 class="text-sm font-medium text-gray-900">${account.accountName || 'Account ' + this.formatCustomerId(account.accountId)}</h4>
+                    <p class="text-xs text-gray-500">ID: ${this.formatCustomerId(account.accountId)}</p>
+                    ${account.isTestAccount ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 mt-1"><i class="fas fa-flask mr-1"></i>Test Account</span>' : ''}
+                    ${account.isManagerAccount ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1 ml-2"><i class="fas fa-users mr-1"></i>Manager Account</span>' : ''}
+                  </div>
+                  <i class="fas fa-check-circle text-green-600"></i>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+          <div class="items-center px-4 py-3 mt-4">
+            <button id="closeAccountModal" class="px-4 py-2 bg-blue-500 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-300">
+              Continue to Dashboard
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Handle close modal
+    document.getElementById('closeAccountModal').addEventListener('click', () => {
+      modal.remove();
+      window.location.href = '/integrations';
+    });
+    
+    // Close on background click
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+        window.location.href = '/integrations';
+      }
+    });
+  }
 }
+
+// Global functions for backward compatibility
+window.syncAccount = function(accountId) {
+  const button = document.querySelector(`[data-account-id="${accountId}"]`);
+  if (button && window.integrationManager) {
+    window.integrationManager.syncAccount(button);
+  }
+};
+
+window.disconnectAccount = function(accountId) {
+  const button = document.querySelector(`[data-account-id="${accountId}"][data-action="disconnect-account"]`);
+  if (button && window.integrationManager) {
+    window.integrationManager.disconnectAccount(button);
+  }
+};
 
 // Initialize the integration manager when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {

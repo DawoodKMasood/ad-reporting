@@ -67,8 +67,8 @@ export class GoogleAdsOAuthService {
     }
   }
 
-  public async getCustomerId(accessToken: string, refreshToken: string): Promise<string> {
-    console.log('🔍 Starting getCustomerId with tokens:', {
+  public async getAccessibleCustomers(accessToken: string, refreshToken: string): Promise<Array<{customerId: string, resourceName: string}>> {
+    console.log('🔍 Starting getAccessibleCustomers with tokens:', {
       hasAccessToken: !!accessToken,
       hasRefreshToken: !!refreshToken,
       accessTokenLength: accessToken?.length,
@@ -77,7 +77,7 @@ export class GoogleAdsOAuthService {
     })
 
     try {
-      logger.info('Attempting to get customer ID from Google Ads API')
+      logger.info('Attempting to get accessible customers from Google Ads API')
 
       // Validate tokens
       if (!accessToken || !refreshToken) {
@@ -103,19 +103,26 @@ export class GoogleAdsOAuthService {
         throw new Error('No accessible customers found. Make sure you have at least one Google Ads account associated with your Google account.')
       }
 
-      // Extract customer ID from the first resource name
-      const resourceName = accessibleCustomers.resource_names[0]
-      const customerId = resourceName.split('/')[1]
-      
-      if (!/^\d{10}$/.test(customerId)) {
-        throw new Error(`Invalid customer ID format: ${customerId}`)
-      }
+      // Extract all customer IDs
+      const customers = accessibleCustomers.resource_names.map(resourceName => {
+        const customerId = resourceName.split('/')[1]
+        
+        if (!/^\d{10}$/.test(customerId)) {
+          console.warn(`Invalid customer ID format: ${customerId}, skipping`)
+          return null
+        }
 
-      console.log('✅ Customer ID retrieved successfully:', customerId)
-      return customerId
+        return {
+          customerId,
+          resourceName
+        }
+      }).filter(Boolean) as Array<{customerId: string, resourceName: string}>
+
+      console.log('✅ Accessible customers retrieved successfully:', customers.map(c => c.customerId))
+      return customers
 
     } catch (error: any) {
-      console.error('❌ Error in getCustomerId:', {
+      console.error('❌ Error in getAccessibleCustomers:', {
         message: error?.message,
         stack: error?.stack,
         code: error?.code,
@@ -127,7 +134,7 @@ export class GoogleAdsOAuthService {
         fullError: error
       })
       
-      logger.error('Error in getCustomerId', error)
+      logger.error('Error in getAccessibleCustomers', error)
       
       // Provide specific error messages based on the error type
       const errorMessage = error?.message || error?.toString() || 'Unknown error'
@@ -171,8 +178,16 @@ Please ensure that:
 4. Try connecting your account again`)
       }
 
-      throw new Error(`Failed to retrieve customer ID: ${errorMessage}`)
+      throw new Error(`Failed to retrieve accessible customers: ${errorMessage}`)
     }
+  }
+
+  public async getCustomerId(accessToken: string, refreshToken: string): Promise<string> {
+    const customers = await this.getAccessibleCustomers(accessToken, refreshToken)
+    if (customers.length === 0) {
+      throw new Error('No accessible customers found')
+    }
+    return customers[0].customerId
   }
 
   public async refreshAccessToken(refreshToken: string) {
@@ -193,6 +208,131 @@ Please ensure that:
       }
       
       throw new Error(`Failed to refresh access token: ${error.message || 'Unknown error'}`)
+    }
+  }
+
+  public async getCustomerInfo(customerId: string, refreshToken: string): Promise<{
+    name: string,
+    timezone: string,
+    isTestAccount: boolean,
+    isManagerAccount: boolean,
+    parentAccountId?: string
+  }> {
+    try {
+      const client = new GoogleAdsApi({
+        client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
+        client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
+        developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
+      })
+
+      const customer = client.Customer({
+        customer_id: customerId,
+        refresh_token: refreshToken,
+      })
+
+      const customerInfo = await customer.report({
+        entity: 'customer',
+        attributes: [
+          'customer.descriptive_name',
+          'customer.time_zone',
+          'customer.test_account',
+          'customer.manager'
+        ]
+      })
+
+      if (customerInfo.length === 0) {
+        throw new Error(`Customer info not found for ID: ${customerId}`)
+      }
+
+      const info = customerInfo[0]
+      return {
+        name: info.customer?.descriptive_name || `Account ${customerId}`,
+        timezone: info.customer?.time_zone || 'UTC',
+        isTestAccount: info.customer?.test_account || false,
+        isManagerAccount: info.customer?.manager || false
+      }
+    } catch (error: any) {
+      console.warn('Could not fetch customer info:', error.message)
+      return {
+        name: `Account ${customerId}`,
+        timezone: 'UTC',
+        isTestAccount: false,
+        isManagerAccount: false
+      }
+    }
+  }
+
+  public async storeTokensForAllCustomers(
+    userId: number,
+    accessToken: string,
+    refreshToken: string,
+    expiresAt?: DateTime | null
+  ): Promise<ConnectedAccount[]> {
+    try {
+      if (!refreshToken) {
+        throw new Error('Refresh token required to fetch customers')
+      }
+
+      console.log('🔍 Fetching all accessible customers from Google Ads API...')
+      const customers = await this.getAccessibleCustomers(accessToken, refreshToken)
+      console.log('✅ Retrieved customers:', customers.map(c => c.customerId))
+      
+      const encryptedAccessToken = encryptionService.encrypt(accessToken)
+      const encryptedRefreshToken = encryptionService.encrypt(refreshToken)
+      const accessTokenHash = encryptionService.hashData(accessToken)
+      const refreshTokenHash = encryptionService.hashData(refreshToken)
+      
+      const connectedAccounts: ConnectedAccount[] = []
+      
+      // Store accessible customers list for reference
+      const accessibleCustomerIds = customers.map(c => c.customerId)
+      
+      for (const customer of customers) {
+        console.log(`🔍 Getting info for customer ${customer.customerId}...`)
+        const customerInfo = await this.getCustomerInfo(customer.customerId, refreshToken)
+        
+        let connectedAccount = await ConnectedAccount.query()
+          .where('user_id', userId)
+          .where('platform', 'google_ads' as const)
+          .where('account_id', customer.customerId)
+          .first()
+        
+        const accountData = {
+          userId,
+          platform: 'google_ads' as const,
+          accountId: customer.customerId,
+          accessToken: encryptedAccessToken,
+          refreshToken: encryptedRefreshToken,
+          accessTokenHash,
+          refreshTokenHash,
+          expiresAt: expiresAt || null,
+          isActive: true,
+          accessibleCustomers: JSON.stringify(accessibleCustomerIds),
+          accountName: customerInfo.name,
+          accountTimezone: customerInfo.timezone,
+          isTestAccount: customerInfo.isTestAccount,
+          isManagerAccount: customerInfo.isManagerAccount
+        }
+        
+        if (connectedAccount) {
+          await connectedAccount.merge(accountData).save()
+        } else {
+          connectedAccount = await ConnectedAccount.create(accountData)
+        }
+        
+        connectedAccounts.push(connectedAccount)
+        console.log('✅ Tokens stored successfully for accountId:', customer.customerId)
+      }
+      
+      logger.info('Tokens stored successfully for all customers', { 
+        customerIds: customers.map(c => c.customerId), 
+        userId 
+      })
+      return connectedAccounts
+    } catch (error: any) {
+      console.error('❌ Store tokens error:', error)
+      logger.error('Error storing tokens for all customers', error)
+      throw new Error(`Failed to store tokens: ${error.message || 'Unknown error'}`)
     }
   }
 
