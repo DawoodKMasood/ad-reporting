@@ -8,11 +8,11 @@ import googleAdsOAuthService from '#services/google_ads_oauth_service'
 export default class IntegrationsController {
   async index({ view, auth }: HttpContext) {
     const user = auth.getUserOrFail()
-    
+
     const connectedAccounts = await ConnectedAccount.query()
       .where('user_id', user.id)
       .orderBy('created_at', 'desc')
-    
+
     const availablePlatforms = [
       {
         name: 'google_ads',
@@ -35,26 +35,26 @@ export default class IntegrationsController {
         disabled: true,
       },
     ]
-    
+
     return view.render('pages/integrations/index', {
       user,
       connectedAccounts,
-      availablePlatforms
+      availablePlatforms,
     })
   }
 
   async show({ params, auth, response, view }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      
+
       const connectedAccount = await ConnectedAccount.query()
         .where('id', params.id)
         .where('user_id', user.id)
         .firstOrFail()
-      
+
       return view.render('pages/integrations/show', {
         user,
-        connectedAccount
+        connectedAccount,
       })
     } catch (error) {
       logger.error('Error fetching connected account details:', error)
@@ -66,10 +66,10 @@ export default class IntegrationsController {
     try {
       const user = auth.getUserOrFail()
       const payload = await request.validateUsing(connectValidator)
-      
+
       if (payload.platform !== 'google_ads') {
         const isApiRequest = request.header('Accept')?.includes('application/json')
-        
+
         if (isApiRequest) {
           return response.badRequest({
             error: 'Unsupported platform',
@@ -78,14 +78,14 @@ export default class IntegrationsController {
         }
         return response.redirect().back()
       }
-      
+
       const state = `${user.id}-${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
       session.put('oauth_state', state)
-      
+
       const authUrl = googleAdsOAuthService.generateAuthUrl(user.id, state)
-      
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
-      
+
       if (isApiRequest) {
         return {
           success: true,
@@ -93,19 +93,19 @@ export default class IntegrationsController {
           message: 'OAuth2 flow initiated successfully',
         }
       }
-      
+
       return response.redirect().toPath(authUrl)
     } catch (error) {
       logger.error('Error initiating OAuth2 flow:', error)
-      
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return response.badRequest({
           error: 'Validation failed',
-          message: error.messages,
+          message: error.messages
         })
       }
-      
+
       return response.redirect().back()
     }
   }
@@ -115,34 +115,34 @@ export default class IntegrationsController {
       const user = auth.getUserOrFail()
       const { code, state } = request.qs()
       const { platform } = params
-      
+
       const storedState = session.get('oauth_state')
-      
+
       if (!state || state !== storedState) {
         return response.badRequest({
           error: 'Invalid state parameter',
           message: 'Possible CSRF attack detected'
         })
       }
-      
+
       session.forget('oauth_state')
-      
+
       if (!code) {
         return response.badRequest({
           error: 'Missing authorization code',
           message: 'Authorization code is required'
         })
       }
-      
+
       if (platform !== 'google_ads') {
         return response.badRequest({
           error: 'Unsupported platform',
           message: `Platform ${platform} is not supported`
         })
       }
-      
+
       const tokens = await googleAdsOAuthService.exchangeCodeForTokens(code)
-      
+
       let connectedAccounts: any[]
       try {
         connectedAccounts = await googleAdsOAuthService.storeTokensForAllCustomers(
@@ -162,7 +162,7 @@ export default class IntegrationsController {
         }
         return response.redirect().toRoute('integrations.index')
       }
-      
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return {
@@ -171,11 +171,11 @@ export default class IntegrationsController {
           message: `${connectedAccounts.length} account(s) connected successfully`
         }
       }
-      
+
       return response.redirect().toRoute('integrations.index')
     } catch (error) {
       logger.error('Error handling OAuth2 callback:', error)
-      
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return response.badRequest({
@@ -183,7 +183,7 @@ export default class IntegrationsController {
           message: error.message
         })
       }
-      
+
       return response.redirect().toRoute('integrations.index')
     }
   }
@@ -192,10 +192,10 @@ export default class IntegrationsController {
     try {
       const user = auth.getUserOrFail()
       const payload = await request.validateUsing(disconnectValidator)
-      
-      const accountId = payload.id || parseInt(params.id, 10)
-      
-      if (!accountId || isNaN(accountId)) {
+
+      const accountId = payload.id || Number.parseInt(params.id, 10)
+
+      if (!accountId || Number.isNaN(accountId)) {
         const isApiRequest = request.header('Accept')?.includes('application/json')
         if (isApiRequest) {
           return response.badRequest({
@@ -205,14 +205,14 @@ export default class IntegrationsController {
         }
         return response.redirect().back()
       }
-      
+
       const connectedAccount = await ConnectedAccount.query()
         .where('id', accountId)
         .where('user_id', user.id)
         .firstOrFail()
-      
+
       await connectedAccount.delete()
-      
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return {
@@ -220,11 +220,11 @@ export default class IntegrationsController {
           message: 'Account disconnected successfully'
         }
       }
-      
+
       return response.redirect().back()
     } catch (error) {
       logger.error('Error disconnecting account:', error)
-      
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return response.badRequest({
@@ -232,7 +232,7 @@ export default class IntegrationsController {
           message: error.message
         })
       }
-      
+
       return response.redirect().back()
     }
   }
@@ -241,10 +241,10 @@ export default class IntegrationsController {
     try {
       const user = auth.getUserOrFail()
       const payload = await request.validateUsing(syncValidator)
-      
-      const accountId = payload.id || parseInt(params.id, 10)
-      
-      if (!accountId || isNaN(accountId)) {
+
+      const accountId = payload.id || Number.parseInt(params.id, 10)
+
+      if (!accountId || Number.isNaN(accountId)) {
         const isApiRequest = request.header('Accept')?.includes('application/json')
         if (isApiRequest) {
           return response.badRequest({
@@ -254,18 +254,18 @@ export default class IntegrationsController {
         }
         return response.redirect().back()
       }
-      
+
       const connectedAccount = await ConnectedAccount.query()
         .where('id', accountId)
         .where('user_id', user.id)
         .firstOrFail()
-      
+
       const enrichedData = await googleAdsService.getEnrichedCampaignData(
         connectedAccount.id,
         user.id,
         { type: 'last_7_days' }
       )
-      
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return {
@@ -275,11 +275,11 @@ export default class IntegrationsController {
           dataCount: enrichedData.length
         }
       }
-      
+
       return response.redirect().back()
     } catch (error) {
       logger.error('Error syncing account data:', error)
-      
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return response.badRequest({
@@ -287,7 +287,7 @@ export default class IntegrationsController {
           message: error.message
         })
       }
-      
+
       return response.redirect().back()
     }
   }
@@ -296,10 +296,10 @@ export default class IntegrationsController {
     try {
       const user = auth.getUserOrFail()
       const { displayName } = request.body()
-      
-      const accountId = parseInt(params.id, 10)
-      
-      if (!accountId || isNaN(accountId)) {
+
+      const accountId = Number.parseInt(params.id, 10)
+
+      if (!accountId || Number.isNaN(accountId)) {
         const isApiRequest = request.header('Accept')?.includes('application/json')
         if (isApiRequest) {
           return response.badRequest({
@@ -309,15 +309,15 @@ export default class IntegrationsController {
         }
         return response.redirect().back()
       }
-      
+
       const connectedAccount = await ConnectedAccount.query()
         .where('id', accountId)
         .where('user_id', user.id)
         .firstOrFail()
-      
+
       connectedAccount.displayName = displayName
       await connectedAccount.save()
-      
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return {
@@ -326,11 +326,11 @@ export default class IntegrationsController {
           account: connectedAccount
         }
       }
-      
+
       return response.redirect().back()
     } catch (error) {
       logger.error('Error updating account name:', error)
-      
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return response.badRequest({
@@ -338,7 +338,7 @@ export default class IntegrationsController {
           message: error.message
         })
       }
-      
+
       return response.redirect().back()
     }
   }
@@ -346,24 +346,27 @@ export default class IntegrationsController {
   async getAccessibleCustomers({ auth, response }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      
+
       // Get all Google Ads connected accounts for this user
       const connectedAccounts = await ConnectedAccount.query()
         .where('user_id', user.id)
         .where('platform', 'google_ads')
         .orderBy('created_at', 'desc')
-      
+
       if (connectedAccounts.length === 0) {
         return response.badRequest({
           error: 'No connected accounts found',
           message: 'Please connect a Google Ads account first'
         })
       }
-      
+
       // Use the first account to get accessible customers
       const firstAccount = connectedAccounts[0]
-      const accessibleCustomers = await googleAdsService.getAccessibleCustomers(firstAccount.id, user.id)
-      
+      const accessibleCustomers = await googleAdsService.getAccessibleCustomers(
+        firstAccount.id,
+        user.id
+      )
+
       return {
         success: true,
         data: accessibleCustomers,

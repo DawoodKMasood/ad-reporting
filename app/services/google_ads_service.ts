@@ -4,7 +4,7 @@ import CampaignData from '#models/campaign_data'
 import googleAdsOAuthService from './google_ads_oauth_service.js'
 import logger from '@adonisjs/core/services/logger'
 import { DateTime } from 'luxon'
-import { GoogleAdsApi, services, enums, MutateOperationTypes, MutateOperation, reports } from 'google-ads-api'
+import { GoogleAdsApi, services, enums, MutateOperation } from 'google-ads-api'
 
 export class GoogleAdsService {
   private cache: Map<string, any> = new Map()
@@ -13,10 +13,10 @@ export class GoogleAdsService {
 
   private async getCustomerClient(connectedAccountId: number, userId: number) {
     const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
-    
+
     // Get the properly configured Google Ads client from the OAuth service
     const { client, refreshToken } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
-    
+
     const config: any = {
       customer_id: connectedAccount.accountId,
       refresh_token: refreshToken,
@@ -33,7 +33,7 @@ export class GoogleAdsService {
   public async getAccessibleCustomers(connectedAccountId: number, userId: number) {
     try {
       const { client, refreshToken } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
-      
+
       const result = await client.listAccessibleCustomers(refreshToken)
       logger.info('listAccessibleCustomers result', { result })
       return result.resource_names || []
@@ -55,15 +55,15 @@ export class GoogleAdsService {
     try {
       const { startDate, endDate } = this.calculateDateRange(dateRange)
       const cacheKey = `campaign_data_${connectedAccountId}_${startDate}_${endDate}`
-      
+
       if (this.isCacheValid(cacheKey)) {
         return this.cache.get(cacheKey)
       }
 
       const customer = await this.getCustomerClient(connectedAccountId, userId)
-      
+
       const query = `
-        SELECT 
+        SELECT
           campaign.id,
           campaign.name,
           campaign.status,
@@ -80,11 +80,10 @@ export class GoogleAdsService {
         ORDER BY segments.date DESC, campaign.id
       `
 
-      const results = await customer.report({
-        query,
-        page_size: 1000
-      })
-      
+      logger.info('Google Ads API Query:', { query })
+      const results = await customer.query(query)
+      logger.info('Google Ads API Response:', { results })
+
       this.cache.set(cacheKey, results)
       this.cacheExpiry.set(cacheKey, DateTime.now().plus({ minutes: this.cacheTtl }))
 
@@ -98,7 +97,7 @@ export class GoogleAdsService {
   public async processAndStoreCampaignData(connectedAccountId: number, rawData: any[]) {
     const processedData: CampaignData[] = []
     const batchSize = 100
-    
+
     for (let i = 0; i < rawData.length; i += batchSize) {
       const batch = rawData.slice(i, i + batchSize).map(row => ({
         connectedAccountId,
@@ -112,27 +111,27 @@ export class GoogleAdsService {
         clicks: row.metrics?.clicks ? parseInt(row.metrics.clicks) : 0,
         conversions: row.metrics?.conversions ? parseFloat(row.metrics.conversions) : 0
       })).filter(data => data.campaignId && data.campaignName)
-      
+
       if (batch.length > 0) {
         const created = await CampaignData.createMany(batch)
         processedData.push(...created)
       }
     }
-    
+
     return processedData
   }
 
   public async syncCampaignData(connectedAccountId: number, userId: number, dateRange?: any) {
     try {
       const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
-      
+
       const syncDateRange = dateRange || this.getIncrementalDateRange(connectedAccount)
       const rawData = await this.fetchCampaignData(connectedAccountId, userId, syncDateRange)
       const processedData = await this.processAndStoreCampaignData(connectedAccountId, rawData)
-      
+
       connectedAccount.lastSyncAt = DateTime.now()
       await connectedAccount.save()
-      
+
       return processedData
     } catch (error: any) {
       logger.error('Error syncing campaign data:', error)
@@ -142,14 +141,14 @@ export class GoogleAdsService {
 
   public async getEnrichedCampaignData(connectedAccountId: number, userId: number, dateRange?: any) {
     await this.syncCampaignData(connectedAccountId, userId, dateRange)
-    
+
     let query = CampaignData.query().where('connected_account_id', connectedAccountId)
-    
+
     if (dateRange) {
       const { startDate, endDate } = this.calculateDateRange(dateRange)
       query = query.whereBetween('date', [startDate, endDate])
     }
-    
+
     const campaignData = await query.orderBy('date', 'desc')
     return campaignData.map(data => this.enrichCampaignData(data))
   }
@@ -159,7 +158,7 @@ export class GoogleAdsService {
     const cpc = campaignData.clicks > 0 ? campaignData.spend / campaignData.clicks : 0
     const cpa = campaignData.conversions > 0 ? campaignData.spend / campaignData.conversions : 0
     const cpm = campaignData.impressions > 0 ? (campaignData.spend / campaignData.impressions) * 1000 : 0
-    
+
     return {
       ...campaignData.serialize(),
       ctr,
@@ -175,7 +174,7 @@ export class GoogleAdsService {
   // Enhanced API Methods
   public async getCampaigns(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
+
     const query = `
       SELECT 
         campaign.id,
@@ -197,18 +196,47 @@ export class GoogleAdsService {
       AND campaign.status != 'REMOVED'
       ORDER BY campaign.id
     `
-    
+
     return await customer.report({
-      query,
-      page_size: 1000
+      entity: 'campaign',
+      attributes: [
+        'campaign.id',
+        'campaign.name',
+        'campaign.status',
+        'campaign.advertising_channel_type',
+        'campaign.advertising_channel_sub_type',
+        'campaign.start_date',
+        'campaign.end_date'
+      ],
+      metrics: [
+        'metrics.impressions',
+        'metrics.clicks',
+        'metrics.cost_micros',
+        'metrics.conversions',
+        'metrics.ctr',
+        'metrics.average_cpc'
+      ],
+      segments: [
+        'segments.date'
+      ],
+      constraints: [{
+        key: 'segments.date',
+        op: 'DURING',
+        val: 'LAST_30_DAYS'
+      }, {
+        key: 'campaign.status',
+        op: '!=',
+        val: 'REMOVED'
+      }],
+      order_by: 'campaign.id'
     })
   }
 
   public async getAdGroups(connectedAccountId: number, userId: number, campaignId?: string) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
+
     const whereClause = campaignId ? `AND campaign.id = ${campaignId}` : ''
-    
+
     const query = `
       SELECT 
         ad_group.id,
@@ -228,18 +256,44 @@ export class GoogleAdsService {
       ${whereClause}
       ORDER BY ad_group.id
     `
-    
+
     return await customer.report({
-      query,
-      page_size: 1000
+      entity: 'ad_group',
+      attributes: [
+        'ad_group.id',
+        'ad_group.name',
+        'ad_group.status',
+        'ad_group.type',
+        'campaign.id',
+        'campaign.name'
+      ],
+      metrics: [
+        'metrics.impressions',
+        'metrics.clicks',
+        'metrics.cost_micros',
+        'metrics.conversions'
+      ],
+      segments: [
+        'segments.date'
+      ],
+      constraints: [{
+        key: 'segments.date',
+        op: 'DURING',
+        val: 'LAST_7_DAYS'
+      }, {
+        key: 'ad_group.status',
+        op: '!=',
+        val: 'REMOVED'
+      }],
+      order_by: 'ad_group.id'
     })
   }
 
   public async getKeywords(connectedAccountId: number, userId: number, adGroupId?: string) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
+
     const whereClause = adGroupId ? `AND ad_group.id = ${adGroupId}` : ''
-    
+
     const query = `
       SELECT 
         keyword_view.resource_name,
@@ -264,18 +318,49 @@ export class GoogleAdsService {
       ${whereClause}
       ORDER BY ad_group.id
     `
-    
+
     return await customer.report({
-      query,
-      page_size: 1000
+      entity: 'keyword_view',
+      attributes: [
+        'keyword_view.resource_name',
+        'ad_group_criterion.keyword.text',
+        'ad_group_criterion.keyword.match_type',
+        'ad_group_criterion.status',
+        'ad_group.id',
+        'ad_group.name',
+        'campaign.id',
+        'campaign.name'
+      ],
+      metrics: [
+        'metrics.impressions',
+        'metrics.clicks',
+        'metrics.cost_micros',
+        'metrics.conversions',
+        'metrics.ctr',
+        'metrics.average_cpc',
+        'metrics.impressions'
+      ],
+      segments: [
+        'segments.date'
+      ],
+      constraints: [{
+        key: 'segments.date',
+        op: 'DURING',
+        val: 'LAST_7_DAYS'
+      }, {
+        key: 'ad_group_criterion.status',
+        op: '!=',
+        val: 'REMOVED'
+      }],
+      order_by: 'ad_group.id'
     })
   }
 
   public async getAds(connectedAccountId: number, userId: number, adGroupId?: string) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
+
     const whereClause = adGroupId ? `AND ad_group.id = ${adGroupId}` : ''
-    
+
     const query = `
       SELECT 
         ad_group_ad.ad.id,
@@ -300,16 +385,47 @@ export class GoogleAdsService {
       ${whereClause}
       ORDER BY ad_group.id
     `
-    
+
     return await customer.report({
-      query,
-      page_size: 1000
+      entity: 'ad_group_ad',
+      attributes: [
+        'ad_group_ad.ad.id',
+        'ad_group_ad.ad.type',
+        'ad_group_ad.status',
+        'ad_group_ad.ad.expanded_text_ad.headline_part1',
+        'ad_group_ad.ad.expanded_text_ad.headline_part2',
+        'ad_group_ad.ad.expanded_text_ad.description',
+        'ad_group.id',
+        'ad_group.name',
+        'campaign.id',
+        'campaign.name'
+      ],
+      metrics: [
+        'metrics.impressions',
+        'metrics.clicks',
+        'metrics.cost_micros',
+        'metrics.conversions',
+        'metrics.ctr'
+      ],
+      segments: [
+        'segments.date'
+      ],
+      constraints: [{
+        key: 'segments.date',
+        op: 'DURING',
+        val: 'LAST_7_DAYS'
+      }, {
+        key: 'ad_group_ad.status',
+        op: '!=',
+        val: 'REMOVED'
+      }],
+      order_by: 'ad_group.id'
     })
   }
 
   public async getConversionActions(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
+
     const query = `
       SELECT 
         conversion_action.id,
@@ -321,18 +437,30 @@ export class GoogleAdsService {
       WHERE conversion_action.status != 'REMOVED'
       ORDER BY conversion_action.id
     `
-    
+
     return await customer.report({
-      query,
-      page_size: 1000
+      entity: 'conversion_action',
+      attributes: [
+        'conversion_action.id',
+        'conversion_action.name',
+        'conversion_action.type',
+        'conversion_action.status',
+        'conversion_action.category'
+      ],
+      constraints: [{
+        key: 'conversion_action.status',
+        op: '!=',
+        val: 'REMOVED'
+      }],
+      order_by: 'conversion_action.id'
     })
   }
 
   public async getAudienceInsights(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
+
     const query = `
-      SELECT 
+      SELECT
         age_range_view.resource_name,
         ad_group_criterion.age_range.type,
         segments.date,
@@ -343,18 +471,15 @@ export class GoogleAdsService {
       WHERE segments.date DURING LAST_30_DAYS
       ORDER BY metrics.impressions DESC
     `
-    
-    return await customer.report({
-      query,
-      page_size: 1000
-    })
+
+    return await customer.query(query)
   }
 
   public async getGenderInsights(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
+
     const query = `
-      SELECT 
+      SELECT
         gender_view.resource_name,
         ad_group_criterion.gender.type,
         segments.date,
@@ -365,16 +490,13 @@ export class GoogleAdsService {
       WHERE segments.date DURING LAST_30_DAYS
       ORDER BY metrics.impressions DESC
     `
-    
-    return await customer.report({
-      query,
-      page_size: 1000
-    })
+
+    return await customer.query(query)
   }
 
   public async getLocationInsights(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
+
     const query = `
       SELECT 
         location_view.resource_name,
@@ -387,16 +509,32 @@ export class GoogleAdsService {
       WHERE segments.date DURING LAST_30_DAYS
       ORDER BY metrics.impressions DESC
     `
-    
+
     return await customer.report({
-      query,
-      page_size: 1000
+      entity: 'location_view',
+      attributes: [
+        'location_view.resource_name'
+      ],
+      metrics: [
+        'metrics.impressions',
+        'metrics.clicks',
+        'metrics.cost_micros'
+      ],
+      segments: [
+        'segments.date'
+      ],
+      constraints: [{
+        key: 'segments.date',
+        op: 'DURING',
+        val: 'LAST_30_DAYS'
+      }],
+      order_by: 'metrics.impressions'
     })
   }
 
   public async getSearchTerms(connectedAccountId: number, userId: number) {
     const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
+
     const query = `
       SELECT 
         search_term_view.resource_name,
@@ -415,228 +553,40 @@ export class GoogleAdsService {
       WHERE segments.date DURING LAST_7_DAYS
       ORDER BY metrics.impressions DESC
     `
-    
+
     return await customer.report({
-      query,
-      page_size: 1000
-    })
-  }
-
-  public async createCampaign(connectedAccountId: number, userId: number, campaignData: {
-    name: string,
-    budgetMicros: number,
-    advertisingChannelType: keyof typeof enums.AdvertisingChannelType,
-    biddingStrategy?: 'MAXIMIZE_CLICKS' | 'MAXIMIZE_CONVERSIONS' | 'TARGET_CPA'
-  }) {
-    const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
-    // First create a budget
-    const budgetOperation: MutateOperation<'campaign_budget'> = {
-      entity: 'campaign_budget',
-      operation: 'create',
-      resource: {
-        name: `Budget for ${campaignData.name}`,
-        amount_micros: campaignData.budgetMicros,
-        delivery_method: enums.BudgetDeliveryMethod.STANDARD
-      }
-    }
-    
-    const budgetResult = await customer.mutateResources([budgetOperation])
-    const budgetResourceName = budgetResult.mutate_operation_responses[0].campaign_budget_result.resource_name
-    
-    // Create the campaign
-    const campaignOperation: MutateOperation<'campaign'> = {
-      entity: 'campaign',
-      operation: 'create',
-      resource: {
-        name: campaignData.name,
-        campaign_budget: budgetResourceName,
-        advertising_channel_type: enums.AdvertisingChannelType[campaignData.advertisingChannelType],
-        status: enums.CampaignStatus.PAUSED, // Start paused for safety
-        start_date: DateTime.now().toFormat('yyyy-MM-dd'),
-        // Set bidding strategy
-        ...(campaignData.biddingStrategy === 'MAXIMIZE_CLICKS' && {
-          maximize_clicks: {}
-        }),
-        ...(campaignData.biddingStrategy === 'MAXIMIZE_CONVERSIONS' && {
-          maximize_conversions: {}
-        }),
-        ...(campaignData.biddingStrategy === 'TARGET_CPA' && {
-          target_cpa: {
-            target_cpa_micros: 5000000 // $5 default
-          }
-        })
-      }
-    }
-    
-    return await customer.mutateResources([campaignOperation])
-  }
-
-  public async updateCampaignStatus(connectedAccountId: number, userId: number, campaignId: string, status: keyof typeof enums.CampaignStatus) {
-    const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
-    const operation: MutateOperation<'campaign'> = {
-      entity: 'campaign',
-      operation: 'update',
-      resource: {
-        resource_name: `customers/${(await ConnectedAccount.findOrFail(connectedAccountId)).accountId}/campaigns/${campaignId}`,
-        status: enums.CampaignStatus[status]
-      },
-      update_mask: {
-        paths: ['status']
-      }
-    }
-    
-    return await customer.mutateResources([operation])
-  }
-
-  public async createAdGroup(connectedAccountId: number, userId: number, campaignId: string, adGroupData: {
-    name: string,
-    cpcBidMicros?: number
-  }) {
-    const customer = await this.getCustomerClient(connectedAccountId, userId)
-    const customerId = (await ConnectedAccount.findOrFail(connectedAccountId)).accountId
-    
-    const operation: MutateOperation<'ad_group'> = {
-      entity: 'ad_group',
-      operation: 'create',
-      resource: {
-        name: adGroupData.name,
-        campaign: `customers/${customerId}/campaigns/${campaignId}`,
-        status: enums.AdGroupStatus.PAUSED,
-        type: enums.AdGroupType.SEARCH_STANDARD,
-        ...(adGroupData.cpcBidMicros && {
-          cpc_bid_micros: adGroupData.cpcBidMicros
-        })
-      }
-    }
-    
-    return await customer.mutateResources([operation])
-  }
-
-  public async addKeywords(connectedAccountId: number, userId: number, adGroupId: string, keywords: Array<{
-    text: string,
-    matchType: keyof typeof enums.KeywordMatchType,
-    cpcBidMicros?: number
-  }>) {
-    const customer = await this.getCustomerClient(connectedAccountId, userId)
-    const customerId = (await ConnectedAccount.findOrFail(connectedAccountId)).accountId
-    
-    const operations: MutateOperation<'ad_group_criterion'>[] = keywords.map(keyword => ({
-      entity: 'ad_group_criterion',
-      operation: 'create',
-      resource: {
-        ad_group: `customers/${customerId}/adGroups/${adGroupId}`,
-        status: enums.AdGroupCriterionStatus.ENABLED,
-        keyword: {
-          text: keyword.text,
-          match_type: enums.KeywordMatchType[keyword.matchType]
-        },
-        ...(keyword.cpcBidMicros && {
-          cpc_bid_micros: keyword.cpcBidMicros
-        })
-      }
-    }))
-    
-    return await customer.mutateResources(operations)
-  }
-
-  public async createTextAd(connectedAccountId: number, userId: number, adGroupId: string, adData: {
-    headline1: string,
-    headline2: string,
-    description: string,
-    finalUrls: string[]
-  }) {
-    const customer = await this.getCustomerClient(connectedAccountId, userId)
-    const customerId = (await ConnectedAccount.findOrFail(connectedAccountId)).accountId
-    
-    const operation: MutateOperation<'ad_group_ad'> = {
-      entity: 'ad_group_ad',
-      operation: 'create',
-      resource: {
-        ad_group: `customers/${customerId}/adGroups/${adGroupId}`,
-        status: enums.AdGroupAdStatus.PAUSED,
-        ad: {
-          expanded_text_ad: {
-            headline_part1: adData.headline1,
-            headline_part2: adData.headline2,
-            description: adData.description
-          },
-          final_urls: adData.finalUrls
-        }
-      }
-    }
-    
-    return await customer.mutateResources([operation])
-  }
-
-  public async getBiddingStrategies(connectedAccountId: number, userId: number) {
-    const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
-    const query = `
-      SELECT 
-        bidding_strategy.id,
-        bidding_strategy.name,
-        bidding_strategy.type,
-        bidding_strategy.status
-      FROM bidding_strategy
-      WHERE bidding_strategy.status != 'REMOVED'
-      ORDER BY bidding_strategy.id
-    `
-    
-    return await customer.report({
-      query,
-      page_size: 1000
-    })
-  }
-
-  public async getAccountHierarchy(connectedAccountId: number, userId: number) {
-    const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
-    const query = `
-      SELECT 
-        customer_client.client_customer,
-        customer_client.level,
-        customer_client.time_zone,
-        customer_client.test_account,
-        customer_client.manager,
-        customer_client.descriptive_name
-      FROM customer_client
-      ORDER BY customer_client.level
-    `
-    
-    return await customer.report({
-      query,
-      page_size: 1000
-    })
-  }
-
-  public async getExtensions(connectedAccountId: number, userId: number) {
-    const customer = await this.getCustomerClient(connectedAccountId, userId)
-    
-    const query = `
-      SELECT 
-        extension_feed_item.id,
-        extension_feed_item.extension_type,
-        extension_feed_item.status,
-        extension_feed_item.sitelink_feed_item.link_text,
-        extension_feed_item.sitelink_feed_item.line1,
-        extension_feed_item.sitelink_feed_item.line2
-      FROM extension_feed_item
-      WHERE extension_feed_item.status != 'REMOVED'
-      ORDER BY extension_feed_item.id
-    `
-    
-    return await customer.report({
-      query,
-      page_size: 1000
+      entity: 'search_term_view',
+      attributes: [
+        'search_term_view.resource_name',
+        'search_term_view.search_term',
+        'search_term_view.status',
+        'ad_group.id',
+        'ad_group.name',
+        'campaign.id',
+        'campaign.name'
+      ],
+      metrics: [
+        'metrics.impressions',
+        'metrics.clicks',
+        'metrics.cost_micros',
+        'metrics.conversions'
+      ],
+      segments: [
+        'segments.date'
+      ],
+      constraints: [{
+        key: 'segments.date',
+        op: 'DURING',
+        val: 'LAST_7_DAYS'
+      }],
+      order_by: 'metrics.impressions'
     })
   }
 
   // Private helper methods
   private calculateDateRange(dateRange: any) {
     let startDate: string, endDate: string
-    
+
     switch (dateRange.type) {
       case 'today':
         startDate = endDate = DateTime.now().toFormat('yyyy-MM-dd')
@@ -657,7 +607,7 @@ export class GoogleAdsService {
         endDate = DateTime.now().toFormat('yyyy-MM-dd')
         startDate = DateTime.now().minus({ days: 30 }).toFormat('yyyy-MM-dd')
     }
-    
+
     return { startDate, endDate }
   }
 
@@ -686,7 +636,7 @@ export class GoogleAdsService {
 
   private categorizeCampaignType(campaignType: string | null): string {
     if (!campaignType) return 'Unknown'
-    
+
     const type = campaignType.toLowerCase()
     if (['search', 'display', 'shopping', 'video', 'app'].includes(type)) {
       return type.charAt(0).toUpperCase() + type.slice(1)
@@ -697,12 +647,12 @@ export class GoogleAdsService {
   private calculateEfficiencyScore(ctr: number, cpc: number, conversions: number, clicks: number, spend: number): number {
     const conversionRate = clicks > 0 ? (conversions / clicks) * 100 : 0
     const roas = spend > 0 ? conversions / spend : 0
-    
+
     const ctrScore = Math.min(100, ctr * 10)
     const cpcScore = Math.max(0, 100 - (cpc * 10))
     const conversionRateScore = Math.min(100, conversionRate * 100)
     const roasScore = Math.min(100, roas * 100)
-    
+
     return Math.round((ctrScore * 0.1) + (cpcScore * 0.1) + (conversionRateScore * 0.4) + (roasScore * 0.4))
   }
 }
