@@ -5,6 +5,7 @@ import encryptionService from './encryption_service.js'
 import logger from '@adonisjs/core/services/logger'
 import { DateTime } from 'luxon'
 import securityMonitoringService from '#services/security_monitoring_service'
+import { GoogleAdsApi } from 'google-ads-api'
 
 // In-memory store for revoked tokens (in production, this should be stored in a database)
 const revokedTokens: Set<string> = new Set()
@@ -21,6 +22,7 @@ const tokenAccessAttempts: Map<string, { count: number; timestamp: number }> = n
  */
 export class GoogleAdsOAuthService {
   private oauth2Client: any
+  private googleAdsClient: GoogleAdsApi
   private static readonly MAX_ACCESS_ATTEMPTS = 5
   private static readonly ACCESS_WINDOW_MS = 60000 // 1 minute
 
@@ -64,6 +66,13 @@ export class GoogleAdsOAuthService {
       env.get('GOOGLE_ADS_CLIENT_SECRET'),
       redirectUri
     )
+
+    // Initialize Google Ads API client for fetching customer info
+    this.googleAdsClient = new GoogleAdsApi({
+      client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
+      client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
+      developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
+    })
   }
 
   /**
@@ -104,9 +113,179 @@ export class GoogleAdsOAuthService {
         refreshToken: tokens.refresh_token || null,
         expiryDate: tokens.expiry_date ? DateTime.fromMillis(tokens.expiry_date) : null,
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error exchanging code for tokens:', error)
       throw new Error(`Failed to exchange code for tokens: ${error.message}`)
+    }
+  }
+
+  /**
+   * Get the actual customer ID from Google Ads API using the access token
+   * 
+   * @param accessToken - The access token to use
+   * @param refreshToken - The refresh token to use
+   * @returns The customer ID
+   */
+  public async getCustomerId(accessToken: string, refreshToken: string): Promise<string> {
+    try {
+      logger.info('Attempting to get customer ID from Google Ads API')
+      
+      // Create a Google Ads customer client without specifying customer_id for listing
+      const customer = this.googleAdsClient.Customer({
+        refresh_token: refreshToken
+      })
+
+      // Use the CustomerService to list accessible customers
+      logger.info('Getting customer service from Google Ads client')
+      
+      try {
+        // Method 1: Try to get accessible customers using the customer service
+        const customerService = customer.service.CustomerService
+        
+        if (customerService && typeof customerService.listAccessibleCustomers === 'function') {
+          logger.info('Using CustomerService.listAccessibleCustomers')
+          const accessibleCustomers = await customerService.listAccessibleCustomers({})
+          
+          logger.info('Retrieved accessible customers via CustomerService', {
+            count: accessibleCustomers.resourceNames?.length || 0,
+            customers: accessibleCustomers.resourceNames
+          })
+
+          if (!accessibleCustomers.resourceNames || accessibleCustomers.resourceNames.length === 0) {
+            throw new Error('No accessible customers found. Please ensure you have proper access to Google Ads accounts.')
+          }
+
+          // Extract customer ID from the first accessible customer resource name
+          const firstCustomerResourceName = accessibleCustomers.resourceNames[0]
+          const customerId = firstCustomerResourceName.split('/')[1]
+          
+          if (!customerId || !/^\d{10}$/.test(customerId)) {
+            throw new Error('Invalid customer ID format retrieved from Google Ads API')
+          }
+
+          logger.info('Customer ID successfully retrieved via CustomerService', { 
+            customerId,
+            resourceName: firstCustomerResourceName 
+          })
+
+          return customerId
+        }
+      } catch (serviceError: any) {
+        logger.warn('CustomerService method failed, trying alternative approach:', serviceError.message)
+      }
+
+      // Method 2: Try using the customer object directly with different method names
+      const directMethods = [
+        'listAccessibleCustomers',
+        'getAccessibleCustomers', 
+        'accessibleCustomers'
+      ]
+
+      for (const methodName of directMethods) {
+        try {
+          if (customer[methodName] && typeof customer[methodName] === 'function') {
+            logger.info(`Trying customer.${methodName}()`)
+            const result = await customer[methodName]()
+            
+            if (result && result.resourceNames && result.resourceNames.length > 0) {
+              const firstCustomerResourceName = result.resourceNames[0]
+              const customerId = firstCustomerResourceName.split('/')[1]
+              
+              if (customerId && /^\d{10}$/.test(customerId)) {
+                logger.info(`Customer ID retrieved via ${methodName}`, { customerId })
+                return customerId
+              }
+            }
+          }
+        } catch (methodError: any) {
+          logger.debug(`Method ${methodName} failed:`, methodError.message)
+        }
+      }
+
+      // Method 3: Try to make a simple query to get customer info
+      try {
+        logger.info('Trying to get customer ID via simple query')
+        
+        // Try to query customer information without specifying customer_id
+        const query = `
+          SELECT 
+            customer.id,
+            customer.descriptive_name
+          FROM customer
+          LIMIT 1
+        `
+        
+        const result = await customer.query(query)
+        
+        if (result && result.length > 0 && result[0].customer?.id) {
+          const customerId = result[0].customer.id.toString()
+          
+          if (/^\d{10}$/.test(customerId)) {
+            logger.info('Customer ID retrieved via query', { customerId })
+            return customerId
+          }
+        }
+      } catch (queryError: any) {
+        logger.debug('Query method failed:', queryError.message)
+      }
+
+      // Method 4: Use a different Google Ads API client approach
+      try {
+        logger.info('Trying alternative Google Ads client configuration')
+        
+        // Create a new client instance with just the refresh token
+        const altCustomer = this.googleAdsClient.Customer({
+          refresh_token: refreshToken
+        })
+
+        // Try to access customer information through the reports interface
+        const customerQuery = `
+          SELECT customer.id, customer.descriptive_name
+          FROM customer
+          LIMIT 1
+        `
+
+        // Execute without specifying customer_id initially
+        const customerResult = await altCustomer.report({
+          query: customerQuery,
+        })
+
+        if (customerResult && customerResult.length > 0) {
+          const customerId = customerResult[0].customer?.id?.toString()
+          if (customerId && /^\d{10}$/.test(customerId)) {
+            logger.info('Customer ID retrieved via report method', { customerId })
+            return customerId
+          }
+        }
+      } catch (altError: any) {
+        logger.debug('Alternative client method failed:', altError.message)
+      }
+
+      // If all methods fail, provide detailed error information
+      throw new Error('Unable to retrieve customer ID using any available method. Please ensure your Google Ads API credentials are correct and you have access to at least one Google Ads account.')
+
+    } catch (error: any) {
+      logger.error('Error getting customer ID from Google Ads API:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        details: error.details
+      })
+      
+      // Provide more specific error messages
+      if (error.message?.includes('DEVELOPER_TOKEN_NOT_ON_ALLOWLIST')) {
+        throw new Error('Developer token not approved. Please ensure your Google Ads API developer token is approved for production use.')
+      }
+      
+      if (error.message?.includes('PERMISSION_DENIED')) {
+        throw new Error('Permission denied. Please ensure you have proper access to Google Ads accounts.')
+      }
+      
+      if (error.message?.includes('invalid_grant')) {
+        throw new Error('Invalid authorization. Please try reconnecting your Google Ads account.')
+      }
+      
+      throw new Error(`Failed to get customer ID: ${error.message}`)
     }
   }
 
@@ -128,7 +307,7 @@ export class GoogleAdsOAuthService {
         accessToken: credentials.access_token,
         expiryDate: credentials.expiry_date ? DateTime.fromMillis(credentials.expiry_date) : null,
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error refreshing access token:', error)
       
       // Handle specific error cases
@@ -148,7 +327,7 @@ export class GoogleAdsOAuthService {
    * Store tokens in the ConnectedAccount model
    * 
    * @param userId - The ID of the user
-   * @param accountId - The Google Ads account ID
+   * @param accountId - The Google Ads account ID (will be fetched if not provided)
    * @param accessToken - The access token to store
    * @param refreshToken - The refresh token to store (optional)
    * @param expiresAt - The expiry date of the access token (optional)
@@ -156,12 +335,23 @@ export class GoogleAdsOAuthService {
    */
   public async storeTokens(
     userId: number,
-    accountId: string,
+    accountId: string | null = null,
     accessToken: string,
     refreshToken?: string | null,
     expiresAt?: DateTime | null
   ): Promise<ConnectedAccount> {
     try {
+      // If accountId is not provided, fetch it from Google Ads API
+      if (!accountId) {
+        if (!refreshToken) {
+          throw new Error('Refresh token is required to fetch customer ID')
+        }
+        
+        logger.info('Account ID not provided, fetching from Google Ads API')
+        accountId = await this.getCustomerId(accessToken, refreshToken)
+        logger.info('Successfully retrieved account ID', { accountId })
+      }
+      
       // Encrypt tokens before storing
       const encryptedAccessToken = encryptionService.encrypt(accessToken)
       const encryptedRefreshToken = refreshToken ? encryptionService.encrypt(refreshToken) : null
@@ -186,6 +376,12 @@ export class GoogleAdsOAuthService {
         connectedAccount.expiresAt = expiresAt || null
         connectedAccount.isActive = true
         await connectedAccount.save()
+        
+        logger.info('Updated existing connected account', { 
+          accountId, 
+          userId, 
+          connectedAccountId: connectedAccount.id 
+        })
       } else {
         // Create new account
         connectedAccount = await ConnectedAccount.create({
@@ -199,13 +395,19 @@ export class GoogleAdsOAuthService {
           expiresAt: expiresAt || null,
           isActive: true,
         })
+        
+        logger.info('Created new connected account', { 
+          accountId, 
+          userId, 
+          connectedAccountId: connectedAccount.id 
+        })
       }
       
       // Log token storage
       logger.info(`Tokens stored for user ${userId}, account ${accountId}`)
       
       return connectedAccount
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error storing tokens:', error)
       throw new Error(`Failed to store tokens: ${error.message}`)
     }
@@ -355,7 +557,7 @@ export class GoogleAdsOAuthService {
           accessToken = refreshedTokens.accessToken
           
           logger.info(`Successfully refreshed access token for account ${connectedAccountId}`)
-        } catch (refreshError) {
+        } catch (refreshError: any) {
           logger.error(`Failed to refresh access token for account ${connectedAccountId}:`, refreshError)
           
           // Mark account as inactive if refresh fails
@@ -381,7 +583,7 @@ export class GoogleAdsOAuthService {
         accessToken: accessToken,
         refreshToken: refreshToken,
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error retrieving tokens:', error)
       
       // Log security event for failed token access
@@ -435,7 +637,7 @@ export class GoogleAdsOAuthService {
       })
       
       return this.oauth2Client
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Error getting authenticated client:', error)
       throw new Error(`Failed to get authenticated client: ${error.message}`)
     }

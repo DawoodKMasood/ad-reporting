@@ -46,7 +46,7 @@ export default await Env.create(new URL('../', import.meta.url), {
   GOOGLE_ADS_CLIENT_ID: Env.schema.string(),
   GOOGLE_ADS_CLIENT_SECRET: Env.schema.string(),
   GOOGLE_ADS_DEVELOPER_TOKEN: Env.schema.string(),
-  GOOGLE_ADS_LOGIN_CUSTOMER_ID: Env.schema.string(),
+  GOOGLE_ADS_LOGIN_CUSTOMER_ID: Env.schema.string.optional(),
 
   /*
   |----------------------------------------------------------

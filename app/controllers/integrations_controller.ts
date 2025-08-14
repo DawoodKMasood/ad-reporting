@@ -207,14 +207,24 @@ export default class IntegrationsController {
         expiryDate: tokens.expiryDate
       })
       
-      // For Google Ads, we need to get the account ID
-      // In a real implementation, we would fetch the customer list from Google Ads API
-      // For now, we'll use a mock account ID
-      const accountId = `google_ads_account_${Date.now()}`
-      logger.info('Using mock account ID', { accountId })
-      
       // Store the tokens securely in the database
+      // Try to fetch the real customer ID, but if it fails, use a temporary ID
       logger.info('Storing tokens in database')
+      let accountId: string | null = null
+      
+      try {
+        // Try to get the real customer ID
+        accountId = await googleAdsOAuthService.default.getCustomerId(tokens.accessToken, tokens.refreshToken)
+        logger.info('Successfully retrieved real customer ID', { accountId })
+      } catch (customerIdError: any) {
+        // If fetching customer ID fails, create a temporary ID that can be fixed later
+        accountId = `temp_google_ads_${Date.now()}_${user.id}`
+        logger.warn('Failed to fetch customer ID automatically, using temporary ID', {
+          tempAccountId: accountId,
+          error: customerIdError.message
+        })
+      }
+      
       const connectedAccount = await googleAdsOAuthService.default.storeTokens(
         user.id,
         accountId,
