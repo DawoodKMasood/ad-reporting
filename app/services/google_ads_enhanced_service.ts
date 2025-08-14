@@ -6,27 +6,24 @@ import logger from '@adonisjs/core/services/logger'
 import { DateTime } from 'luxon'
 
 export class GoogleAdsEnhancedService {
-  private googleAdsClient: GoogleAdsApi
-
-  constructor() {
-    this.googleAdsClient = new GoogleAdsApi({
-      client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
-      client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
-      developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
-    })
-  }
 
   private async getCustomer(connectedAccountId: number, userId: number) {
     const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
-    const tokens = await googleAdsOAuthService.retrieveTokens(connectedAccountId, userId)
     
-    return this.googleAdsClient.Customer({
+    // Get the Google Ads client with proper authentication from OAuth service
+    const { client, refreshToken } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
+    
+    const config: any = {
       customer_id: connectedAccount.accountId,
-      refresh_token: tokens.refreshToken!,
-      login_customer_id: env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID') !== connectedAccount.accountId 
-        ? env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID') 
-        : undefined
-    })
+      refresh_token: refreshToken,
+    }
+
+    const loginCustomerId = env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID')
+    if (loginCustomerId && loginCustomerId !== connectedAccount.accountId) {
+      config.login_customer_id = loginCustomerId
+    }
+    
+    return client.Customer(config)
   }
 
   public async getCampaigns(connectedAccountId: number, userId: number) {

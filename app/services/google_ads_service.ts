@@ -1,4 +1,3 @@
-import { GoogleAdsApi, CustomerOptions, enums } from 'google-ads-api'
 import env from '#start/env'
 import ConnectedAccount from '#models/connected_account'
 import CampaignData from '#models/campaign_data'
@@ -14,12 +13,12 @@ export class GoogleAdsService {
   private async getCustomerClient(connectedAccountId: number, userId: number) {
     const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
     
-    // Get the properly configured Google Ads client and auth from the OAuth service
-    const { client, auth } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
+    // Get the properly configured Google Ads client from the OAuth service
+    const { client, refreshToken } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
     
-    const config: CustomerOptions = {
+    const config: any = {
       customer_id: connectedAccount.accountId,
-      auth: auth
+      refresh_token: refreshToken,
     }
 
     const loginCustomerId = env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID')
@@ -32,16 +31,14 @@ export class GoogleAdsService {
 
   public async getAccessibleCustomers(connectedAccountId: number, userId: number) {
     try {
-      const { client, auth } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
+      const { client, refreshToken } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
       
-      const result = await client.listAccessibleCustomers({
-        auth: auth
-      })
-      
+      const result = await client.listAccessibleCustomers(refreshToken)
+      logger.info('listAccessibleCustomers result', { result })
       return result.resource_names || []
     } catch (error: any) {
-      logger.error('Error fetching accessible customers:', error)
-      throw new Error(`Failed to fetch accessible customers: ${error.message}`)
+      logger.error('Error fetching accessible customers:', error);
+      throw new Error(`Failed to fetch accessible customers: ${error.message}`);
     }
   }
 
@@ -86,7 +83,7 @@ export class GoogleAdsService {
         query,
         page_size: 1000
       })
-
+      
       this.cache.set(cacheKey, results)
       this.cacheExpiry.set(cacheKey, DateTime.now().plus({ minutes: this.cacheTtl }))
 

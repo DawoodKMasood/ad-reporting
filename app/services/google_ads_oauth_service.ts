@@ -54,7 +54,7 @@ export class GoogleAdsOAuthService {
   public async exchangeCodeForTokens(code: string) {
     try {
       const { tokens } = await this.oauth2Client.getToken(code)
-      
+      logger.info('Code exchange successful')
       return {
         accessToken: tokens.access_token,
         refreshToken: tokens.refresh_token || null,
@@ -84,25 +84,18 @@ export class GoogleAdsOAuthService {
         throw new Error('Both access token and refresh token are required')
       }
 
-      // Set up OAuth2 client with the refresh token
-      this.oauth2Client.setCredentials({
-        access_token: accessToken,
-        refresh_token: refreshToken
-      })
-
-      // Create GoogleAdsApi client with OAuth2 authentication
+      // Create GoogleAdsApi client with only basic auth credentials
       const client = new GoogleAdsApi({
         client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
         client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
         developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
       })
 
+      logger.info('GoogleAdsApi client created with config')
       console.log('🔄 Created GoogleAdsApi client, attempting to list accessible customers...')
 
-      // Use the OAuth2 client as auth for the Google Ads API call
-      const accessibleCustomers = await client.listAccessibleCustomers({
-        auth: this.oauth2Client
-      })
+      // Call listAccessibleCustomers with refresh token as parameter
+      const accessibleCustomers = await client.listAccessibleCustomers(refreshToken)
 
       console.log('📊 listAccessibleCustomers result:', accessibleCustomers)
 
@@ -139,18 +132,33 @@ export class GoogleAdsOAuthService {
       // Provide specific error messages based on the error type
       const errorMessage = error?.message || error?.toString() || 'Unknown error'
       
+      if (errorMessage.includes('No access, refresh token, API key or refresh handler callback is set')) {
+        throw new Error(`Google Ads API authentication failed. Please ensure:
+
+1. Your Google Ads developer token is valid and approved.
+2. The OAuth2 tokens are properly configured.
+3. The Google Ads API is enabled in your Google Cloud Project.
+4. Your Google account has access to Google Ads accounts.
+
+Current configuration:
+- Developer Token: ${env.get('GOOGLE_ADS_DEVELOPER_TOKEN') ? 'Present' : 'Missing'}
+- Client ID: ${env.get('GOOGLE_ADS_CLIENT_ID') ? 'Present' : 'Missing'}
+- Client Secret: ${env.get('GOOGLE_ADS_CLIENT_SECRET') ? 'Present' : 'Missing'}
+- Access Token: ${accessToken ? 'Present' : 'Missing'}
+- Refresh Token: ${refreshToken ? 'Present' : 'Missing'}`)
+      }
+      
       if (errorMessage.includes('invalid_request') || errorMessage.includes('Getting metadata from plugin failed')) {
-        throw new Error(`Google Ads API authentication failed. This could be due to:
+        throw new Error(`Google Ads API authentication failed. This is likely due to:
 
-1. Google Ads API not enabled in your Google Cloud Project
-2. Invalid or expired OAuth2 credentials
-3. Missing Google Ads developer token permissions
-4. No Google Ads accounts associated with the authenticated user
+1. The Google Ads API not being enabled in your Google Cloud Project.
+2. Your developer token not having the necessary permissions to access the Google Ads API.
+3. Invalid or expired OAuth2 credentials.
 
-Please ensure:
-- Google Ads API is enabled in your Google Cloud Console
-- Your developer token is approved and active
-- The authenticated Google account has access to Google Ads accounts`)
+Please ensure that:
+- The Google Ads API is enabled in your Google Cloud Console.
+- Your developer token is approved and active.
+- The authenticated Google account has access to Google Ads accounts.`)
       }
       
       if (errorMessage.includes('Google Ads API has not been used in project') || 
@@ -171,7 +179,7 @@ Please ensure:
     try {
       this.oauth2Client.setCredentials({ refresh_token: refreshToken })
       const { credentials } = await this.oauth2Client.refreshAccessToken()
-      
+      logger.info('Access token refreshed')
       return {
         accessToken: credentials.access_token,
         expiryDate: credentials.expiry_date ? DateTime.fromMillis(credentials.expiry_date) : null,
@@ -212,13 +220,13 @@ Please ensure:
       
       let connectedAccount = await ConnectedAccount.query()
         .where('user_id', userId)
-        .where('platform', 'google_ads')
+        .where('platform', 'google_ads' as const)
         .where('account_id', accountId)
         .first()
       
       const accountData = {
         userId,
-        platform: 'google_ads',
+        platform: 'google_ads' as const,
         accountId,
         accessToken: encryptedAccessToken,
         refreshToken: encryptedRefreshToken,
@@ -303,24 +311,16 @@ Please ensure:
       throw new Error('Refresh token required for Google Ads API access')
     }
     
-    // Set up OAuth2 client
-    const oauthClient = new google.auth.OAuth2(
-      env.get('GOOGLE_ADS_CLIENT_ID'),
-      env.get('GOOGLE_ADS_CLIENT_SECRET')
-    )
-    
-    oauthClient.setCredentials({
-      access_token: accessToken,
-      refresh_token: refreshToken
+    // Create GoogleAdsApi client with only basic credentials
+    const client = new GoogleAdsApi({
+      client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
+      client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
+      developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
     })
     
     return {
-      client: new GoogleAdsApi({
-        client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
-        client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
-        developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
-      }),
-      auth: oauthClient
+      client,
+      refreshToken // Return refresh token to be used in Customer() calls
     }
   }
 
@@ -362,8 +362,8 @@ Please ensure:
   }
 
   private looksEncrypted(data: string): boolean {
-    return data && !data.startsWith('ya29.') && !data.startsWith('1//') && 
-           !data.includes(' ') && data.length > 100 && /^[A-Za-z0-9+/=]+$/.test(data)
+    return !!(data && !data.startsWith('ya29.') && !data.startsWith('1//') &&
+           !data.includes(' ') && data.length > 100 && /^[A-Za-z0-9+/=]+$/.test(data));
   }
 
   private generateStateParameter(userId: number): string {
