@@ -11,25 +11,11 @@
             Dashboard
           </h1>
           <p class="mt-2 text-gray-600">
-            Welcome back, {{ user.fullName }}! Here's your advertising performance overview.
+            Welcome back, {{ user.fullName }}!
           </p>
         </div>
-        
-        <!-- Account Switcher (only show if multiple Google Ads accounts) -->
-        @if(connectedAccounts && connectedAccounts.filter(account => account.platform === 'google_ads').length > 1)
-          <div class="hidden md:block">
-            @!component('components/account-switcher', { currentAccount: null })
-          </div>
-        @end
       </div>
     </div>
-
-    <!-- Multi-Account Dashboard (for Google Ads accounts) -->
-    @if(connectedAccounts && connectedAccounts.filter(account => account.platform === 'google_ads').length > 0)
-      <div class="mb-8">
-        @!component('components/multi-account-dashboard')
-      </div>
-    @end
 
     <!-- Overall Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
