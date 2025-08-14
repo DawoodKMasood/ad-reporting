@@ -1,7 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import ConnectedAccount from '#models/connected_account'
 import googleAdsService from '#services/google_ads_service'
-import googleAdsEnhancedService from '#services/google_ads_enhanced_service'
 import logger from '@adonisjs/core/services/logger'
 
 export default class GoogleAdsController {
@@ -13,7 +12,7 @@ export default class GoogleAdsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      const campaigns = await googleAdsEnhancedService.getCampaigns(connectedAccount.id, user.id)
+      const campaigns = await googleAdsService.getCampaigns(connectedAccount.id, user.id)
       
       return { success: true, data: campaigns }
     } catch (error) {
@@ -31,7 +30,7 @@ export default class GoogleAdsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      const adGroups = await googleAdsEnhancedService.getAdGroups(connectedAccount.id, user.id, campaignId)
+      const adGroups = await googleAdsService.getAdGroups(connectedAccount.id, user.id, campaignId)
       
       return { success: true, data: adGroups }
     } catch (error) {
@@ -49,7 +48,7 @@ export default class GoogleAdsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      const keywords = await googleAdsEnhancedService.getKeywords(connectedAccount.id, user.id, adGroupId)
+      const keywords = await googleAdsService.getKeywords(connectedAccount.id, user.id, adGroupId)
       
       return { success: true, data: keywords }
     } catch (error) {
@@ -67,7 +66,7 @@ export default class GoogleAdsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      const ads = await googleAdsEnhancedService.getAds(connectedAccount.id, user.id, adGroupId)
+      const ads = await googleAdsService.getAds(connectedAccount.id, user.id, adGroupId)
       
       return { success: true, data: ads }
     } catch (error) {
@@ -84,7 +83,7 @@ export default class GoogleAdsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      const searchTerms = await googleAdsEnhancedService.getSearchTerms(connectedAccount.id, user.id)
+      const searchTerms = await googleAdsService.getSearchTerms(connectedAccount.id, user.id)
       
       return { success: true, data: searchTerms }
     } catch (error) {
@@ -102,9 +101,9 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const [ageRanges, genders, locations] = await Promise.all([
-        googleAdsEnhancedService.getAudienceInsights(connectedAccount.id, user.id),
-        googleAdsEnhancedService.getGenderInsights(connectedAccount.id, user.id),
-        googleAdsEnhancedService.getLocationInsights(connectedAccount.id, user.id)
+        googleAdsService.getAudienceInsights(connectedAccount.id, user.id),
+        googleAdsService.getGenderInsights(connectedAccount.id, user.id),
+        googleAdsService.getLocationInsights(connectedAccount.id, user.id)
       ])
       
       return { 
@@ -131,7 +130,7 @@ export default class GoogleAdsController {
 
       const { name, budgetMicros, advertisingChannelType, biddingStrategy } = request.body()
 
-      const result = await googleAdsEnhancedService.createCampaign(connectedAccount.id, user.id, {
+      const result = await googleAdsService.createCampaign(connectedAccount.id, user.id, {
         name,
         budgetMicros,
         advertisingChannelType,
@@ -155,7 +154,7 @@ export default class GoogleAdsController {
 
       const { campaignId, name, cpcBidMicros } = request.body()
 
-      const result = await googleAdsEnhancedService.createAdGroup(connectedAccount.id, user.id, campaignId, {
+      const result = await googleAdsService.createAdGroup(connectedAccount.id, user.id, campaignId, {
         name,
         cpcBidMicros
       })
@@ -177,7 +176,7 @@ export default class GoogleAdsController {
 
       const { adGroupId, keywords } = request.body()
 
-      const result = await googleAdsEnhancedService.addKeywords(connectedAccount.id, user.id, adGroupId, keywords)
+      const result = await googleAdsService.addKeywords(connectedAccount.id, user.id, adGroupId, keywords)
       
       return { success: true, data: result }
     } catch (error) {
@@ -196,7 +195,7 @@ export default class GoogleAdsController {
 
       const { adGroupId, headline1, headline2, description, finalUrls } = request.body()
 
-      const result = await googleAdsEnhancedService.createTextAd(connectedAccount.id, user.id, adGroupId, {
+      const result = await googleAdsService.createTextAd(connectedAccount.id, user.id, adGroupId, {
         headline1,
         headline2,
         description,
@@ -220,7 +219,7 @@ export default class GoogleAdsController {
 
       const { campaignId, status } = request.body()
 
-      const result = await googleAdsEnhancedService.updateCampaignStatus(connectedAccount.id, user.id, campaignId, status)
+      const result = await googleAdsService.updateCampaignStatus(connectedAccount.id, user.id, campaignId, status)
       
       return { success: true, data: result }
     } catch (error) {
@@ -237,7 +236,7 @@ export default class GoogleAdsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      const hierarchy = await googleAdsEnhancedService.getAccountHierarchy(connectedAccount.id, user.id)
+      const hierarchy = await googleAdsService.getAccountHierarchy(connectedAccount.id, user.id)
       
       return { success: true, data: hierarchy }
     } catch (error) {
@@ -254,7 +253,7 @@ export default class GoogleAdsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      const strategies = await googleAdsEnhancedService.getBiddingStrategies(connectedAccount.id, user.id)
+      const strategies = await googleAdsService.getBiddingStrategies(connectedAccount.id, user.id)
       
       return { success: true, data: strategies }
     } catch (error) {
@@ -271,7 +270,7 @@ export default class GoogleAdsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      const extensions = await googleAdsEnhancedService.getExtensions(connectedAccount.id, user.id)
+      const extensions = await googleAdsService.getExtensions(connectedAccount.id, user.id)
       
       return { success: true, data: extensions }
     } catch (error) {
@@ -288,7 +287,7 @@ export default class GoogleAdsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      const conversions = await googleAdsEnhancedService.getConversionActions(connectedAccount.id, user.id)
+      const conversions = await googleAdsService.getConversionActions(connectedAccount.id, user.id)
       
       return { success: true, data: conversions }
     } catch (error) {
