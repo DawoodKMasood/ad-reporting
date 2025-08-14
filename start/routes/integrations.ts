@@ -26,12 +26,6 @@ router
     // Fix temporary account IDs
     router.post('/fix-temporary-ids', [IntegrationsController, 'fixTemporaryIds']).as('integrations.fix_temporary_ids')
     
-    // Account management routes (for fixing mock accounts)
-    router.post('/fix-mock-accounts', [AccountManagementController, 'fixMockAccounts']).as('integrations.fix_mock_accounts')
-    router.post('/delete-mock-accounts', [AccountManagementController, 'deleteMockAccounts']).as('integrations.delete_mock_accounts')
-    router.get('/list-accounts', [AccountManagementController, 'listAccounts']).as('integrations.list_accounts')
-    router.post('/set-customer-id', [AccountManagementController, 'setCustomerId']).as('integrations.set_customer_id')
-    router.post('/try-auto-fetch-customer-id', [AccountManagementController, 'tryAutoFetchCustomerId']).as('integrations.try_auto_fetch_customer_id')
   })
   .prefix('/integrations')
   .middleware([middleware.auth()])
