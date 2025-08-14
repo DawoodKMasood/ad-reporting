@@ -130,6 +130,16 @@ export class GoogleAdsOAuthService {
       }
     } catch (error) {
       logger.error('Error refreshing access token:', error)
+      
+      // Handle specific error cases
+      if (error.message?.includes('invalid_grant')) {
+        throw new Error('The refresh token has expired or been revoked. Please reconnect your Google Ads account.')
+      }
+      
+      if (error.message?.includes('invalid_client')) {
+        throw new Error('Invalid client credentials. Please check your Google Ads API configuration.')
+      }
+      
       throw new Error(`Failed to refresh access token: ${error.message}`)
     }
   }
@@ -271,6 +281,7 @@ export class GoogleAdsOAuthService {
 
   /**
    * Retrieve and decrypt tokens from the ConnectedAccount model
+   * Automatically refreshes expired tokens if refresh token is available
    * 
    * @param connectedAccountId - The ID of the connected account
    * @param userId - The ID of the user requesting the tokens (for rate limiting)
@@ -293,25 +304,67 @@ export class GoogleAdsOAuthService {
       
       // Check if tokens exist
       if (!connectedAccount.accessToken) {
-        throw new Error('No access token found for this account')
-      }
-      
-      // Check if access token is expired
-      if (connectedAccount.isTokenExpired) {
-        logger.warn(`Access token expired for account ${connectedAccountId}`)
-        throw new Error('Access token has expired')
+        throw new Error('No access token found for this account. Please reconnect your Google Ads account.')
       }
       
       // Check if access token is revoked
       if (connectedAccount.accessTokenHash && this.isTokenRevoked(connectedAccount.accessTokenHash)) {
         logger.warn(`Access token revoked for account ${connectedAccountId}`)
-        throw new Error('Access token has been revoked')
+        throw new Error('Access token has been revoked. Please reconnect your Google Ads account.')
       }
       
-      // Decrypt tokens
-      const accessToken = encryptionService.decrypt(connectedAccount.accessToken)
-      const refreshToken = connectedAccount.refreshToken ? 
-        encryptionService.decrypt(connectedAccount.refreshToken) : null
+      // The model hooks should have already decrypted the tokens
+      let accessToken = connectedAccount.accessToken
+      let refreshToken = connectedAccount.refreshToken
+      
+      // If tokens appear to still be encrypted, decrypt them manually
+      try {
+        if (this.looksEncrypted(accessToken)) {
+          accessToken = encryptionService.decrypt(accessToken)
+        }
+        if (refreshToken && this.looksEncrypted(refreshToken)) {
+          refreshToken = encryptionService.decrypt(refreshToken)
+        }
+      } catch (decryptError) {
+        logger.error('Error decrypting tokens manually:', decryptError)
+        throw new Error('Failed to decrypt stored tokens. Please reconnect your Google Ads account.')
+      }
+      
+      // Check if access token is expired and refresh if possible
+      if (connectedAccount.isTokenExpired) {
+        logger.info(`Access token expired for account ${connectedAccountId}, attempting to refresh`)
+        
+        if (!refreshToken) {
+          throw new Error('Access token has expired and no refresh token is available. Please reconnect your Google Ads account.')
+        }
+        
+        try {
+          // Refresh the access token
+          const refreshedTokens = await this.refreshAccessToken(refreshToken)
+          
+          // Store the new tokens
+          await this.storeTokens(
+            connectedAccount.userId,
+            connectedAccount.accountId,
+            refreshedTokens.accessToken,
+            refreshToken,
+            refreshedTokens.expiryDate
+          )
+          
+          // Use the new access token
+          accessToken = refreshedTokens.accessToken
+          
+          logger.info(`Successfully refreshed access token for account ${connectedAccountId}`)
+        } catch (refreshError) {
+          logger.error(`Failed to refresh access token for account ${connectedAccountId}:`, refreshError)
+          
+          // Mark account as inactive if refresh fails
+          connectedAccount.isActive = false
+          await connectedAccount.save()
+          
+          throw new Error(`Access token has expired and refresh failed: ${refreshError.message}`)
+        }
+      }
       
       // Log token retrieval
       logger.info(`Tokens retrieved for account ${connectedAccountId}`)
@@ -344,6 +397,26 @@ export class GoogleAdsOAuthService {
   }
 
   /**
+   * Check if a string looks like encrypted data
+   * 
+   * @param data - The data to check
+   * @returns True if data appears to be encrypted
+   */
+  private looksEncrypted(data: string): boolean {
+    if (!data) return false
+    
+    // Base64 encoded encrypted data characteristics:
+    // - Only contains base64 characters
+    // - Longer than typical tokens
+    // - Doesn't start with known Google token prefixes
+    return !data.startsWith('ya29.') && 
+           !data.startsWith('1//') && 
+           !data.includes(' ') && 
+           data.length > 100 &&
+           /^[A-Za-z0-9+/=]+$/.test(data)
+  }
+
+  /**
    * Get OAuth2 client with credentials set
    * 
    * @param connectedAccountId - The ID of the connected account
@@ -352,7 +425,7 @@ export class GoogleAdsOAuthService {
    */
   public async getAuthenticatedClient(connectedAccountId: number, userId?: number): Promise<any> {
     try {
-      // Retrieve tokens
+      // Retrieve tokens (will auto-refresh if expired)
       const { accessToken, refreshToken } = await this.retrieveTokens(connectedAccountId, userId)
       
       // Set credentials

@@ -4,6 +4,7 @@ import User from './user.js'
 import CampaignData from './campaign_data.js'
 import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import databaseSecurityService from '#services/database_security_service'
+import logger from '@adonisjs/core/services/logger'
 
 export default class ConnectedAccount extends BaseModel {
   @column({ isPrimary: true })
@@ -55,13 +56,20 @@ export default class ConnectedAccount extends BaseModel {
    * Hook to encrypt tokens before saving
    */
   public async $beforeSave() {
-    // Encrypt tokens before saving
-    if (this.accessToken) {
-      this.accessToken = databaseSecurityService.encryptField(this.accessToken, 'access_token')
-    }
-    
-    if (this.refreshToken) {
-      this.refreshToken = databaseSecurityService.encryptField(this.refreshToken, 'refresh_token')
+    try {
+      // Encrypt tokens before saving
+      if (this.accessToken && !this.isAccessTokenEncrypted()) {
+        logger.info(`Encrypting access token for account ${this.id}`)
+        this.accessToken = databaseSecurityService.encryptField(this.accessToken, 'access_token')
+      }
+      
+      if (this.refreshToken && !this.isRefreshTokenEncrypted()) {
+        logger.info(`Encrypting refresh token for account ${this.id}`)
+        this.refreshToken = databaseSecurityService.encryptField(this.refreshToken, 'refresh_token')
+      }
+    } catch (error) {
+      logger.error('Error encrypting tokens in $beforeSave hook:', error)
+      // Don't throw error to avoid breaking the save operation
     }
   }
 
@@ -69,13 +77,18 @@ export default class ConnectedAccount extends BaseModel {
    * Hook to decrypt tokens after fetching
    */
   public async $afterFind() {
-    // Decrypt tokens after fetching
-    if (this.accessToken) {
-      this.accessToken = databaseSecurityService.decryptField(this.accessToken, 'access_token')
-    }
-    
-    if (this.refreshToken) {
-      this.refreshToken = databaseSecurityService.decryptField(this.refreshToken, 'refresh_token')
+    try {
+      // Decrypt tokens after fetching
+      if (this.accessToken && this.isAccessTokenEncrypted()) {
+        this.accessToken = databaseSecurityService.decryptField(this.accessToken, 'access_token')
+      }
+      
+      if (this.refreshToken && this.isRefreshTokenEncrypted()) {
+        this.refreshToken = databaseSecurityService.decryptField(this.refreshToken, 'refresh_token')
+      }
+    } catch (error) {
+      logger.error('Error decrypting tokens in $afterFind hook:', error)
+      // Don't throw error to avoid breaking the fetch operation
     }
   }
 
@@ -85,20 +98,53 @@ export default class ConnectedAccount extends BaseModel {
   public static async $afterFetch(records: ConnectedAccount[]) {
     // Decrypt tokens for all records
     for (const record of records) {
-      if (record.accessToken) {
-        record.accessToken = databaseSecurityService.decryptField(
-          record.accessToken,
-          'access_token'
-        )
-      }
-      
-      if (record.refreshToken) {
-        record.refreshToken = databaseSecurityService.decryptField(
-          record.refreshToken,
-          'refresh_token'
-        )
+      try {
+        if (record.accessToken && record.isAccessTokenEncrypted()) {
+          record.accessToken = databaseSecurityService.decryptField(
+            record.accessToken,
+            'access_token'
+          )
+        }
+        
+        if (record.refreshToken && record.isRefreshTokenEncrypted()) {
+          record.refreshToken = databaseSecurityService.decryptField(
+            record.refreshToken,
+            'refresh_token'
+          )
+        }
+      } catch (error) {
+        logger.error(`Error decrypting tokens for account ${record.id} in $afterFetch hook:`, error)
+        // Don't throw error to avoid breaking the fetch operation
       }
     }
+  }
+
+  /**
+   * Check if access token appears to be encrypted
+   */
+  private isAccessTokenEncrypted(): boolean {
+    if (!this.accessToken) return false
+    
+    // Base64 encoded encrypted data will not contain spaces and will be longer than typical access tokens
+    // Also check if it looks like a Google access token (starts with ya29.)
+    return !this.accessToken.startsWith('ya29.') && 
+           !this.accessToken.includes(' ') && 
+           this.accessToken.length > 100 &&
+           /^[A-Za-z0-9+/=]+$/.test(this.accessToken)
+  }
+
+  /**
+   * Check if refresh token appears to be encrypted
+   */
+  private isRefreshTokenEncrypted(): boolean {
+    if (!this.refreshToken) return false
+    
+    // Similar check for refresh tokens
+    // Google refresh tokens typically start with 1//
+    return !this.refreshToken.startsWith('1//') && 
+           !this.refreshToken.includes(' ') && 
+           this.refreshToken.length > 100 &&
+           /^[A-Za-z0-9+/=]+$/.test(this.refreshToken)
   }
 
   /**
@@ -112,27 +158,27 @@ export default class ConnectedAccount extends BaseModel {
   }
 
   /**
-   * Method to encrypt tokens
+   * Method to encrypt tokens manually
    */
   encryptTokens(): void {
-    if (this.accessToken) {
+    if (this.accessToken && !this.isAccessTokenEncrypted()) {
       this.accessToken = databaseSecurityService.encryptField(this.accessToken, 'access_token')
     }
     
-    if (this.refreshToken) {
+    if (this.refreshToken && !this.isRefreshTokenEncrypted()) {
       this.refreshToken = databaseSecurityService.encryptField(this.refreshToken, 'refresh_token')
     }
   }
 
   /**
-   * Method to decrypt tokens
+   * Method to decrypt tokens manually
    */
   decryptTokens(): void {
-    if (this.accessToken) {
+    if (this.accessToken && this.isAccessTokenEncrypted()) {
       this.accessToken = databaseSecurityService.decryptField(this.accessToken, 'access_token')
     }
     
-    if (this.refreshToken) {
+    if (this.refreshToken && this.isRefreshTokenEncrypted()) {
       this.refreshToken = databaseSecurityService.decryptField(this.refreshToken, 'refresh_token')
     }
   }

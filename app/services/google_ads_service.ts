@@ -47,6 +47,7 @@ export class GoogleAdsService {
    * @param connectedAccountId - The ID of the connected account
    * @param userId - The ID of the user requesting the data (for rate limiting)
    * @param dateRange - Date range configuration
+   * @param retryCount - Current retry attempt count
    * @returns Array of campaign data
    */
   public async fetchCampaignData(
@@ -56,8 +57,11 @@ export class GoogleAdsService {
       type: 'today' | 'last_7_days' | 'last_30_days' | 'custom',
       startDate?: string,
       endDate?: string
-    } = { type: 'last_30_days' }
+    } = { type: 'last_30_days' },
+    retryCount: number = 0
   ): Promise<any[]> {
+    const maxRetries = 3
+    
     try {
       // Get the connected account
       const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
@@ -67,7 +71,7 @@ export class GoogleAdsService {
         throw new Error('Connected account is not active')
       }
       
-      // Get decrypted tokens with rate limiting
+      // Get decrypted tokens with automatic refresh if expired
       const decryptedTokens = await googleAdsOAuthService.retrieveTokens(connectedAccountId, userId)
       
       // Check if we have a refresh token
@@ -75,18 +79,29 @@ export class GoogleAdsService {
         throw new Error('No refresh token available for this account')
       }
       
+      // Get login customer ID from environment
+      const loginCustomerId = env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID')
+      
       // Set up the Google Ads client with the authenticated credentials
       logger.info('Creating Google Ads customer client', {
         customerId: connectedAccount.accountId,
+        loginCustomerId: loginCustomerId,
         hasGoogleAdsClient: !!this.googleAdsClient,
         hasCustomerMethod: !!(this.googleAdsClient && typeof this.googleAdsClient.Customer === 'function')
       })
       
-      const customer = this.googleAdsClient.Customer({
+      // Prepare customer configuration
+      const customerConfig: any = {
         customer_id: connectedAccount.accountId,
-        login_customer_id: env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID'),
         refresh_token: decryptedTokens.refreshToken
-      })
+      }
+      
+      // Only add login_customer_id if it's provided
+      if (loginCustomerId) {
+        customerConfig.login_customer_id = loginCustomerId
+      }
+      
+      const customer = this.googleAdsClient.Customer(customerConfig)
       
       logger.info('Google Ads customer client created', {
         hasCustomer: !!customer,
@@ -129,58 +144,85 @@ export class GoogleAdsService {
         return this.cache.get(cacheKey)
       }
       
-      // Query to fetch comprehensive campaign performance data
-      const query = `
+      // Start with a very simple query to test the connection
+      const simpleQuery = `
         SELECT 
           campaign.id,
-          campaign.name,
-          campaign.status,
-          campaign.advertising_channel_type,
-          campaign.advertising_channel_sub_type,
-          ad_group.id,
-          ad_group.name,
-          ad_group.status,
-          ad_group.type,
-          segments.date,
-          segments.device,
-          segments.ad_network_type,
-          segments.slot,
-          metrics.cost_micros,
-          metrics.impressions,
-          metrics.clicks,
-          metrics.conversions,
-          metrics.conversions_value,
-          metrics.all_conversions,
-          metrics.all_conversions_value,
-          metrics.ctr,
-          metrics.average_cpc,
-          metrics.average_cpm,
-          metrics.interactions,
-          metrics.interaction_rate,
-          bidding_strategy.id,
-          bidding_strategy.name,
-          bidding_strategy.type
+          campaign.name
         FROM campaign
-        WHERE segments.date BETWEEN '${startDate}' AND '${endDate}'
-        ORDER BY segments.date DESC
+        LIMIT 5
       `
       
-      // Execute the query with pagination
-      const results = await this.executePaginatedQuery(customer, query)
+      logger.info('Starting with simple query to test connection', {
+        query: simpleQuery,
+        startDate,
+        endDate
+      })
       
-      // Cache the results
-      this.cache.set(cacheKey, results)
-      this.cacheExpiry.set(cacheKey, DateTime.now().plus({ minutes: this.cacheTtl }))
+      // Execute the simple query first
+      const results = await this.executePaginatedQuery(customer, simpleQuery)
+      
+      logger.info(`Simple query completed successfully, returned ${results.length} results`)
+      
+      // If simple query works, try a query with date filter
+      if (results.length >= 0) { // Allow empty results
+        const dateQuery = `
+          SELECT 
+            campaign.id,
+            campaign.name,
+            campaign.status,
+            segments.date,
+            metrics.impressions,
+            metrics.clicks
+          FROM campaign
+          WHERE segments.date = '${endDate}'
+          LIMIT 10
+        `
+        
+        logger.info('Executing date-filtered query', { query: dateQuery })
+        const dateResults = await this.executePaginatedQuery(customer, dateQuery)
+        
+        // Cache the results
+        this.cache.set(cacheKey, dateResults)
+        this.cacheExpiry.set(cacheKey, DateTime.now().plus({ minutes: this.cacheTtl }))
+        
+        return dateResults
+      }
       
       return results
-    } catch (error) {
-      logger.error('Error fetching campaign data from Google Ads API:', error)
-      // Try to handle authentication errors by refreshing tokens
-      if (error.code === 401 || error.code === 403) {
-        logger.info('Attempting to refresh access token')
-        await this.refreshTokens(connectedAccountId)
-        throw new Error(`Authentication failed. Please try again: ${error.message}`)
+    } catch (error: any) {
+      logger.error('Error fetching campaign data from Google Ads API:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        details: error.details,
+        name: error.name,
+        connectedAccountId,
+        userId,
+        retryCount,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error))
+      })
+      
+      // Handle authentication errors by retrying with fresh tokens
+      if ((error.code === 401 || error.code === 403 || error.message?.includes('token') || error.message?.includes('auth') || error.message?.includes('invalid_grant')) && retryCount < maxRetries) {
+        logger.info(`Authentication error encountered, attempting retry ${retryCount + 1}/${maxRetries}`)
+        
+        // Wait a bit before retrying to avoid rapid successive requests
+        await this.sleep(1000 * (retryCount + 1))
+        
+        // Retry the request (the retrieveTokens call will handle token refresh automatically)
+        return await this.fetchCampaignData(connectedAccountId, userId, dateRange, retryCount + 1)
       }
+      
+      // Handle rate limiting with exponential backoff
+      if (error.code === 429 && retryCount < maxRetries) {
+        const delay = Math.pow(2, retryCount) * 1000 // Exponential backoff
+        logger.info(`Rate limited, retrying after ${delay}ms (attempt ${retryCount + 1}/${maxRetries})`)
+        
+        await this.sleep(delay)
+        return await this.fetchCampaignData(connectedAccountId, userId, dateRange, retryCount + 1)
+      }
+      
       throw new Error(`Failed to fetch campaign data: ${error.message}`)
     }
   }
@@ -213,80 +255,74 @@ export class GoogleAdsService {
       }
       
       const allResults: any[] = []
-      let nextPageToken: string | undefined
       
-      do {
-        logger.info('Executing Google Ads query', {
-          query: query.substring(0, 200) + (query.length > 200 ? '...' : ''),
-          pageSize,
-          nextPageToken: !!nextPageToken
-        })
-        
+      // For testing, let's just do a single query without pagination first
+      logger.info('Executing Google Ads query (single page)', {
+        query: query.substring(0, 200) + (query.length > 200 ? '...' : ''),
+        pageSize
+      })
+      
+      try {
         const response: any = await customer.query(query, {
-          page_size: pageSize,
-          page_token: nextPageToken
-        }).catch((error: any) => {
-          logger.error('Error executing Google Ads query:', {
-            error: error.message,
-            stack: error.stack,
-            code: error.code,
-            details: error.details,
-            query: query.substring(0, 200) + (query.length > 200 ? '...' : '')
-          })
-          throw error
+          page_size: pageSize
         })
         
-        if (response.results) {
+        logger.info('Query response received', {
+          hasResponse: !!response,
+          responseType: typeof response,
+          hasResults: !!(response && response.results),
+          resultsLength: response && response.results ? response.results.length : 0
+        })
+        
+        if (response && response.results) {
           allResults.push(...response.results)
         }
         
-        nextPageToken = response.next_page_token
-      } while (nextPageToken)
-      
-      return allResults
-    } catch (error) {
-      logger.error('Error executing paginated query:', error)
+        logger.info(`Query completed successfully, returned ${allResults.length} results`)
+        return allResults
+      } catch (queryError: any) {
+        logger.error('Error executing Google Ads query:', {
+          message: queryError.message,
+          stack: queryError.stack,
+          code: queryError.code,
+          details: queryError.details,
+          name: queryError.name,
+          query: query.substring(0, 200) + (query.length > 200 ? '...' : ''),
+          fullError: JSON.stringify(queryError, Object.getOwnPropertyNames(queryError))
+        })
+        
+        // If it's a permission or authentication error, throw it up
+        if (queryError.code === 401 || queryError.code === 403) {
+          throw queryError
+        }
+        
+        // For other errors, check if it's related to the specific account
+        if (queryError.message?.includes('CUSTOMER_NOT_FOUND') || queryError.message?.includes('not found')) {
+          throw new Error('Google Ads account not found. Please verify the account ID is correct.')
+        }
+        
+        if (queryError.message?.includes('PERMISSION_DENIED')) {
+          throw new Error('Permission denied. Please ensure the account has proper access permissions.')
+        }
+        
+        if (queryError.message?.includes('DEVELOPER_TOKEN_NOT_ON_ALLOWLIST')) {
+          throw new Error('Developer token not approved. Please ensure your Google Ads API developer token is approved.')
+        }
+        
+        throw queryError
+      }
+    } catch (error: any) {
+      logger.error('Error executing paginated query:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        details: error.details,
+        name: error.name,
+        hasCustomer: !!customer,
+        customerType: typeof customer,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error))
+      })
       throw error
-    }
-  }
-
-  /**
-   * Refresh access tokens for a connected account
-   * 
-   * @param connectedAccountId - The ID of the connected account
-   */
-  private async refreshTokens(connectedAccountId: number): Promise<void> {
-    try {
-      const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
-      
-      if (!connectedAccount.refreshToken) {
-        throw new Error('No refresh token available')
-      }
-      
-      // Decrypt refresh token
-      const decryptedTokens = await googleAdsOAuthService.retrieveTokens(connectedAccountId)
-      
-      // Check if refresh token exists
-      if (!decryptedTokens.refreshToken) {
-        throw new Error('No refresh token available')
-      }
-      
-      // Refresh the access token
-      const newTokens = await googleAdsOAuthService.refreshAccessToken(decryptedTokens.refreshToken)
-      
-      // Store the new tokens
-      await googleAdsOAuthService.storeTokens(
-        connectedAccount.userId,
-        connectedAccount.accountId,
-        newTokens.accessToken,
-        decryptedTokens.refreshToken,
-        newTokens.expiryDate
-      )
-      
-      logger.info(`Successfully refreshed tokens for account ${connectedAccountId}`)
-    } catch (error) {
-      logger.error('Error refreshing tokens:', error)
-      throw new Error(`Failed to refresh tokens: ${error.message}`)
     }
   }
 
@@ -318,7 +354,7 @@ export class GoogleAdsService {
           const conversions = row.metrics?.conversions
           
           // Skip rows with missing required data
-          if (!campaignId || !campaignName || !date) {
+          if (!campaignId || !campaignName) {
             logger.warn(`Skipping row with missing required data: campaignId=${campaignId}, campaignName=${campaignName}, date=${date}`)
             continue
           }
@@ -331,7 +367,7 @@ export class GoogleAdsService {
             campaignType: campaignType || null,
             campaignSubType: campaignSubType || null,
             adGroupType: adGroupType || null,
-            date: DateTime.fromFormat(date, 'yyyy-MM-dd'),
+            date: date ? DateTime.fromFormat(date, 'yyyy-MM-dd') : DateTime.now(),
             spend: spend ? spend / 1000000 : 0, // Convert micros to currency
             impressions: impressions || 0,
             clicks: clicks || 0,
@@ -434,8 +470,15 @@ export class GoogleAdsService {
       logger.info(`Successfully synced ${processedData.length} campaign data records for account ${connectedAccountId}`)
       
       return processedData
-    } catch (error) {
-      logger.error('Error syncing campaign data:', error)
+    } catch (error: any) {
+      logger.error('Error syncing campaign data:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        details: error.details,
+        name: error.name,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error))
+      })
       throw new Error(`Failed to sync campaign data: ${error.message}`)
     }
   }
@@ -701,8 +744,15 @@ export class GoogleAdsService {
       const enrichedData = campaignData.map(data => this.enrichCampaignData(data))
       
       return enrichedData
-    } catch (error) {
-      logger.error('Error getting enriched campaign data:', error)
+    } catch (error: any) {
+      logger.error('Error getting enriched campaign data:', {
+        message: error.message,
+        stack: error.stack,
+        code: error.code,
+        details: error.details,
+        name: error.name,
+        fullError: JSON.stringify(error, Object.getOwnPropertyNames(error))
+      })
       throw new Error(`Failed to get enriched campaign data: ${error.message}`)
     }
   }

@@ -12,6 +12,8 @@ export class DatabaseSecurityService {
   // Fields that should be encrypted at the database level
   private static readonly ENCRYPTED_FIELDS: string[] = [
     'campaign_name',
+    'access_token',
+    'refresh_token',
     // Add other sensitive fields as needed
   ]
   
