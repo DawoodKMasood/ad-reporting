@@ -51,8 +51,8 @@ export class GoogleAdsService {
   private async validateAndFixAccountId(connectedAccountId: number, userId: number): Promise<ConnectedAccount> {
     const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
     
-    // Check if this is a mock account ID (contains "google_ads_account_" prefix)
-    if (connectedAccount.accountId.startsWith('google_ads_account_')) {
+    // Check if this is a mock account ID (contains "google_ads_account_" or "temp_google_ads_" prefix)
+    if (connectedAccount.accountId.startsWith('google_ads_account_') || connectedAccount.accountId.startsWith('temp_google_ads_')) {
       logger.info('Detected mock account ID, fetching real customer ID', {
         mockAccountId: connectedAccount.accountId,
         connectedAccountId
@@ -83,6 +83,7 @@ export class GoogleAdsService {
         
         logger.info('Updated connected account with real customer ID', {
           connectedAccountId,
+          oldAccountId: connectedAccount.accountId,
           newAccountId: realCustomerId
         })
       } catch (error: any) {
@@ -91,13 +92,25 @@ export class GoogleAdsService {
           connectedAccountId,
           accountId: connectedAccount.accountId
         })
-        throw new Error(`Failed to fetch real customer ID: ${error.message}`)
+        
+        // If we can't fetch the customer ID, the account is unusable
+        // Mark it as inactive and throw an error
+        connectedAccount.isActive = false
+        await connectedAccount.save()
+        
+        throw new Error(`Failed to fetch real customer ID: ${error.message}. The account has been marked as inactive. Please reconnect your Google Ads account.`)
       }
     }
     
     // Validate customer ID format (should be 10 digits)
     if (!/^\d{10}$/.test(connectedAccount.accountId)) {
-      throw new Error(`Invalid customer ID format: ${connectedAccount.accountId}. Must be 10 digits.`)
+      // Check if it's still a temporary ID that we couldn't fix
+      if (connectedAccount.accountId.startsWith('temp_google_ads_') || 
+          connectedAccount.accountId.startsWith('google_ads_account_')) {
+        throw new Error(`Your Google Ads account still has a temporary ID (${connectedAccount.accountId}). This usually means we couldn't retrieve your real customer ID during setup. Please disconnect and reconnect your Google Ads account, or contact support if the problem persists.`)
+      }
+      
+      throw new Error(`Invalid customer ID format: ${connectedAccount.accountId}. Expected a 10-digit number, but got: ${connectedAccount.accountId}. Please disconnect and reconnect your Google Ads account.`)
     }
     
     return connectedAccount
@@ -820,6 +833,106 @@ export class GoogleAdsService {
         return 'App'
       default:
         return 'Other'
+    }
+  }
+
+  /**
+   * Fix all connected accounts with temporary or mock account IDs
+   * 
+   * This method finds all accounts with temporary or mock IDs and attempts to
+   * fetch their real customer IDs from the Google Ads API.
+   * 
+   * @returns Array of results for each fixed account
+   */
+  public async fixAllTemporaryAccountIds(): Promise<Array<{
+    connectedAccountId: number;
+    oldAccountId: string;
+    newAccountId: string | null;
+    success: boolean;
+    error?: string;
+  }>> {
+    try {
+      logger.info('Starting to fix all temporary account IDs')
+      
+      // Find all connected accounts with temporary or mock IDs
+      const accountsToFix = await ConnectedAccount.query()
+        .where('platform', 'google_ads')
+        .where(builder => {
+          builder
+            .where('account_id', 'like', 'temp_google_ads_%')
+            .orWhere('account_id', 'like', 'google_ads_account_%')
+        })
+        .where('is_active', true)
+      
+      logger.info(`Found ${accountsToFix.length} accounts with temporary IDs to fix`)
+      
+      const results: Array<{
+        connectedAccountId: number;
+        oldAccountId: string;
+        newAccountId: string | null;
+        success: boolean;
+        error?: string;
+      }> = []
+      
+      for (const account of accountsToFix) {
+        try {
+          logger.info(`Fixing account ${account.id} with ID ${account.accountId}`)
+          
+          // Get tokens to fetch real customer ID
+          const decryptedTokens = await googleAdsOAuthService.retrieveTokens(account.id, account.userId)
+          
+          if (!decryptedTokens.refreshToken) {
+            throw new Error('No refresh token available')
+          }
+          
+          // Fetch the real customer ID
+          const realCustomerId = await googleAdsOAuthService.getCustomerId(
+            decryptedTokens.accessToken, 
+            decryptedTokens.refreshToken
+          )
+          
+          // Update the account with real customer ID
+          const oldAccountId = account.accountId
+          account.accountId = realCustomerId
+          await account.save()
+          
+          results.push({
+            connectedAccountId: account.id,
+            oldAccountId,
+            newAccountId: realCustomerId,
+            success: true
+          })
+          
+          logger.info(`Successfully fixed account ${account.id}`, {
+            oldAccountId,
+            newAccountId: realCustomerId
+          })
+        } catch (error: any) {
+          logger.error(`Failed to fix account ${account.id}`, {
+            error: error.message,
+            accountId: account.accountId
+          })
+          
+          // Mark account as inactive if we can't fix it
+          account.isActive = false
+          await account.save()
+          
+          results.push({
+            connectedAccountId: account.id,
+            oldAccountId: account.accountId,
+            newAccountId: null,
+            success: false,
+            error: error.message
+          })
+        }
+      }
+      
+      logger.info(`Finished fixing temporary account IDs. Fixed: ${results.filter(r => r.success).length}, Failed: ${results.filter(r => !r.success).length}`)
+      
+      return results
+    } catch (error: any) {
+      logger.error('Error fixing temporary account IDs:', error)
+      throw new Error(`Failed to fix temporary account IDs: ${error.message}`)
     }
   }
 

@@ -130,162 +130,182 @@ export class GoogleAdsOAuthService {
     try {
       logger.info('Attempting to get customer ID from Google Ads API')
       
+      // Validate input tokens
+      if (!accessToken || !refreshToken) {
+        throw new Error('Both access token and refresh token are required to fetch customer ID')
+      }
+      
       // Create a Google Ads customer client without specifying customer_id for listing
       const customer = this.googleAdsClient.Customer({
         refresh_token: refreshToken
       })
 
-      // Use the CustomerService to list accessible customers
-      logger.info('Getting customer service from Google Ads client')
+      // Method 1: Try to get accessible customers using the listAccessibleCustomers method
+      logger.info('Attempting to list accessible customers')
       
       try {
-        // Method 1: Try to get accessible customers using the customer service
-        const customerService = customer.service.CustomerService
+        const accessibleCustomers = await customer.listAccessibleCustomers()
         
+        logger.info('Retrieved accessible customers', {
+          count: accessibleCustomers.resourceNames?.length || 0,
+          customers: accessibleCustomers.resourceNames
+        })
+
+        if (!accessibleCustomers.resourceNames || accessibleCustomers.resourceNames.length === 0) {
+          throw new Error('No accessible customers found. Please ensure you have proper access to Google Ads accounts and that your account is not suspended.')
+        }
+
+        // Extract customer ID from the first accessible customer resource name
+        // Resource name format: customers/1234567890
+        const firstCustomerResourceName = accessibleCustomers.resourceNames[0]
+        const customerId = firstCustomerResourceName.split('/')[1]
+        
+        if (!customerId || !/^\d{10}$/.test(customerId)) {
+          throw new Error(`Invalid customer ID format retrieved from Google Ads API: ${customerId}. Expected 10 digits.`)
+        }
+
+        logger.info('Customer ID successfully retrieved via listAccessibleCustomers', { 
+          customerId,
+          resourceName: firstCustomerResourceName 
+        })
+
+        return customerId
+      } catch (listError: any) {
+        logger.warn('listAccessibleCustomers method failed, trying alternative approaches:', {
+          error: listError.message,
+          code: listError.code
+        })
+        
+        // If it's a permission error, don't try other methods
+        if (listError.message?.includes('PERMISSION_DENIED') || 
+            listError.message?.includes('DEVELOPER_TOKEN_NOT_ON_ALLOWLIST')) {
+          throw listError
+        }
+      }
+
+      // Method 2: Try using the customer service directly
+      try {
+        logger.info('Trying to access customer service directly')
+        
+        const customerService = customer.service?.CustomerService
         if (customerService && typeof customerService.listAccessibleCustomers === 'function') {
-          logger.info('Using CustomerService.listAccessibleCustomers')
           const accessibleCustomers = await customerService.listAccessibleCustomers({})
           
-          logger.info('Retrieved accessible customers via CustomerService', {
-            count: accessibleCustomers.resourceNames?.length || 0,
-            customers: accessibleCustomers.resourceNames
-          })
-
-          if (!accessibleCustomers.resourceNames || accessibleCustomers.resourceNames.length === 0) {
-            throw new Error('No accessible customers found. Please ensure you have proper access to Google Ads accounts.')
-          }
-
-          // Extract customer ID from the first accessible customer resource name
-          const firstCustomerResourceName = accessibleCustomers.resourceNames[0]
-          const customerId = firstCustomerResourceName.split('/')[1]
-          
-          if (!customerId || !/^\d{10}$/.test(customerId)) {
-            throw new Error('Invalid customer ID format retrieved from Google Ads API')
-          }
-
-          logger.info('Customer ID successfully retrieved via CustomerService', { 
-            customerId,
-            resourceName: firstCustomerResourceName 
-          })
-
-          return customerId
-        }
-      } catch (serviceError: any) {
-        logger.warn('CustomerService method failed, trying alternative approach:', serviceError.message)
-      }
-
-      // Method 2: Try using the customer object directly with different method names
-      const directMethods = [
-        'listAccessibleCustomers',
-        'getAccessibleCustomers', 
-        'accessibleCustomers'
-      ]
-
-      for (const methodName of directMethods) {
-        try {
-          if (customer[methodName] && typeof customer[methodName] === 'function') {
-            logger.info(`Trying customer.${methodName}()`)
-            const result = await customer[methodName]()
+          if (accessibleCustomers.resourceNames && accessibleCustomers.resourceNames.length > 0) {
+            const firstCustomerResourceName = accessibleCustomers.resourceNames[0]
+            const customerId = firstCustomerResourceName.split('/')[1]
             
-            if (result && result.resourceNames && result.resourceNames.length > 0) {
-              const firstCustomerResourceName = result.resourceNames[0]
-              const customerId = firstCustomerResourceName.split('/')[1]
-              
-              if (customerId && /^\d{10}$/.test(customerId)) {
-                logger.info(`Customer ID retrieved via ${methodName}`, { customerId })
-                return customerId
-              }
+            if (customerId && /^\d{10}$/.test(customerId)) {
+              logger.info('Customer ID retrieved via CustomerService', { customerId })
+              return customerId
             }
           }
-        } catch (methodError: any) {
-          logger.debug(`Method ${methodName} failed:`, methodError.message)
         }
+      } catch (serviceError: any) {
+        logger.debug('CustomerService method failed:', serviceError.message)
       }
 
-      // Method 3: Try to make a simple query to get customer info
+      // Method 3: Try to use the GoogleAds client's listAccessibleCustomers at the client level
       try {
-        logger.info('Trying to get customer ID via simple query')
+        logger.info('Trying to use GoogleAds client listAccessibleCustomers method')
         
-        // Try to query customer information without specifying customer_id
-        const query = `
-          SELECT 
-            customer.id,
-            customer.descriptive_name
-          FROM customer
-          LIMIT 1
-        `
-        
-        const result = await customer.query(query)
-        
-        if (result && result.length > 0 && result[0].customer?.id) {
-          const customerId = result[0].customer.id.toString()
-          
-          if (/^\d{10}$/.test(customerId)) {
-            logger.info('Customer ID retrieved via query', { customerId })
-            return customerId
-          }
-        }
-      } catch (queryError: any) {
-        logger.debug('Query method failed:', queryError.message)
-      }
-
-      // Method 4: Use a different Google Ads API client approach
-      try {
-        logger.info('Trying alternative Google Ads client configuration')
-        
-        // Create a new client instance with just the refresh token
-        const altCustomer = this.googleAdsClient.Customer({
+        // Create a client with authentication
+        const authenticatedClient = this.googleAdsClient.Customer({
           refresh_token: refreshToken
         })
+        
+        // Some versions of the API have the method at different levels
+        if (typeof authenticatedClient.listAccessibleCustomers === 'function') {
+          const accessibleCustomers = await authenticatedClient.listAccessibleCustomers()
+          
+          if (accessibleCustomers && accessibleCustomers.resourceNames && accessibleCustomers.resourceNames.length > 0) {
+            const firstCustomerResourceName = accessibleCustomers.resourceNames[0]
+            const customerId = firstCustomerResourceName.split('/')[1]
+            
+            if (customerId && /^\d{10}$/.test(customerId)) {
+              logger.info('Customer ID retrieved via client listAccessibleCustomers', { customerId })
+              return customerId
+            }
+          }
+        }
+      } catch (clientError: any) {
+        logger.debug('Client-level listAccessibleCustomers failed:', clientError.message)
+      }
 
-        // Try to access customer information through the reports interface
-        const customerQuery = `
-          SELECT customer.id, customer.descriptive_name
-          FROM customer
-          LIMIT 1
-        `
-
-        // Execute without specifying customer_id initially
-        const customerResult = await altCustomer.report({
-          query: customerQuery,
+      // Method 4: Try using the Google OAuth2 client to call the API directly
+      try {
+        logger.info('Trying to call Google Ads API directly via HTTP')
+        
+        // Set up OAuth2 client with tokens
+        this.oauth2Client.setCredentials({
+          access_token: accessToken,
+          refresh_token: refreshToken
         })
-
-        if (customerResult && customerResult.length > 0) {
-          const customerId = customerResult[0].customer?.id?.toString()
+        
+        // Make direct HTTP request to list accessible customers
+        const url = 'https://googleads.googleapis.com/v21/customers:listAccessibleCustomers'
+        const response = await this.oauth2Client.request({ url })
+        
+        if (response.data && response.data.resourceNames && response.data.resourceNames.length > 0) {
+          const firstCustomerResourceName = response.data.resourceNames[0]
+          const customerId = firstCustomerResourceName.split('/')[1]
+          
           if (customerId && /^\d{10}$/.test(customerId)) {
-            logger.info('Customer ID retrieved via report method', { customerId })
+            logger.info('Customer ID retrieved via direct HTTP call', { customerId })
             return customerId
           }
         }
-      } catch (altError: any) {
-        logger.debug('Alternative client method failed:', altError.message)
+      } catch (httpError: any) {
+        logger.debug('Direct HTTP call failed:', httpError.message)
       }
 
       // If all methods fail, provide detailed error information
-      throw new Error('Unable to retrieve customer ID using any available method. Please ensure your Google Ads API credentials are correct and you have access to at least one Google Ads account.')
+      throw new Error('Unable to retrieve customer ID using any available method. Please ensure: 1) Your Google Ads API developer token is approved, 2) You have access to at least one Google Ads account, 3) Your account is not suspended, and 4) The OAuth scopes include adwords access.')
 
     } catch (error: any) {
       logger.error('Error getting customer ID from Google Ads API:', {
         message: error.message,
         stack: error.stack,
         code: error.code,
-        details: error.details
+        details: error.details,
+        name: error.name
       })
       
-      // Provide more specific error messages
+      // Provide more specific error messages based on error type
       if (error.message?.includes('DEVELOPER_TOKEN_NOT_ON_ALLOWLIST')) {
-        throw new Error('Developer token not approved. Please ensure your Google Ads API developer token is approved for production use.')
+        throw new Error('Developer token not approved. Please ensure your Google Ads API developer token is approved for production use and is properly configured.')
       }
       
       if (error.message?.includes('PERMISSION_DENIED')) {
-        throw new Error('Permission denied. Please ensure you have proper access to Google Ads accounts.')
+        throw new Error('Permission denied. Please ensure you have proper access to Google Ads accounts and that you granted the correct permissions during OAuth.')
       }
       
-      if (error.message?.includes('invalid_grant')) {
-        throw new Error('Invalid authorization. Please try reconnecting your Google Ads account.')
+      if (error.message?.includes('invalid_grant') || error.message?.includes('invalid_client')) {
+        throw new Error('Invalid authorization credentials. Please try reconnecting your Google Ads account from the beginning.')
       }
       
-      throw new Error(`Failed to get customer ID: ${error.message}`)
+      if (error.message?.includes('CUSTOMER_NOT_FOUND')) {
+        throw new Error('No Google Ads customers found. Please ensure you have at least one active Google Ads account.')
+      }
+      
+      if (error.message?.includes('suspended') || error.message?.includes('disabled')) {
+        throw new Error('Your Google Ads account appears to be suspended or disabled. Please contact Google Ads support.')
+      }
+      
+      if (error.code === 401) {
+        throw new Error('Authentication failed. Your access token may have expired or been revoked. Please reconnect your account.')
+      }
+      
+      if (error.code === 403) {
+        throw new Error('Access forbidden. Please ensure your Google Ads API credentials are correct and you have the necessary permissions.')
+      }
+      
+      if (error.code === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a few minutes.')
+      }
+      
+      // For unknown errors, include the original message
+      throw new Error(`Failed to get customer ID: ${error.message}. Please check your Google Ads account setup and API credentials.`)
     }
   }
 

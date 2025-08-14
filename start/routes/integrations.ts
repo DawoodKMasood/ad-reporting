@@ -23,6 +23,9 @@ router
 
     router.post('/sync/:id', [IntegrationsController, 'sync']).as('integrations.sync')
     
+    // Fix temporary account IDs
+    router.post('/fix-temporary-ids', [IntegrationsController, 'fixTemporaryIds']).as('integrations.fix_temporary_ids')
+    
     // Account management routes (for fixing mock accounts)
     router.post('/fix-mock-accounts', [AccountManagementController, 'fixMockAccounts']).as('integrations.fix_mock_accounts')
     router.post('/delete-mock-accounts', [AccountManagementController, 'deleteMockAccounts']).as('integrations.delete_mock_accounts')

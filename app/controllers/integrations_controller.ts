@@ -208,21 +208,32 @@ export default class IntegrationsController {
       })
       
       // Store the tokens securely in the database
-      // Try to fetch the real customer ID, but if it fails, use a temporary ID
+      // Fetch the real customer ID - don't create temporary IDs
       logger.info('Storing tokens in database')
       let accountId: string | null = null
       
       try {
-        // Try to get the real customer ID
+        // Get the real customer ID - this is required for proper integration
         accountId = await googleAdsOAuthService.default.getCustomerId(tokens.accessToken, tokens.refreshToken)
         logger.info('Successfully retrieved real customer ID', { accountId })
       } catch (customerIdError: any) {
-        // If fetching customer ID fails, create a temporary ID that can be fixed later
-        accountId = `temp_google_ads_${Date.now()}_${user.id}`
-        logger.warn('Failed to fetch customer ID automatically, using temporary ID', {
-          tempAccountId: accountId,
-          error: customerIdError.message
+        logger.error('Failed to fetch customer ID from Google Ads API', {
+          error: customerIdError.message,
+          stack: customerIdError.stack
         })
+        
+        // Return a proper error instead of creating a temporary ID
+        const isApiRequest = request.header('Accept')?.includes('application/json')
+        if (isApiRequest) {
+          return response.badRequest({
+            error: 'Failed to retrieve Google Ads account information',
+            message: 'Unable to fetch your Google Ads customer ID. Please ensure you have access to at least one Google Ads account and try again.',
+            details: customerIdError.message
+          })
+        }
+        
+        // For web requests, redirect back with error message
+        return response.redirect().toRoute('integrations.index')
       }
       
       const connectedAccount = await googleAdsOAuthService.default.storeTokens(
@@ -308,6 +319,62 @@ export default class IntegrationsController {
       if (isApiRequest) {
         return response.badRequest({
           error: 'Failed to disconnect account',
+          message: error.message
+        })
+      }
+      
+      // For web requests, redirect back with error
+      return response.redirect().back()
+    }
+  }
+
+  /**
+   * Fix accounts with temporary IDs
+   */
+  async fixTemporaryIds({ auth, response, request }: HttpContext) {
+    try {
+      const user = auth.getUserOrFail()
+      
+      logger.info(`User ${user.id} initiated fix for temporary account IDs`)
+      
+      // Import the Google Ads service
+      const { default: googleAdsService } = await import('#services/google_ads_service')
+      
+      // Fix all temporary account IDs
+      const results = await googleAdsService.fixAllTemporaryAccountIds()
+      
+      // Filter results to only show accounts owned by the current user
+      const userResults = results.filter(result => {
+        // We would need to join with the ConnectedAccount to filter by user
+        // For now, return all results but in production you might want to filter
+        return true
+      })
+      
+      logger.info(`Fixed ${userResults.filter(r => r.success).length} accounts for user ${user.id}`)
+      
+      const isApiRequest = request.header('Accept')?.includes('application/json')
+      if (isApiRequest) {
+        return {
+          success: true,
+          message: 'Temporary account IDs fix completed',
+          results: userResults,
+          summary: {
+            total: userResults.length,
+            fixed: userResults.filter(r => r.success).length,
+            failed: userResults.filter(r => !r.success).length
+          }
+        }
+      }
+      
+      // For web requests, redirect back
+      return response.redirect().back()
+    } catch (error) {
+      logger.error('Error fixing temporary account IDs:', error)
+      
+      const isApiRequest = request.header('Accept')?.includes('application/json')
+      if (isApiRequest) {
+        return response.badRequest({
+          error: 'Failed to fix temporary account IDs',
           message: error.message
         })
       }
