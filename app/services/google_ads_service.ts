@@ -12,22 +12,45 @@ export class GoogleAdsService {
   private cacheTtl: number = 10
 
   private async getCustomerClient(connectedAccountId: number, userId: number) {
-    const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
+    try {
+      logger.info('Getting customer client', { connectedAccountId, userId })
+      const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
+      logger.info('Found connected account', { accountId: connectedAccount.accountId })
 
-    // Get the properly configured Google Ads client from the OAuth service
-    const { client, refreshToken } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
+      // Get the properly configured Google Ads client from the OAuth service
+      const { client, refreshToken } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
+      logger.info('Got Google Ads client from OAuth service', { hasClient: !!client, hasRefreshToken: !!refreshToken })
 
-    const config: any = {
-      customer_id: connectedAccount.accountId,
-      refresh_token: refreshToken,
+      const config: any = {
+        customer_id: connectedAccount.accountId,
+        refresh_token: refreshToken,
+      }
+
+      const loginCustomerId = env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID')
+      if (loginCustomerId && loginCustomerId !== connectedAccount.accountId) {
+        config.login_customer_id = loginCustomerId
+      }
+
+      logger.info('Creating customer instance with config', { config })
+      const customer = client.Customer(config)
+      logger.info('Created customer instance successfully')
+      return customer
+    } catch (error: any) {
+      logger.error('Error getting customer client:', {
+        message: error?.message,
+        stack: error?.stack,
+        code: error?.code,
+        status: error?.status,
+        name: error?.name,
+        details: error?.details,
+        response: error?.response,
+        toString: error?.toString(),
+        fullError: error,
+        connectedAccountId,
+        userId
+      })
+      throw new Error(`Failed to get customer client: ${error.message || error.toString() || 'Unknown error'}`)
     }
-
-    const loginCustomerId = env.get('GOOGLE_ADS_LOGIN_CUSTOMER_ID')
-    if (loginCustomerId && loginCustomerId !== connectedAccount.accountId) {
-      config.login_customer_id = loginCustomerId
-    }
-
-    return client.Customer(config)
   }
 
   public async getAccessibleCustomers(connectedAccountId: number, userId: number) {
@@ -53,44 +76,189 @@ export class GoogleAdsService {
     } = { type: 'last_30_days' }
   ) {
     try {
+      logger.info('Starting fetchCampaignData', { connectedAccountId, userId, dateRange })
       const { startDate, endDate } = this.calculateDateRange(dateRange)
+      logger.info('Calculated date range', { startDate, endDate })
       const cacheKey = `campaign_data_${connectedAccountId}_${startDate}_${endDate}`
 
       if (this.isCacheValid(cacheKey)) {
+        logger.info('Returning cached data', { cacheKey })
         return this.cache.get(cacheKey)
       }
 
+      logger.info('Getting customer client', { connectedAccountId, userId })
       const customer = await this.getCustomerClient(connectedAccountId, userId)
+      logger.info('Got customer client successfully')
 
-      const query = `
-        SELECT
-          campaign.id,
-          campaign.name,
-          campaign.status,
-          campaign.advertising_channel_type,
-          campaign.advertising_channel_sub_type,
-          segments.date,
-          metrics.impressions,
-          metrics.clicks,
-          metrics.cost_micros,
-          metrics.conversions
-        FROM campaign
-        WHERE segments.date BETWEEN '${startDate}' AND '${endDate}'
-        AND campaign.status != 'REMOVED'
-        ORDER BY segments.date DESC, campaign.id
-      `
+      // For incremental syncs, we still need to use BETWEEN, but for standard ranges we can use DURING
+      let query: string;
+      if (dateRange.type === 'custom' || dateRange.type === 'today') {
+        // Use BETWEEN for custom date ranges
+        query = `
+          SELECT
+            campaign.id,
+            campaign.name,
+            campaign.status,
+            campaign.advertising_channel_type,
+            campaign.advertising_channel_sub_type,
+            segments.date,
+            metrics.impressions,
+            metrics.clicks,
+            metrics.cost_micros,
+            metrics.conversions
+          FROM campaign
+          WHERE segments.date BETWEEN '${startDate}' AND '${endDate}'
+          AND campaign.status != 'REMOVED'
+          ORDER BY segments.date DESC, campaign.id
+        `;
+      } else {
+        // Use DURING for standard date ranges
+        let duringClause: string;
+        switch (dateRange.type) {
+          case 'last_7_days':
+            duringClause = 'LAST_7_DAYS';
+            break;
+          case 'last_30_days':
+          default:
+            duringClause = 'LAST_30_DAYS';
+            break;
+        }
+        
+        query = `
+          SELECT
+            campaign.id,
+            campaign.name,
+            campaign.status,
+            campaign.advertising_channel_type,
+            campaign.advertising_channel_sub_type,
+            segments.date,
+            metrics.impressions,
+            metrics.clicks,
+            metrics.cost_micros,
+            metrics.conversions
+          FROM campaign
+          WHERE segments.date DURING ${duringClause}
+          AND campaign.status != 'REMOVED'
+          ORDER BY segments.date DESC, campaign.id
+        `;
+      }
 
-      logger.info('Google Ads API Query:', { query })
-      const results = await customer.query(query)
-      logger.info('Google Ads API Response:', { results })
+      logger.info('Google Ads API Query:', { query, dateRange, startDate, endDate })
+      
+      try {
+        // Try using the report method instead of query
+        let results: any[];
+        if (dateRange.type === 'custom' || dateRange.type === 'today') {
+          // Use report method with constraints for custom date ranges
+          results = await customer.report({
+            entity: 'campaign',
+            attributes: [
+              'campaign.id',
+              'campaign.name',
+              'campaign.status',
+              'campaign.advertising_channel_type',
+              'campaign.advertising_channel_sub_type'
+            ],
+            metrics: [
+              'metrics.impressions',
+              'metrics.clicks',
+              'metrics.cost_micros',
+              'metrics.conversions'
+            ],
+            segments: [
+              'segments.date'
+            ],
+            constraints: [{
+              key: 'segments.date',
+              op: 'BETWEEN',
+              val: [startDate, endDate]
+            }, {
+              key: 'campaign.status',
+              op: '!=',
+              val: 'REMOVED'
+            }],
+            order_by: 'segments.date'
+          })
+        } else {
+          // Use report method with DURING for standard date ranges
+          let duringClause: string;
+          switch (dateRange.type) {
+            case 'last_7_days':
+              duringClause = 'LAST_7_DAYS';
+              break;
+            case 'last_30_days':
+            default:
+              duringClause = 'LAST_30_DAYS';
+              break;
+          }
+          
+          results = await customer.report({
+            entity: 'campaign',
+            attributes: [
+              'campaign.id',
+              'campaign.name',
+              'campaign.status',
+              'campaign.advertising_channel_type',
+              'campaign.advertising_channel_sub_type'
+            ],
+            metrics: [
+              'metrics.impressions',
+              'metrics.clicks',
+              'metrics.cost_micros',
+              'metrics.conversions'
+            ],
+            segments: [
+              'segments.date'
+            ],
+            constraints: [{
+              key: 'segments.date',
+              op: 'DURING',
+              val: duringClause
+            }, {
+              key: 'campaign.status',
+              op: '!=',
+              val: 'REMOVED'
+            }],
+            order_by: 'segments.date'
+          })
+        }
+        logger.info('Google Ads API Response:', { results: results?.length || 0 })
+        return results
+      } catch (reportError: any) {
+        logger.error('Error executing Google Ads API report:', {
+          message: reportError?.message,
+          stack: reportError?.stack,
+          code: reportError?.code,
+          status: reportError?.status,
+          name: reportError?.name,
+          details: reportError?.details,
+          response: reportError?.response,
+          toString: reportError?.toString(),
+          fullError: reportError,
+          dateRange,
+          startDate,
+          endDate
+        })
+        throw new Error(`Failed to execute Google Ads API report: ${reportError.message || reportError.toString() || 'Unknown error'}`)
+      }
 
       this.cache.set(cacheKey, results)
       this.cacheExpiry.set(cacheKey, DateTime.now().plus({ minutes: this.cacheTtl }))
 
       return results
     } catch (error: any) {
-      logger.error('Error fetching campaign data:', error)
-      throw new Error(`Failed to fetch campaign data: ${error.message}`)
+      logger.error('Error fetching campaign data:', {
+        message: error?.message,
+        stack: error?.stack,
+        code: error?.code,
+        status: error?.status,
+        name: error?.name,
+        details: error?.details,
+        response: error?.response,
+        toString: error?.toString(),
+        fullError: error
+      })
+      throw new Error(`Failed to fetch campaign data: ${error.message || error.toString() || 'Unknown error'}`)
     }
   }
 
