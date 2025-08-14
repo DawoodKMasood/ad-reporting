@@ -13,6 +13,7 @@ import router from '@adonisjs/core/services/router'
 import './routes/auth.js'
 import './routes/dashboard.js'
 import './routes/integrations.js'
+import './routes/google_ads.js'
 
 // Home route - redirects based on auth status
 router.get('/', async ({ auth, response }) => {
