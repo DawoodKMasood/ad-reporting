@@ -32,17 +32,17 @@
           </p>
           <div class="flex items-center mt-1 space-x-2">
             <span 
-              x-show="currentAccount?.isTestAccount" 
-              class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
-            >
-              <i class="fas fa-flask mr-1"></i>
-              Test Account
-            </span>
-            <span 
               x-show="currentAccount?.isManagerAccount" 
               class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
             >
               Manager
+            </span>
+            <span 
+              x-show="currentAccount?.isTestAccount" 
+               class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 ml-1"
+            >
+              <i class="fas fa-flask mr-1"></i>
+              Test Account
             </span>
           </div>
         </div>
