@@ -35,12 +35,12 @@
                   <h3 class="text-sm font-medium text-gray-900">
                     {{ account.accountDisplayName || (user.fullName + "'s " + (account.platform === 'google_ads' ? 'Google Ads' : account.platform === 'meta_ads' ? 'Meta Ads' : account.platform === 'tiktok_ads' ? 'TikTok Ads' : account.platform.replace('_', ' ')) + " Account") }}
                     @if(account.isManagerAccount)
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      <span class="inline-flex items-center px-2 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-1">
                         Manager
                       </span>
                     @end
                     @if(account.isTestAccount)
-                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-100 text-zinc-800 ml-1">
+                      <span class="inline-flex items-center px-2 rounded-full text-xs font-medium bg-gray-100 text-gray-800 ml-1">
                         Test Account
                       </span>
                     @end
