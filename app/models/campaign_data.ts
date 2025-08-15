@@ -41,6 +41,22 @@ export default class CampaignData extends BaseModel {
   @column()
   declare conversions: number
 
+  @column({
+    consume: (value: string | null) => {
+      if (!value) return null;
+      try {
+        return typeof value === 'string' ? JSON.parse(value) : value;
+      } catch {
+        return null;
+      }
+    },
+    prepare: (value: any) => {
+      if (!value) return null;
+      return typeof value === 'object' ? JSON.stringify(value) : value;
+    }
+  })
+  declare metadata: any | null
+
   @column.dateTime({ autoCreate: true })
   declare createdAt: DateTime
 

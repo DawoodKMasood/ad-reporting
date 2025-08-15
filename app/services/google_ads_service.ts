@@ -66,6 +66,242 @@ export class GoogleAdsService {
     }
   }
 
+  public async getChildAccounts(connectedAccountId: number, userId: number) {
+    try {
+      logger.info('Getting child accounts for manager account', { connectedAccountId })
+      const customer = await this.getCustomerClient(connectedAccountId, userId)
+
+      const query = `
+        SELECT
+          customer_client.id,
+          customer_client.descriptive_name,
+          customer_client.currency_code,
+          customer_client.time_zone,
+          customer_client.test_account,
+          customer_client.manager,
+          customer_client.status
+        FROM customer_client
+        WHERE customer_client.status = 'ENABLED'
+        ORDER BY customer_client.descriptive_name
+      `
+
+      const results = await customer.query(query)
+      logger.info('Child accounts query result', { count: results?.length || 0 })
+      return results || []
+    } catch (error: any) {
+      logger.error('Error fetching child accounts:', error)
+      throw new Error(`Failed to fetch child accounts: ${error.message}`)
+    }
+  }
+
+  public async isManagerAccount(connectedAccountId: number, userId: number): Promise<boolean> {
+    try {
+      const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
+      
+      // Check if we already know this is a manager account
+      if (connectedAccount.isManagerAccount !== null && connectedAccount.isManagerAccount !== undefined) {
+        return connectedAccount.isManagerAccount
+      }
+
+      // Query Google Ads API to check if this is a manager account
+      const customer = await this.getCustomerClient(connectedAccountId, userId)
+      
+      const query = `
+        SELECT
+          customer.manager,
+          customer.test_account
+        FROM customer
+        LIMIT 1
+      `
+
+      const results = await customer.query(query)
+      const isManager = results?.[0]?.customer?.manager || false
+      
+      // Update the connected account with this information
+      connectedAccount.isManagerAccount = isManager
+      await connectedAccount.save()
+      
+      return isManager
+    } catch (error: any) {
+      logger.error('Error checking if manager account:', error)
+      // Default to false if we can't determine
+      return false
+    }
+  }
+
+  public async fetchCampaignDataForManagerAccount(
+    connectedAccountId: number,
+    userId: number,
+    dateRange: {
+      type: 'today' | 'last_7_days' | 'last_30_days' | 'custom',
+      startDate?: string,
+      endDate?: string
+    } = { type: 'last_30_days' }
+  ) {
+    try {
+      logger.info('Fetching campaign data for manager account', { connectedAccountId })
+      
+      // Get child accounts
+      const childAccounts = await this.getChildAccounts(connectedAccountId, userId)
+      logger.info('Found child accounts', { count: childAccounts.length })
+      
+      if (childAccounts.length === 0) {
+        logger.warn('No child accounts found for manager account - trying direct campaign access')
+        
+        // Try to fetch campaigns directly from the manager account
+        // Some manager accounts might have their own campaigns
+        try {
+          logger.info('Attempting to fetch campaigns directly from manager account')
+          const managerCampaigns = await this.fetchCampaignData(connectedAccountId, userId, dateRange)
+          
+          if (managerCampaigns.length > 0) {
+            logger.info('Found campaigns directly on manager account', { count: managerCampaigns.length })
+            return managerCampaigns
+          }
+        } catch (managerError: any) {
+          logger.warn('Manager account direct campaign fetch failed:', managerError.message)
+          // This is expected for most manager accounts
+        }
+        
+        // If we get here, the manager account truly has no accessible data
+        logger.warn('Manager account has no accessible campaigns or child accounts')
+        
+        // Throw a specific error that the controller can catch
+        throw new Error('Manager account has no accessible child accounts or campaigns')
+      }
+
+      const allCampaignData: any[] = []
+      
+      // Fetch campaign data for each child account
+      for (const childAccount of childAccounts) {
+        try {
+          const childCustomerId = childAccount.customer_client?.id
+          if (!childCustomerId) {
+            logger.warn('Child account missing ID, skipping')
+            continue
+          }
+
+          logger.info('Fetching data for child account', { childCustomerId })
+          
+          // Create a temporary customer client for the child account
+          const { client, refreshToken } = await googleAdsOAuthService.getGoogleAdsClient(connectedAccountId, userId)
+          
+          const childCustomer = client.Customer({
+            customer_id: childCustomerId,
+            refresh_token: refreshToken,
+          })
+
+          const { startDate, endDate } = this.calculateDateRange(dateRange)
+          
+          let results: any[]
+          if (dateRange.type === 'custom' || dateRange.type === 'today') {
+            results = await childCustomer.report({
+              entity: 'campaign',
+              attributes: [
+                'campaign.id',
+                'campaign.name',
+                'campaign.status',
+                'campaign.advertising_channel_type',
+                'campaign.advertising_channel_sub_type'
+              ],
+              metrics: [
+                'metrics.impressions',
+                'metrics.clicks',
+                'metrics.cost_micros',
+                'metrics.conversions'
+              ],
+              segments: [
+                'segments.date'
+              ],
+              constraints: [{
+                key: 'segments.date',
+                op: 'BETWEEN',
+                val: [startDate, endDate]
+              }, {
+                key: 'campaign.status',
+                op: '!=',
+                val: 'REMOVED'
+              }],
+              order_by: 'segments.date'
+            })
+          } else {
+            let duringClause: string
+            switch (dateRange.type) {
+              case 'last_7_days':
+                duringClause = 'LAST_7_DAYS'
+                break
+              case 'last_30_days':
+              default:
+                duringClause = 'LAST_30_DAYS'
+                break
+            }
+            
+            results = await childCustomer.report({
+              entity: 'campaign',
+              attributes: [
+                'campaign.id',
+                'campaign.name',
+                'campaign.status',
+                'campaign.advertising_channel_type',
+                'campaign.advertising_channel_sub_type'
+              ],
+              metrics: [
+                'metrics.impressions',
+                'metrics.clicks',
+                'metrics.cost_micros',
+                'metrics.conversions'
+              ],
+              segments: [
+                'segments.date'
+              ],
+              constraints: [{
+                key: 'segments.date',
+                op: 'DURING',
+                val: duringClause
+              }, {
+                key: 'campaign.status',
+                op: '!=',
+                val: 'REMOVED'
+              }],
+              order_by: 'segments.date'
+            })
+          }
+
+          // Add child account identifier to each result
+          const enrichedResults = results.map(result => ({
+            ...result,
+            childAccountId: childCustomerId,
+            childAccountName: childAccount.customer_client?.descriptive_name || `Account ${childCustomerId}`
+          }))
+          
+          allCampaignData.push(...enrichedResults)
+          logger.info('Fetched campaign data for child account', { 
+            childCustomerId, 
+            dataCount: results.length 
+          })
+          
+        } catch (childError: any) {
+          logger.error('Error fetching data for child account', {
+            childAccountId: childAccount.customer_client?.id,
+            error: childError.message
+          })
+          // Continue with other child accounts even if one fails
+          continue
+        }
+      }
+      
+      logger.info('Completed fetching campaign data for all child accounts', {
+        totalDataCount: allCampaignData.length
+      })
+      
+      return allCampaignData
+      
+    } catch (error: any) {
+      logger.error('Error fetching campaign data for manager account:', error)
+      throw new Error(`Failed to fetch campaign data for manager account: ${error.message}`)
+    }
+  }
+
   public async fetchCampaignData(
     connectedAccountId: number,
     userId: number,
@@ -240,6 +476,21 @@ export class GoogleAdsService {
           endDate
         })
         
+        // Check for specific manager account error
+        const errorString = JSON.stringify(reportError)
+        if (errorString.includes('REQUESTED_METRICS_FOR_MANAGER') || 
+            errorString.includes('Metrics cannot be requested for a manager account')) {
+          logger.warn('Manager account detected via API error - switching to child account sync')
+          
+          // Update the connected account to mark it as a manager account
+          const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
+          connectedAccount.isManagerAccount = true
+          await connectedAccount.save()
+          
+          // Try fetching data for manager account instead
+          return await this.fetchCampaignDataForManagerAccount(connectedAccountId, userId, dateRange)
+        }
+        
         // Better error formatting to avoid [object Object] issue
         let errorMessage = 'Unknown error';
         if (reportError?.message) {
@@ -293,18 +544,31 @@ export class GoogleAdsService {
     const batchSize = 100
 
     for (let i = 0; i < rawData.length; i += batchSize) {
-      const batch = rawData.slice(i, i + batchSize).map(row => ({
-        connectedAccountId,
-        campaignId: row.campaign?.id?.toString(),
-        campaignName: row.campaign?.name,
-        campaignType: row.campaign?.advertising_channel_type || null,
-        campaignSubType: row.campaign?.advertising_channel_sub_type || null,
-        date: row.segments?.date ? DateTime.fromFormat(row.segments.date, 'yyyy-MM-dd') : DateTime.now(),
-        spend: row.metrics?.cost_micros ? parseFloat(row.metrics.cost_micros) / 1000000 : 0,
-        impressions: row.metrics?.impressions ? parseInt(row.metrics.impressions) : 0,
-        clicks: row.metrics?.clicks ? parseInt(row.metrics.clicks) : 0,
-        conversions: row.metrics?.conversions ? parseFloat(row.metrics.conversions) : 0
-      })).filter(data => data.campaignId && data.campaignName)
+      const batch = rawData.slice(i, i + batchSize).map(row => {
+        // For manager accounts, we include child account info in the campaign name
+        let campaignName = row.campaign?.name
+        if (row.childAccountName && row.childAccountId) {
+          campaignName = `[${row.childAccountName}] ${campaignName}`
+        }
+        
+        return {
+          connectedAccountId,
+          campaignId: row.campaign?.id?.toString(),
+          campaignName,
+          campaignType: row.campaign?.advertising_channel_type || null,
+          campaignSubType: row.campaign?.advertising_channel_sub_type || null,
+          date: row.segments?.date ? DateTime.fromFormat(row.segments.date, 'yyyy-MM-dd') : DateTime.now(),
+          spend: row.metrics?.cost_micros ? parseFloat(row.metrics.cost_micros) / 1000000 : 0,
+          impressions: row.metrics?.impressions ? parseInt(row.metrics.impressions) : 0,
+          clicks: row.metrics?.clicks ? parseInt(row.metrics.clicks) : 0,
+          conversions: row.metrics?.conversions ? parseFloat(row.metrics.conversions) : 0,
+          // Store additional metadata for manager accounts
+          metadata: row.childAccountId ? {
+            childAccountId: row.childAccountId,
+            childAccountName: row.childAccountName
+          } : null
+        }
+      }).filter(data => data.campaignId && data.campaignName)
 
       if (batch.length > 0) {
         const created = await CampaignData.createMany(batch)
@@ -319,8 +583,20 @@ export class GoogleAdsService {
     try {
       const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
 
+      // Check if this is a manager account
+      const isManager = await this.isManagerAccount(connectedAccountId, userId)
+      
       const syncDateRange = dateRange || this.getIncrementalDateRange(connectedAccount)
-      const rawData = await this.fetchCampaignData(connectedAccountId, userId, syncDateRange)
+      
+      let rawData: any[]
+      if (isManager) {
+        logger.info('Syncing manager account - fetching data from child accounts', { connectedAccountId })
+        rawData = await this.fetchCampaignDataForManagerAccount(connectedAccountId, userId, syncDateRange)
+      } else {
+        logger.info('Syncing regular account', { connectedAccountId })
+        rawData = await this.fetchCampaignData(connectedAccountId, userId, syncDateRange)
+      }
+      
       const processedData = await this.processAndStoreCampaignData(connectedAccountId, rawData)
 
       connectedAccount.lastSyncAt = DateTime.now()
@@ -349,17 +625,44 @@ export class GoogleAdsService {
   }
 
   public async getEnrichedCampaignData(connectedAccountId: number, userId: number, dateRange?: any) {
-    await this.syncCampaignData(connectedAccountId, userId, dateRange)
+    try {
+      await this.syncCampaignData(connectedAccountId, userId, dateRange)
 
-    let query = CampaignData.query().where('connected_account_id', connectedAccountId)
+      let query = CampaignData.query().where('connected_account_id', connectedAccountId)
 
-    if (dateRange) {
-      const { startDate, endDate } = this.calculateDateRange(dateRange)
-      query = query.whereBetween('date', [startDate, endDate])
+      if (dateRange) {
+        const { startDate, endDate } = this.calculateDateRange(dateRange)
+        query = query.whereBetween('date', [startDate, endDate])
+      }
+
+      const campaignData = await query.orderBy('date', 'desc')
+      return campaignData.map(data => this.enrichCampaignData(data))
+    } catch (error: any) {
+      logger.error('Error getting enriched campaign data:', error)
+      
+      // Check for manager account with no accessible child accounts
+      if (error.message && error.message.includes('no accessible campaigns or child accounts')) {
+        const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
+        if (connectedAccount.isManagerAccount) {
+          throw new Error('Manager account has no accessible child accounts or campaigns')
+        }
+      }
+      
+      // For manager accounts with no accessible child accounts, return existing data instead of throwing
+      if (error.message && (error.message.includes('manager account') || error.message.includes('child accounts'))) {
+        logger.warn('Manager account sync failed, returning existing data only')
+        
+        let query = CampaignData.query().where('connected_account_id', connectedAccountId)
+        if (dateRange) {
+          const { startDate, endDate } = this.calculateDateRange(dateRange)
+          query = query.whereBetween('date', [startDate, endDate])
+        }
+        const campaignData = await query.orderBy('date', 'desc')
+        return campaignData.map(data => this.enrichCampaignData(data))
+      }
+      
+      throw error
     }
-
-    const campaignData = await query.orderBy('date', 'desc')
-    return campaignData.map(data => this.enrichCampaignData(data))
   }
 
   public enrichCampaignData(campaignData: CampaignData) {

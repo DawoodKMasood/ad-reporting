@@ -245,14 +245,23 @@ Please ensure that:
       }
 
       const info = customerInfo[0]
+      const isManager = info.customer?.manager || false
+      
+      console.log(`📋 Customer ${customerId} info:`, {
+        name: info.customer?.descriptive_name,
+        isManager,
+        isTest: info.customer?.test_account
+      })
+      
       return {
         name: info.customer?.descriptive_name || `Account ${customerId}`,
         timezone: info.customer?.time_zone || 'UTC',
         isTestAccount: info.customer?.test_account || false,
-        isManagerAccount: info.customer?.manager || false
+        isManagerAccount: isManager
       }
     } catch (error: any) {
       console.warn('Could not fetch customer info:', error.message)
+      // For safety, assume it might be a manager account if we can't determine
       return {
         name: `Account ${customerId}`,
         timezone: 'UTC',
@@ -322,6 +331,11 @@ Please ensure that:
         
         connectedAccounts.push(connectedAccount)
         console.log('✅ Tokens stored successfully for accountId:', customer.customerId)
+        
+        // If this is a manager account, try to sync child account data immediately
+        if (customerInfo.isManagerAccount) {
+          console.log(`📊 Manager account detected, will sync child accounts during first data fetch`)
+        }
       }
       
       logger.info('Tokens stored successfully for all customers', { 

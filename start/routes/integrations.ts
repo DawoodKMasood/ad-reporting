@@ -111,6 +111,8 @@ router
 
     router.post('/sync/:id', [IntegrationsController, 'sync']).as('integrations.sync')
     
+    router.get('/:id/sync-status', [IntegrationsController, 'getSyncStatus']).as('integrations.sync_status')
+    
     router.patch('/:id/name', [IntegrationsController, 'updateAccountName']).as('integrations.update_name')
     
     router.get('/:id', [IntegrationsController, 'show']).as('integrations.show')

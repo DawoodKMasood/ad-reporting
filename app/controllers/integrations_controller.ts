@@ -1,5 +1,6 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import ConnectedAccount from '#models/connected_account'
+import CampaignData from '#models/campaign_data'
 import { connectValidator, disconnectValidator, syncValidator } from '#validators/integrations'
 import logger from '@adonisjs/core/services/logger'
 import googleAdsService from '#services/google_ads_service'
@@ -52,9 +53,54 @@ export default class IntegrationsController {
         .where('user_id', user.id)
         .firstOrFail()
 
+      // Get summary metrics for the last 30 days
+      let accountMetrics = {
+        totalSpend: 0,
+        totalImpressions: 0,
+        totalClicks: 0,
+        totalConversions: 0
+      }
+
+      let syncIssues = {
+        hasData: false,
+        isManagerWithNoChildren: false,
+        lastSyncError: null
+      }
+
+      try {
+        const campaignData = await googleAdsService.getEnrichedCampaignData(
+          connectedAccount.id,
+          user.id,
+          { type: 'last_30_days' }
+        )
+        
+        syncIssues.hasData = campaignData.length > 0
+        
+        // Calculate totals
+        accountMetrics = campaignData.reduce((acc, data) => ({
+          totalSpend: acc.totalSpend + (data.spend || 0),
+          totalImpressions: acc.totalImpressions + (data.impressions || 0),
+          totalClicks: acc.totalClicks + (data.clicks || 0),
+          totalConversions: acc.totalConversions + (data.conversions || 0)
+        }), accountMetrics)
+        
+      } catch (metricsError: any) {
+        logger.warn('Could not fetch account metrics:', metricsError)
+        syncIssues.lastSyncError = metricsError.message
+        
+        // Check if this is a manager account with no children case
+        if (connectedAccount.isManagerAccount && 
+            metricsError.message && 
+            metricsError.message.includes('no accessible child accounts')) {
+          syncIssues.isManagerWithNoChildren = true
+        }
+      }
+
       return view.render('pages/integrations/show', {
         user,
         connectedAccount,
+        accountMetrics,
+        syncIssues,
       })
     } catch (error) {
       logger.error('Error fetching connected account details:', error)
@@ -358,6 +404,46 @@ export default class IntegrationsController {
       }
 
       return response.redirect().back()
+    }
+  }
+
+  async getSyncStatus({ params, auth, response }: HttpContext) {
+    try {
+      const user = auth.getUserOrFail()
+      const connectedAccount = await ConnectedAccount.query()
+        .where('id', params.id)
+        .where('user_id', user.id)
+        .firstOrFail()
+
+      // Check if there's any campaign data
+      const campaignDataCount = await CampaignData.query()
+        .where('connected_account_id', connectedAccount.id)
+        .count('* as total')
+
+      const hasData = campaignDataCount[0].$extras.total > 0
+      
+      return {
+        success: true,
+        account: {
+          id: connectedAccount.id,
+          accountId: connectedAccount.accountId,
+          formattedAccountId: connectedAccount.formattedAccountId,
+          accountName: connectedAccount.accountName,
+          displayName: connectedAccount.displayName,
+          isActive: connectedAccount.isActive,
+          isTestAccount: connectedAccount.isTestAccount,
+          isManagerAccount: connectedAccount.isManagerAccount,
+          lastSyncAt: connectedAccount.lastSyncAt,
+          hasData,
+          dataCount: campaignDataCount[0].$extras.total
+        }
+      }
+    } catch (error) {
+      logger.error('Error getting sync status:', error)
+      return response.badRequest({
+        error: 'Failed to get sync status',
+        message: error.message
+      })
     }
   }
 
