@@ -280,14 +280,32 @@ export default class IntegrationsController {
     } catch (error) {
       logger.error('Error syncing account data:', error)
 
+      // Better error formatting to provide more details to the user
+      let errorMessage = 'Unknown error occurred during sync'
+      let errorDetails = {}
+      
+      if (error?.message) {
+        errorMessage = error.message
+      }
+      
+      if (error?.details) {
+        errorDetails = error.details
+      } else if (error?.response) {
+        errorDetails = error.response
+      } else {
+        errorDetails = { error: error?.toString() || 'Unknown error' }
+      }
+
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
         return response.badRequest({
           error: 'Failed to sync data',
-          message: error.message
+          message: errorMessage,
+          details: errorDetails,
         })
       }
 
+      // For web requests, we could add a flash message here
       return response.redirect().back()
     }
   }
@@ -370,7 +388,7 @@ export default class IntegrationsController {
       return {
         success: true,
         data: accessibleCustomers,
-        connectedAccounts: connectedAccounts.map(account => ({
+        connectedAccounts: connectedAccounts.map((account) => ({
           id: account.id,
           accountId: account.accountId,
           formattedAccountId: account.formattedAccountId,
@@ -378,8 +396,8 @@ export default class IntegrationsController {
           displayName: account.displayName,
           isActive: account.isActive,
           isTestAccount: account.isTestAccount,
-          isManagerAccount: account.isManagerAccount
-        }))
+          isManagerAccount: account.isManagerAccount,
+        })),
       }
     } catch (error) {
       logger.error('Error fetching accessible customers:', error)

@@ -239,13 +239,24 @@ export class GoogleAdsService {
           startDate,
           endDate
         })
-        throw new Error(`Failed to execute Google Ads API report: ${reportError.message || reportError.toString() || 'Unknown error'}`)
+        
+        // Better error formatting to avoid [object Object] issue
+        let errorMessage = 'Unknown error';
+        if (reportError?.message) {
+          errorMessage = reportError.message;
+        } else if (reportError?.details) {
+          errorMessage = JSON.stringify(reportError.details);
+        } else if (reportError?.response) {
+          errorMessage = JSON.stringify(reportError.response);
+        } else if (reportError?.toString && reportError.toString() !== '[object Object]') {
+          errorMessage = reportError.toString();
+        } else {
+          errorMessage = JSON.stringify(reportError);
+        }
+        
+        throw new Error(`Failed to execute Google Ads API report: ${errorMessage}`)
       }
 
-      this.cache.set(cacheKey, results)
-      this.cacheExpiry.set(cacheKey, DateTime.now().plus({ minutes: this.cacheTtl }))
-
-      return results
     } catch (error: any) {
       logger.error('Error fetching campaign data:', {
         message: error?.message,
@@ -258,7 +269,22 @@ export class GoogleAdsService {
         toString: error?.toString(),
         fullError: error
       })
-      throw new Error(`Failed to fetch campaign data: ${error.message || error.toString() || 'Unknown error'}`)
+      
+      // Better error formatting to avoid [object Object] issue
+      let errorMessage = 'Unknown error';
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.details) {
+        errorMessage = JSON.stringify(error.details);
+      } else if (error?.response) {
+        errorMessage = JSON.stringify(error.response);
+      } else if (error?.toString && error.toString() !== '[object Object]') {
+        errorMessage = error.toString();
+      } else {
+        errorMessage = JSON.stringify(error);
+      }
+      
+      throw new Error(`Failed to fetch campaign data: ${errorMessage}`)
     }
   }
 
@@ -303,7 +329,22 @@ export class GoogleAdsService {
       return processedData
     } catch (error: any) {
       logger.error('Error syncing campaign data:', error)
-      throw new Error(`Failed to sync campaign data: ${error.message}`)
+      
+      // Better error formatting to avoid [object Object] issue
+      let errorMessage = 'Unknown error';
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.details) {
+        errorMessage = JSON.stringify(error.details);
+      } else if (error?.response) {
+        errorMessage = JSON.stringify(error.response);
+      } else if (error?.toString && error.toString() !== '[object Object]') {
+        errorMessage = error.toString();
+      } else {
+        errorMessage = JSON.stringify(error);
+      }
+      
+      throw new Error(`Failed to sync campaign data: ${errorMessage}`)
     }
   }
 
