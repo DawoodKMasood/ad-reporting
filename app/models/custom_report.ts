@@ -79,6 +79,19 @@ export default class CustomReport extends BaseModel {
   @column()
   declare scheduleFrequency: 'daily' | 'weekly' | 'monthly' | null
 
+  @column({
+    consume: (value: string | null) => {
+      if (!value) return null;
+      try {
+        return typeof value === 'string' ? JSON.parse(value) : value;
+      } catch {
+        return null;
+      }
+    },
+    prepare: (value: any) => JSON.stringify(value)
+  })
+  declare widgetLayout: any[] | null
+
   @column.dateTime()
   declare lastGeneratedAt: DateTime | null
 

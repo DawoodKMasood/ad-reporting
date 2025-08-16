@@ -1,4 +1,5 @@
 import '../css/app.css'
 import './integrations.js'
+import './custom-reports.js'
 
-console.log('Hello World')
+console.log('Ad Reporting App loaded')

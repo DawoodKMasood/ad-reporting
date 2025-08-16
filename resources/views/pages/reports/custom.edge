@@ -1,48 +1,46 @@
-@layout.app({ title: 'Custom Reports' })
+@layout.app({ title: 'Custom Report Builder' })
 
 @slot('main')
   <!-- Main Content -->
   <div class="max-w-7xl mx-auto py-6">
     <!-- Page Header -->
+    <a href="{{ route('reports.index') }}" class="inline-flex items-center text-blue-600 hover:text-blue-800 mb-4">
+      <i class="fas fa-arrow-left mr-1"></i>
+      Back to Reports
+    </a>
     <div class="mb-8">
       <div class="flex items-center justify-between">
         <div>
           <div class="flex items-center">
-            <a 
-              href="{{ route('reports.index') }}" 
-              class="text-gray-500 hover:text-gray-700 mr-3"
-            >
-              <i class="fas fa-arrow-left"></i>
-            </a>
             <h1 class="text-3xl font-bold text-gray-900">
               <i class="fas fa-chart-pie mr-3 text-purple-600"></i>
               Custom Report Builder
             </h1>
           </div>
           <p class="mt-2 text-gray-600">
-            Create custom reports with drag-and-drop widgets and advanced filtering
+            Drag and drop widgets to create custom reports with advanced filtering
           </p>
         </div>
         
         <!-- Report Actions -->
         <div class="flex items-center space-x-3">
           <button 
-            onclick="loadTemplate()"
+            id="loadReportBtn"
             class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
             <i class="fas fa-folder-open mr-2"></i>
-            Load Template
+            Load Report
           </button>
           <button 
-            onclick="saveTemplate()"
+            id="saveReportBtn"
             class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
             <i class="fas fa-save mr-2"></i>
-            Save Template
+            Save Report
           </button>
           <button 
-            onclick="previewReport()"
-            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700"
+            id="previewReportBtn"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
             <i class="fas fa-eye mr-2"></i>
             Preview Report
@@ -53,7 +51,7 @@
 
     @if(connectedAccounts && connectedAccounts.length > 0)
       <!-- Report Builder Interface -->
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Widget Library Sidebar -->
         <div class="lg:col-span-1">
           <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
@@ -67,134 +65,200 @@
               <!-- Metrics Widgets -->
               <div>
                 <h4 class="text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">Metrics</h4>
-                <div class="space-y-2">
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('metric', {type: 'spend', title: 'Total Spend'})"
+                <div id="metricWidgets" class="space-y-2">
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "spend", "title": "Total Spend", "icon": "fa-dollar-sign", "color": "green"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-dollar-sign text-green-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Total Spend</span>
                     </div>
-                  </button>
+                  </div>
                   
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('metric', {type: 'impressions', title: 'Impressions'})"
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "impressions", "title": "Impressions", "icon": "fa-eye", "color": "blue"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-eye text-blue-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Impressions</span>
                     </div>
-                  </button>
+                  </div>
                   
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('metric', {type: 'clicks', title: 'Clicks'})"
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "clicks", "title": "Clicks", "icon": "fa-mouse-pointer", "color": "purple"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-mouse-pointer text-purple-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Clicks</span>
                     </div>
-                  </button>
+                  </div>
                   
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('metric', {type: 'conversions', title: 'Conversions'})"
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "conversions", "title": "Conversions", "icon": "fa-trophy", "color": "orange"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-trophy text-orange-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Conversions</span>
                     </div>
-                  </button>
+                  </div>
+
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "ctr", "title": "Click-Through Rate", "icon": "fa-percentage", "color": "indigo"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-percentage text-indigo-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">CTR</span>
+                    </div>
+                  </div>
+
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "cpc", "title": "Cost Per Click", "icon": "fa-coins", "color": "yellow"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-coins text-yellow-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">CPC</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <!-- Chart Widgets -->
               <div>
                 <h4 class="text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">Charts</h4>
-                <div class="space-y-2">
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('chart', {type: 'line', title: 'Performance Over Time'})"
+                <div id="chartWidgets" class="space-y-2">
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="chart"
+                    data-widget-config='{"type": "line", "title": "Performance Over Time", "icon": "fa-chart-line"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-chart-line text-blue-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Line Chart</span>
                     </div>
-                  </button>
+                  </div>
                   
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('chart', {type: 'bar', title: 'Platform Comparison'})"
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="chart"
+                    data-widget-config='{"type": "bar", "title": "Platform Comparison", "icon": "fa-chart-bar"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-chart-bar text-green-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Bar Chart</span>
                     </div>
-                  </button>
+                  </div>
                   
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('chart', {type: 'pie', title: 'Spend Distribution'})"
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="chart"
+                    data-widget-config='{"type": "pie", "title": "Spend Distribution", "icon": "fa-chart-pie"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-chart-pie text-purple-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Pie Chart</span>
                     </div>
-                  </button>
+                  </div>
+
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="chart"
+                    data-widget-config='{"type": "doughnut", "title": "Conversion Funnel", "icon": "fa-chart-donut"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-chart-pie text-pink-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Doughnut Chart</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <!-- Table Widgets -->
               <div>
                 <h4 class="text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">Tables</h4>
-                <div class="space-y-2">
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('table', {type: 'campaign', title: 'Campaign Performance'})"
+                <div id="tableWidgets" class="space-y-2">
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="table"
+                    data-widget-config='{"type": "campaign", "title": "Campaign Performance", "icon": "fa-table"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-table text-gray-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Campaign Table</span>
                     </div>
-                  </button>
+                  </div>
                   
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('table', {type: 'platform', title: 'Platform Breakdown'})"
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="table"
+                    data-widget-config='{"type": "platform", "title": "Platform Breakdown", "icon": "fa-list"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-list text-indigo-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Platform Table</span>
                     </div>
-                  </button>
+                  </div>
+
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="table"
+                    data-widget-config='{"type": "keywords", "title": "Top Keywords", "icon": "fa-search"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-search text-green-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Keywords Table</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <!-- Text Widgets -->
               <div>
                 <h4 class="text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">Content</h4>
-                <div class="space-y-2">
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('text', {type: 'heading', title: 'Report Heading'})"
+                <div id="textWidgets" class="space-y-2">
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="text"
+                    data-widget-config='{"type": "heading", "title": "Report Heading", "icon": "fa-heading"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-heading text-gray-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Text Heading</span>
                     </div>
-                  </button>
+                  </div>
                   
-                  <button 
-                    class="widget-item w-full p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300 text-left"
-                    onclick="addWidget('text', {type: 'description', title: 'Description Text'})"
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="text"
+                    data-widget-config='{"type": "description", "title": "Description Text", "icon": "fa-align-left"}'
                   >
                     <div class="flex items-center">
                       <i class="fas fa-align-left text-gray-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Description</span>
                     </div>
-                  </button>
+                  </div>
+
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="text"
+                    data-widget-config='{"type": "divider", "title": "Section Divider", "icon": "fa-minus"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-minus text-gray-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Divider</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -202,7 +266,7 @@
         </div>
 
         <!-- Report Canvas -->
-        <div class="lg:col-span-3">
+        <div class="lg:col-span-2">
           <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div class="flex items-center justify-between mb-6">
               <h3 class="text-lg font-semibold text-gray-900">
@@ -211,14 +275,14 @@
               </h3>
               <div class="flex items-center space-x-2">
                 <button 
-                  onclick="clearCanvas()"
+                  id="clearCanvasBtn"
                   class="px-3 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-md hover:bg-red-200"
                 >
                   <i class="fas fa-trash mr-1"></i>
                   Clear All
                 </button>
                 <button 
-                  onclick="undoLastAction()"
+                  id="undoBtn"
                   class="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
                 >
                   <i class="fas fa-undo mr-1"></i>
@@ -234,8 +298,8 @@
             >
               <div id="emptyState" class="text-center py-12">
                 <i class="fas fa-mouse-pointer text-4xl text-gray-400 mb-4"></i>
-                <h4 class="text-lg font-medium text-gray-600 mb-2">Click widgets to add them to your report</h4>
-                <p class="text-gray-500">Start by clicking on metrics, charts, or tables from the widget library</p>
+                <h4 class="text-lg font-medium text-gray-600 mb-2">Drag widgets here to build your report</h4>
+                <p class="text-gray-500">Start by dragging metrics, charts, or tables from the widget library</p>
               </div>
 
               <!-- Dynamic Widget Container -->
@@ -265,316 +329,46 @@
     @endif
   </div>
 
-  <!-- Chart.js for Widget Previews -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-  <script>
-    let widgetCounter = 0;
-    let reportWidgets = [];
-
-    // Add widget to canvas (simplified approach)
-    function addWidget(type, config) {
-      widgetCounter++;
-      const widgetId = `widget-${widgetCounter}`;
-      
-      // Hide empty state and show widget container
-      document.getElementById('emptyState').style.display = 'none';
-      document.getElementById('widgetContainer').classList.remove('hidden');
-      
-      let widgetHtml = '';
-      
-      switch(type) {
-        case 'metric':
-          widgetHtml = createMetricWidget(widgetId, config);
-          break;
-        case 'chart':
-          widgetHtml = createChartWidget(widgetId, config);
-          break;
-        case 'table':
-          widgetHtml = createTableWidget(widgetId, config);
-          break;
-        case 'text':
-          widgetHtml = createTextWidget(widgetId, config);
-          break;
-      }
-      
-      document.getElementById('widgetContainer').innerHTML += widgetHtml;
-      
-      // Store widget data
-      reportWidgets.push({
-        id: widgetId,
-        type: type,
-        config: config
-      });
-      
-      // Initialize charts if needed
-      if (type === 'chart') {
-        setTimeout(() => initializeChart(widgetId, config), 100);
-      }
-    }
-
-    function createMetricWidget(id, config) {
-      const sampleValue = getSampleMetricValue(config.type);
-      return `
-        <div id="${id}" class="widget-container bg-white border border-gray-200 rounded-lg p-4 relative group">
-          <div class="widget-controls absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onclick="removeWidget('${id}')" class="p-1 text-gray-400 hover:text-red-600 ml-1">
-              <i class="fas fa-times text-xs"></i>
-            </button>
+  <!-- Save Report Modal -->
+  <div id="saveReportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+      <div class="mt-3">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Save Custom Report</h3>
+        <form id="saveReportForm">
+          <div class="mb-4">
+            <label for="reportName" class="block text-sm font-medium text-gray-700 mb-2">Report Name</label>
+            <input type="text" id="reportName" name="name" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter report name" required>
           </div>
-          <div class="flex items-center">
-            <div class="flex-1">
-              <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">${config.title}</h4>
-              <p class="text-2xl font-bold text-gray-900">${sampleValue}</p>
-            </div>
-            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <i class="fas ${getMetricIcon(config.type)} text-blue-600"></i>
-            </div>
+          <div class="mb-4">
+            <label for="reportDescription" class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+            <textarea id="reportDescription" name="description" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter report description"></textarea>
           </div>
+          <div class="flex justify-end space-x-3">
+            <button type="button" id="cancelSaveBtn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">Save Report</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load Report Modal -->
+  <div id="loadReportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+      <div class="mt-3">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Load Existing Report</h3>
+        <div id="reportsList" class="max-h-60 overflow-y-auto">
+          <!-- Reports will be loaded here -->
         </div>
-      `;
-    }
-
-    function createChartWidget(id, config) {
-      return `
-        <div id="${id}" class="widget-container bg-white border border-gray-200 rounded-lg p-4 relative group">
-          <div class="widget-controls absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onclick="removeWidget('${id}')" class="p-1 text-gray-400 hover:text-red-600 ml-1">
-              <i class="fas fa-times text-xs"></i>
-            </button>
-          </div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">${config.title}</h3>
-          <div class="relative h-64">
-            <canvas id="${id}-chart"></canvas>
-          </div>
+        <div class="flex justify-end mt-4">
+          <button type="button" id="cancelLoadBtn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
         </div>
-      `;
-    }
+      </div>
+    </div>
+  </div>
 
-    function createTableWidget(id, config) {
-      return `
-        <div id="${id}" class="widget-container bg-white border border-gray-200 rounded-lg overflow-hidden relative group">
-          <div class="widget-controls absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-            <button onclick="removeWidget('${id}')" class="p-1 text-gray-400 hover:text-red-600 ml-1">
-              <i class="fas fa-times text-xs"></i>
-            </button>
-          </div>
-          <div class="px-4 py-3 border-b border-gray-200">
-            <h3 class="text-lg font-semibold text-gray-900">${config.title}</h3>
-          </div>
-          <div class="overflow-x-auto">
-            ${getSampleTableData(config.type)}
-          </div>
-        </div>
-      `;
-    }
-
-    function createTextWidget(id, config) {
-      const content = config.type === 'heading' ? 
-        '<h2 class="text-2xl font-bold text-gray-900">Report Heading</h2>' :
-        '<p class="text-gray-700">This is a description text widget. You can customize the content.</p>';
-      
-      return `
-        <div id="${id}" class="widget-container bg-white border border-gray-200 rounded-lg p-4 relative group">
-          <div class="widget-controls absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button onclick="removeWidget('${id}')" class="p-1 text-gray-400 hover:text-red-600 ml-1">
-              <i class="fas fa-times text-xs"></i>
-            </button>
-          </div>
-          ${content}
-        </div>
-      `;
-    }
-
-    // Helper Functions
-    function getSampleMetricValue(type) {
-      const values = {
-        spend: '$2,450.50',
-        impressions: '145,680',
-        clicks: '4,720',
-        conversions: '142'
-      };
-      return values[type] || '$0';
-    }
-
-    function getMetricIcon(type) {
-      const icons = {
-        spend: 'fa-dollar-sign',
-        impressions: 'fa-eye',
-        clicks: 'fa-mouse-pointer',
-        conversions: 'fa-trophy'
-      };
-      return icons[type] || 'fa-chart-bar';
-    }
-
-    function getSampleTableData(type) {
-      if (type === 'campaign') {
-        return `
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campaign</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Spend</th>
-                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">CTR</th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr><td class="px-4 py-3 text-sm">Brand Campaign</td><td class="px-4 py-3 text-sm">$1,250</td><td class="px-4 py-3 text-sm">3.2%</td></tr>
-              <tr><td class="px-4 py-3 text-sm">Product Campaign</td><td class="px-4 py-3 text-sm">$890</td><td class="px-4 py-3 text-sm">2.8%</td></tr>
-            </tbody>
-          </table>
-        `;
-      }
-      return '<p class="p-4 text-gray-500">Sample table data</p>';
-    }
-
-    function initializeChart(widgetId, config) {
-      const ctx = document.getElementById(`${widgetId}-chart`);
-      if (!ctx) return;
-      
-      try {
-        let chartConfig = {
-          type: config.type,
-          data: getSampleChartData(config.type),
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                position: config.type === 'pie' ? 'bottom' : 'top'
-              }
-            }
-          }
-        };
-        
-        new Chart(ctx, chartConfig);
-      } catch (error) {
-        console.warn('Chart initialization failed:', error);
-      }
-    }
-
-    function getSampleChartData(type) {
-      switch(type) {
-        case 'line':
-          return {
-            labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'],
-            datasets: [{
-              label: 'Performance',
-              data: [12, 19, 15, 25, 22],
-              borderColor: 'rgb(59, 130, 246)',
-              backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              tension: 0.4
-            }]
-          };
-        case 'bar':
-          return {
-            labels: ['Google Ads', 'Meta Ads', 'LinkedIn Ads'],
-            datasets: [{
-              label: 'Spend',
-              data: [1200, 800, 400],
-              backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6']
-            }]
-          };
-        case 'pie':
-          return {
-            labels: ['Google Ads', 'Meta Ads', 'LinkedIn Ads'],
-            datasets: [{
-              data: [50, 30, 20],
-              backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6']
-            }]
-          };
-        default:
-          return { labels: [], datasets: [] };
-      }
-    }
-
-    // Widget Management Functions
-    function removeWidget(widgetId) {
-      const element = document.getElementById(widgetId);
-      if (element) {
-        element.remove();
-      }
-      
-      reportWidgets = reportWidgets.filter(widget => widget.id !== widgetId);
-      
-      if (reportWidgets.length === 0) {
-        document.getElementById('emptyState').style.display = 'block';
-        document.getElementById('widgetContainer').classList.add('hidden');
-      }
-    }
-
-    function clearCanvas() {
-      if (confirm('Are you sure you want to clear all widgets?')) {
-        document.getElementById('widgetContainer').innerHTML = '';
-        document.getElementById('emptyState').style.display = 'block';
-        document.getElementById('widgetContainer').classList.add('hidden');
-        reportWidgets = [];
-        widgetCounter = 0;
-      }
-    }
-
-    function undoLastAction() {
-      if (reportWidgets.length > 0) {
-        const lastWidget = reportWidgets[reportWidgets.length - 1];
-        removeWidget(lastWidget.id);
-      }
-    }
-
-    // Template and Report Functions
-    function loadTemplate() {
-      alert('Load template feature coming soon!');
-    }
-
-    function saveTemplate() {
-      if (reportWidgets.length === 0) {
-        alert('Please add some widgets before saving the template.');
-        return;
-      }
-      alert('Save template feature coming soon!');
-    }
-
-    function previewReport() {
-      if (reportWidgets.length === 0) {
-        alert('Please add some widgets before previewing the report.');
-        return;
-      }
-      
-      // Create a new window with the report preview
-      const previewWindow = window.open('', '_blank', 'width=1200,height=800');
-      const reportHtml = generateReportPreviewHtml();
-      previewWindow.document.write(reportHtml);
-      previewWindow.document.close();
-    }
-
-    function generateReportPreviewHtml() {
-      const widgets = document.getElementById('widgetContainer').innerHTML;
-      // Remove widget controls and buttons for clean preview
-      const cleanWidgets = widgets
-        .replace(/class="widget-controls[^"]*"/g, 'style="display: none;"')
-        .replace(/<button[^>]*>.*?<\/button>/gs, '');
-      
-      return `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Custom Report Preview</title>
-          <script src="https://cdn.tailwindcss.com"></script>
-          <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-          <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-        </head>
-        <body class="bg-gray-50 p-8">
-          <div class="max-w-7xl mx-auto">
-            <div class="mb-8 text-center">
-              <h1 class="text-3xl font-bold text-gray-900 mb-2">Custom Marketing Report</h1>
-              <p class="text-gray-600">Generated on ${new Date().toLocaleDateString()}</p>
-            </div>
-            <div class="space-y-6">
-              ${cleanWidgets}
-            </div>
-          </div>
-        </body>
-        </html>
-      `;
-    }
-  </script>
+  <!-- Required Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
 @endslot
 @end
