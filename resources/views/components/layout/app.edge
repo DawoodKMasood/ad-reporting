@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrfToken }}">
     @vite(['resources/js/app.js'])
     <link href="/css/fontawesome.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
     @if ($slots.meta)
       {{{ await $slots.meta() }}}
     @endif

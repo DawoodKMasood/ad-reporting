@@ -237,7 +237,9 @@ export default class ReportsController {
   async saveLayout({ request, auth, response }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      const data = await request.validateUsing(saveLayoutValidator)
+      const data = request.all()
+      
+      logger.info('SaveLayout called with data:', data)
 
       if (data.reportId) {
         // Update existing report

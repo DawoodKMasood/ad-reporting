@@ -27,6 +27,7 @@
           <button 
             id="saveReportBtn"
             class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            onclick="handleSaveClick()"
           >
             <i class="fas fa-save mr-2"></i>
             Save Report
@@ -34,6 +35,7 @@
           <button 
             id="previewReportBtn"
             class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            onclick="handlePreviewClick()"
           >
             <i class="fas fa-eye mr-2"></i>
             Preview Report
@@ -55,10 +57,11 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="accountSelection">
             @each(account in connectedAccounts)
               <div 
-                class="account-option cursor-pointer flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
+                class="account-option cursor-pointer flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-green-600 transition-all duration-200"
                 data-account-id="{{ account.id }}"
                 data-account-name="{{ account.accountDisplayName }}"
                 data-platform="{{ account.platform }}"
+                onclick="selectAccount(this)"
               >
                 <div class="flex-shrink-0">
                   @!component('components/platform-logo', { 
@@ -86,9 +89,6 @@
                       Inactive
                     </span>
                   @end
-                </div>
-                <div class="flex-shrink-0 ml-2">
-                  <i class="fas fa-check-circle text-xl text-purple-600 hidden account-selected-icon"></i>
                 </div>
               </div>
             @end
@@ -122,6 +122,8 @@
                     data-widget-type="metric"
                     data-widget-config='{"type": "spend", "title": "Total Spend", "icon": "fa-dollar-sign", "color": "green"}'
                     draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-dollar-sign text-green-600 mr-2"></i>
@@ -134,6 +136,8 @@
                     data-widget-type="metric"
                     data-widget-config='{"type": "impressions", "title": "Impressions", "icon": "fa-eye", "color": "blue"}'
                     draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-eye text-blue-600 mr-2"></i>
@@ -146,6 +150,8 @@
                     data-widget-type="metric"
                     data-widget-config='{"type": "clicks", "title": "Clicks", "icon": "fa-mouse-pointer", "color": "purple"}'
                     draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-mouse-pointer text-purple-600 mr-2"></i>
@@ -158,34 +164,12 @@
                     data-widget-type="metric"
                     data-widget-config='{"type": "conversions", "title": "Conversions", "icon": "fa-trophy", "color": "orange"}'
                     draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-trophy text-orange-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Conversions</span>
-                    </div>
-                  </div>
-
-                  <div 
-                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
-                    data-widget-type="metric"
-                    data-widget-config='{"type": "ctr", "title": "Click-Through Rate", "icon": "fa-percentage", "color": "indigo"}'
-                    draggable="true"
-                  >
-                    <div class="flex items-center">
-                      <i class="fas fa-percentage text-indigo-600 mr-2"></i>
-                      <span class="text-sm text-gray-900">CTR</span>
-                    </div>
-                  </div>
-
-                  <div 
-                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
-                    data-widget-type="metric"
-                    data-widget-config='{"type": "cpc", "title": "Cost Per Click", "icon": "fa-coins", "color": "yellow"}'
-                    draggable="true"
-                  >
-                    <div class="flex items-center">
-                      <i class="fas fa-coins text-yellow-600 mr-2"></i>
-                      <span class="text-sm text-gray-900">CPC</span>
                     </div>
                   </div>
                 </div>
@@ -200,6 +184,8 @@
                     data-widget-type="chart"
                     data-widget-config='{"type": "line", "title": "Performance Over Time", "icon": "fa-chart-line"}'
                     draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-chart-line text-blue-600 mr-2"></i>
@@ -212,34 +198,12 @@
                     data-widget-type="chart"
                     data-widget-config='{"type": "bar", "title": "Platform Comparison", "icon": "fa-chart-bar"}'
                     draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-chart-bar text-green-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Bar Chart</span>
-                    </div>
-                  </div>
-                  
-                  <div 
-                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
-                    data-widget-type="chart"
-                    data-widget-config='{"type": "pie", "title": "Spend Distribution", "icon": "fa-chart-pie"}'
-                    draggable="true"
-                  >
-                    <div class="flex items-center">
-                      <i class="fas fa-chart-pie text-purple-600 mr-2"></i>
-                      <span class="text-sm text-gray-900">Pie Chart</span>
-                    </div>
-                  </div>
-
-                  <div 
-                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
-                    data-widget-type="chart"
-                    data-widget-config='{"type": "doughnut", "title": "Conversion Funnel", "icon": "fa-chart-donut"}'
-                    draggable="true"
-                  >
-                    <div class="flex items-center">
-                      <i class="fas fa-chart-pie text-pink-600 mr-2"></i>
-                      <span class="text-sm text-gray-900">Doughnut Chart</span>
                     </div>
                   </div>
                 </div>
@@ -254,76 +218,12 @@
                     data-widget-type="table"
                     data-widget-config='{"type": "campaign", "title": "Campaign Performance", "icon": "fa-table"}'
                     draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-table text-gray-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Campaign Table</span>
-                    </div>
-                  </div>
-                  
-                  <div 
-                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
-                    data-widget-type="table"
-                    data-widget-config='{"type": "platform", "title": "Platform Breakdown", "icon": "fa-list"}'
-                    draggable="true"
-                  >
-                    <div class="flex items-center">
-                      <i class="fas fa-list text-indigo-600 mr-2"></i>
-                      <span class="text-sm text-gray-900">Platform Table</span>
-                    </div>
-                  </div>
-
-                  <div 
-                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
-                    data-widget-type="table"
-                    data-widget-config='{"type": "keywords", "title": "Top Keywords", "icon": "fa-search"}'
-                    draggable="true"
-                  >
-                    <div class="flex items-center">
-                      <i class="fas fa-search text-green-600 mr-2"></i>
-                      <span class="text-sm text-gray-900">Keywords Table</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Text Widgets -->
-              <div>
-                <h4 class="text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">Content</h4>
-                <div id="textWidgets" class="space-y-2">
-                  <div 
-                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
-                    data-widget-type="text"
-                    data-widget-config='{"type": "heading", "title": "Report Heading", "icon": "fa-heading"}'
-                    draggable="true"
-                  >
-                    <div class="flex items-center">
-                      <i class="fas fa-heading text-gray-600 mr-2"></i>
-                      <span class="text-sm text-gray-900">Text Heading</span>
-                    </div>
-                  </div>
-                  
-                  <div 
-                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
-                    data-widget-type="text"
-                    data-widget-config='{"type": "description", "title": "Description Text", "icon": "fa-align-left"}'
-                    draggable="true"
-                  >
-                    <div class="flex items-center">
-                      <i class="fas fa-align-left text-gray-600 mr-2"></i>
-                      <span class="text-sm text-gray-900">Description</span>
-                    </div>
-                  </div>
-
-                  <div 
-                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
-                    data-widget-type="text"
-                    data-widget-config='{"type": "divider", "title": "Section Divider", "icon": "fa-minus"}'
-                    draggable="true"
-                  >
-                    <div class="flex items-center">
-                      <i class="fas fa-minus text-gray-600 mr-2"></i>
-                      <span class="text-sm text-gray-900">Divider</span>
                     </div>
                   </div>
                 </div>
@@ -344,16 +244,10 @@
                 <button 
                   id="clearCanvasBtn"
                   class="px-3 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-md hover:bg-red-200"
+                  onclick="clearCanvas()"
                 >
                   <i class="fas fa-trash mr-1"></i>
                   Clear All
-                </button>
-                <button 
-                  id="undoBtn"
-                  class="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
-                >
-                  <i class="fas fa-undo mr-1"></i>
-                  Undo
                 </button>
               </div>
             </div>
@@ -362,6 +256,9 @@
             <div 
               id="reportCanvas" 
               class="min-h-96 border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50"
+              ondragover="handleDragOver(event)"
+              ondragleave="handleDragLeave(event)"
+              ondrop="handleDrop(event)"
             >
               <div id="emptyState" class="text-center py-12">
                 <i class="fas fa-mouse-pointer text-4xl text-gray-400 mb-4"></i>
@@ -406,7 +303,7 @@
     <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
       <div class="mt-3">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Save Custom Report</h3>
-        <form id="saveReportForm">
+        <form id="saveReportForm" onsubmit="handleSaveSubmit(event)">
           <div class="mb-4">
             <label for="reportName" class="block text-sm font-medium text-gray-700 mb-2">Report Name</label>
             <input type="text" id="reportName" name="name" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter report name" required>
@@ -416,12 +313,393 @@
             <textarea id="reportDescription" name="description" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter report description"></textarea>
           </div>
           <div class="flex justify-end space-x-3">
-            <button type="button" id="cancelSaveBtn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
+            <button type="button" onclick="hideModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
             <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">Save Report</button>
           </div>
         </form>
       </div>
     </div>
   </div>
+
+  <!-- Page-specific JavaScript -->
+  <script>
+    // Global state
+    let selectedAccountId = null;
+    let selectedAccountData = null;
+    let widgetCounter = 0;
+    let draggedData = null;
+
+    // Account selection
+    function selectAccount(element) {
+      console.log('Selecting account:', element.dataset.accountId);
+      
+      // Clear all selections
+      document.querySelectorAll('.account-option').forEach(opt => {
+        opt.classList.remove('border-green-600');
+        opt.classList.add('border-gray-200');
+      });
+      
+      // Select this one
+      element.classList.remove('border-gray-200');
+      element.classList.add('border-green-600');
+      
+      // Store selection
+      selectedAccountId = element.dataset.accountId;
+      selectedAccountData = {
+        id: element.dataset.accountId,
+        name: element.dataset.accountName,
+        platform: element.dataset.platform
+      };
+      
+      // Hide error
+      document.getElementById('accountRequiredError').classList.add('hidden');
+      
+      showNotification('Account selected: ' + selectedAccountData.name, 'success');
+    }
+
+    // Drag and drop handlers
+    function handleDragStart(event, element) {
+      console.log('Drag start');
+      draggedData = {
+        type: element.dataset.widgetType,
+        config: JSON.parse(element.dataset.widgetConfig || '{}')
+      };
+      event.dataTransfer.effectAllowed = 'copy';
+      event.dataTransfer.setData('text/plain', JSON.stringify(draggedData));
+      element.style.opacity = '0.5';
+    }
+
+    function handleDragEnd(event, element) {
+      element.style.opacity = '1';
+    }
+
+    function handleDragOver(event) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'copy';
+      document.getElementById('reportCanvas').classList.add('border-purple-400', 'bg-purple-50');
+    }
+
+    function handleDragLeave(event) {
+      if (event.target.id === 'reportCanvas') {
+        document.getElementById('reportCanvas').classList.remove('border-purple-400', 'bg-purple-50');
+      }
+    }
+
+    function handleDrop(event) {
+      event.preventDefault();
+      console.log('Drop event');
+      document.getElementById('reportCanvas').classList.remove('border-purple-400', 'bg-purple-50');
+      
+      try {
+        const data = JSON.parse(event.dataTransfer.getData('text/plain'));
+        addWidget(data);
+      } catch (err) {
+        console.error('Drop error:', err);
+      }
+    }
+
+    // Add widget to canvas
+    function addWidget(data) {
+      console.log('Adding widget:', data);
+      widgetCounter++;
+      const id = 'widget-' + widgetCounter;
+      
+      let html = '';
+      
+      if (data.type === 'metric') {
+        html = createMetricWidget(id, data.config);
+      } else if (data.type === 'chart') {
+        html = createChartWidget(id, data.config);
+      } else if (data.type === 'table') {
+        html = createTableWidget(id, data.config);
+      }
+      
+      if (html) {
+        // Hide empty state
+        document.getElementById('emptyState').style.display = 'none';
+        
+        // Show container and add widget
+        const container = document.getElementById('widgetContainer');
+        container.classList.remove('hidden');
+        container.insertAdjacentHTML('beforeend', html);
+        
+        // Init chart if needed
+        if (data.type === 'chart') {
+          setTimeout(() => initChart(id, data.config), 100);
+        }
+        
+        // Hide error
+        document.getElementById('canvasRequiredError').classList.add('hidden');
+        
+        showNotification('Widget added!', 'success');
+      }
+    }
+
+    // Widget creators
+    function createMetricWidget(id, config) {
+      const values = {
+        spend: '$2,450.50',
+        impressions: '145,680',
+        clicks: '4,720',
+        conversions: '142'
+      };
+      const colors = {
+        green: 'bg-green-500',
+        blue: 'bg-blue-500',
+        purple: 'bg-purple-500',
+        orange: 'bg-orange-500'
+      };
+      
+      return `
+        <div id="${id}" class="widget-item bg-white border rounded-lg p-4 relative group" data-widget-type="metric" data-widget-config='${JSON.stringify(config)}'>
+          <button onclick="removeWidget('${id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100">×</button>
+          <div class="flex items-center">
+            <div class="flex-1">
+              <h4 class="text-sm text-gray-500 uppercase">${config.title}</h4>
+              <p class="text-2xl font-bold">${values[config.type] || '0'}</p>
+            </div>
+            <div class="w-12 h-12 ${colors[config.color] || 'bg-gray-500'} rounded flex items-center justify-center">
+              <i class="fas ${config.icon} text-white"></i>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function createChartWidget(id, config) {
+      return `
+        <div id="${id}" class="widget-item bg-white border rounded-lg p-4 relative group" data-widget-type="chart" data-widget-config='${JSON.stringify(config)}'>
+          <button onclick="removeWidget('${id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100">×</button>
+          <h3 class="text-lg font-semibold mb-4">${config.title}</h3>
+          <canvas id="${id}-chart" style="max-height: 300px;"></canvas>
+        </div>
+      `;
+    }
+
+    function createTableWidget(id, config) {
+      const account = selectedAccountData ? selectedAccountData.name : 'Account';
+      return `
+        <div id="${id}" class="widget-item bg-white border rounded-lg overflow-hidden relative group" data-widget-type="table" data-widget-config='${JSON.stringify(config)}'>
+          <button onclick="removeWidget('${id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 z-10">×</button>
+          <div class="px-4 py-3 border-b">
+            <h3 class="text-lg font-semibold">${config.title}</h3>
+          </div>
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left text-xs uppercase">Campaign</th>
+                <th class="px-4 py-2 text-left text-xs uppercase">Account</th>
+                <th class="px-4 py-2 text-left text-xs uppercase">Spend</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="px-4 py-2">Campaign 1</td><td class="px-4 py-2">${account}</td><td class="px-4 py-2">$1,250</td></tr>
+              <tr><td class="px-4 py-2">Campaign 2</td><td class="px-4 py-2">${account}</td><td class="px-4 py-2">$890</td></tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    // Initialize chart
+    function initChart(id, config) {
+      const canvas = document.getElementById(id + '-chart');
+      if (!canvas || typeof Chart === 'undefined') return;
+      
+      let data = {};
+      if (config.type === 'line') {
+        data = {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+          datasets: [{
+            label: 'Spend',
+            data: [1200, 1350, 1100, 1800, 1650],
+            borderColor: '#3B82F6'
+          }]
+        };
+      } else if (config.type === 'bar') {
+        data = {
+          labels: ['Google', 'Meta', 'LinkedIn'],
+          datasets: [{
+            label: 'Spend',
+            data: [1500, 800, 150],
+            backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6']
+          }]
+        };
+      }
+      
+      new Chart(canvas, {
+        type: config.type,
+        data: data,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    }
+
+    // Remove widget
+    function removeWidget(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+      
+      // Check if empty
+      const container = document.getElementById('widgetContainer');
+      if (container.children.length === 0) {
+        container.classList.add('hidden');
+        document.getElementById('emptyState').style.display = 'block';
+      }
+    }
+
+    // Clear canvas
+    function clearCanvas() {
+      if (!confirm('Clear all widgets?')) return;
+      
+      document.getElementById('widgetContainer').innerHTML = '';
+      document.getElementById('widgetContainer').classList.add('hidden');
+      document.getElementById('emptyState').style.display = 'block';
+      
+      widgetCounter = 0;
+      showNotification('Canvas cleared', 'info');
+    }
+
+    // Button handlers
+    function handleSaveClick() {
+      console.log('Save clicked');
+      if (!validate()) return;
+      
+      document.getElementById('saveReportModal').classList.remove('hidden');
+    }
+
+    function handlePreviewClick() {
+      console.log('Preview clicked');
+      if (!validate()) return;
+      
+      // Generate simple preview
+      const widgets = getWidgets();
+      let html = '<h1>Report Preview</h1>';
+      widgets.forEach(w => {
+        html += '<div style="border: 1px solid #ccc; padding: 10px; margin: 10px;">';
+        html += '<h3>' + (w.config.title || w.type) + '</h3>';
+        html += '</div>';
+      });
+      
+      const preview = window.open('', '_blank');
+      preview.document.write(html);
+      preview.document.close();
+    }
+
+    function handleSaveSubmit(event) {
+      event.preventDefault();
+      console.log('Saving report...');
+      
+      const form = new FormData(event.target);
+      const data = {
+        name: form.get('name'),
+        description: form.get('description'),
+        connectedAccountId: parseInt(selectedAccountId),
+        widgetLayout: getWidgets(),
+        platform: selectedAccountData ? selectedAccountData.platform : 'google_ads'
+      };
+      
+      console.log('Report data:', data);
+      
+      // Send to server
+      fetch('/reports/save-layout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': '{{ csrfToken }}'
+        },
+        body: JSON.stringify(data)
+      })
+      .then(res => res.json())
+      .then(result => {
+        console.log('Save result:', result);
+        if (result.success) {
+          hideModal();
+          showNotification('Report saved!', 'success');
+          setTimeout(() => {
+            window.location.href = '/reports';
+          }, 2000);
+        } else {
+          showNotification('Error: ' + (result.error || 'Unknown'), 'error');
+        }
+      })
+      .catch(err => {
+        console.error('Save error:', err);
+        showNotification('Failed to save', 'error');
+      });
+    }
+
+    function hideModal() {
+      document.getElementById('saveReportModal').classList.add('hidden');
+    }
+
+    // Validation
+    function validate() {
+      let valid = true;
+      
+      if (!selectedAccountId) {
+        document.getElementById('accountRequiredError').classList.remove('hidden');
+        valid = false;
+      }
+      
+      if (getWidgets().length === 0) {
+        document.getElementById('canvasRequiredError').classList.remove('hidden');
+        valid = false;
+      }
+      
+      if (!valid) {
+        showNotification('Please select an account and add widgets', 'warning');
+      }
+      
+      return valid;
+    }
+
+    // Get all widgets
+    function getWidgets() {
+      const widgets = [];
+      document.querySelectorAll('#widgetContainer .widget-item').forEach((el, i) => {
+        widgets.push({
+          id: el.id,
+          type: el.dataset.widgetType,
+          config: JSON.parse(el.dataset.widgetConfig || '{}'),
+          order: i
+        });
+      });
+      return widgets;
+    }
+
+    // Show notification
+    function showNotification(msg, type) {
+      console.log('[' + type + '] ' + msg);
+      
+      // Remove old
+      const old = document.querySelector('.notification-toast');
+      if (old) old.remove();
+      
+      const colors = {
+        success: 'bg-green-100 text-green-700',
+        error: 'bg-red-100 text-red-700',
+        warning: 'bg-yellow-100 text-yellow-700',
+        info: 'bg-blue-100 text-blue-700'
+      };
+      
+      const div = document.createElement('div');
+      div.className = 'notification-toast fixed top-4 right-4 px-4 py-2 rounded ' + (colors[type] || colors.info) + ' z-50';
+      div.textContent = msg;
+      document.body.appendChild(div);
+      
+      setTimeout(() => div.remove(), 5000);
+    }
+
+    // Auto-select first account if only one
+    window.addEventListener('load', function() {
+      const accounts = document.querySelectorAll('.account-option');
+      if (accounts.length === 1) {
+        selectAccount(accounts[0]);
+      }
+    });
+  </script>
 @endslot
 @end
