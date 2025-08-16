@@ -2,6 +2,8 @@
  * Custom Report Builder Module
  * Handles all JavaScript functionality for the drag and drop report builder
  */
+import Sortable from 'sortablejs';
+import Chart from 'chart.js/auto';
 
 class CustomReportBuilder {
   constructor() {
@@ -20,16 +22,24 @@ class CustomReportBuilder {
   }
 
   init() {
+    console.log('CustomReportBuilder: Initializing...');
     // Only initialize if we're on the custom reports page
     if (!document.getElementById('reportCanvas')) {
+      console.log('CustomReportBuilder: Not on custom reports page, exiting');
       return;
     }
     
+    console.log('CustomReportBuilder: Setting up elements...');
     this.setupElements();
+    console.log('CustomReportBuilder: Setting up account selection...');
     this.setupAccountSelection();
+    console.log('CustomReportBuilder: Initializing drag and drop...');
     this.initializeDragAndDrop();
+    console.log('CustomReportBuilder: Setting up event listeners...');
     this.setupEventListeners();
+    console.log('CustomReportBuilder: Loading existing report...');
     this.loadExistingReport();
+    console.log('CustomReportBuilder: Initialization complete');
   }
 
   setupElements() {

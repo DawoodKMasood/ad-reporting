@@ -63,12 +63,14 @@
     "@adonisjs/static": "^1.1.1",
     "@adonisjs/vite": "^4.0.0",
     "@vinejs/vine": "^3.0.1",
+    "chart.js": "^4.5.0",
     "edge.js": "^6.3.0",
     "google-ads-api": "^21.0.0",
     "googleapis": "^155.0.1",
     "luxon": "^3.7.1",
     "pg": "^8.16.3",
-    "reflect-metadata": "^0.2.2"
+    "reflect-metadata": "^0.2.2",
+    "sortablejs": "^1.15.6"
   },
   "hotHook": {
     "boundaries": [
