@@ -4,6 +4,7 @@ import CampaignData from '#models/campaign_data'
 import { connectValidator, disconnectValidator, syncValidator } from '#validators/integrations'
 import logger from '@adonisjs/core/services/logger'
 import googleAdsService from '#services/google_ads_service'
+import { DateTime } from 'luxon'
 import googleAdsOAuthService from '#services/google_ads_oauth_service'
 
 export default class IntegrationsController {
@@ -53,14 +54,6 @@ export default class IntegrationsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      // Get existing campaign data from database for metrics
-      let accountMetrics = {
-        totalSpend: 0,
-        totalImpressions: 0,
-        totalClicks: 0,
-        totalConversions: 0
-      }
-
       let syncIssues = {
         hasData: false,
         isManagerWithNoChildren: false,
@@ -78,32 +71,42 @@ export default class IntegrationsController {
         
         syncIssues.hasData = existingData.length > 0
         
-        // Calculate totals from existing data
-        if (existingData.length > 0) {
-          accountMetrics = existingData.reduce((acc, data) => ({
-            totalSpend: acc.totalSpend + (Number(data.spend) || 0),
-            totalImpressions: acc.totalImpressions + (Number(data.impressions) || 0),
-            totalClicks: acc.totalClicks + (Number(data.clicks) || 0),
-            totalConversions: acc.totalConversions + (Number(data.conversions) || 0)
-          }), accountMetrics)
-        }
-        
-        // Ensure all values are numbers
-        accountMetrics.totalSpend = Number(accountMetrics.totalSpend) || 0
-        accountMetrics.totalImpressions = Number(accountMetrics.totalImpressions) || 0
-        accountMetrics.totalClicks = Number(accountMetrics.totalClicks) || 0
-        accountMetrics.totalConversions = Number(accountMetrics.totalConversions) || 0
-        
       } catch (metricsError: any) {
         logger.warn('Could not fetch existing campaign data:', metricsError)
         syncIssues.lastSyncError = metricsError.message
       }
 
+      // Fetch sync history data
+      let syncHistory: { id: number; date: DateTime; status: string; records: number; duration: string }[] = []
+      try {
+        // For now, we'll create a basic sync history based on the last sync time
+        // In a more advanced implementation, this would come from a dedicated sync history table
+        if (connectedAccount.lastSyncAt) {
+          // Get count of campaign data records for this account
+          const campaignDataCount = await CampaignData.query()
+            .where('connected_account_id', connectedAccount.id)
+            .count('* as total')
+          
+          const recordCount = campaignDataCount[0].$extras.total || 0
+          
+          // Create a single sync history entry based on the last sync
+          syncHistory = [{
+            id: 1,
+            date: connectedAccount.lastSyncAt,
+            status: 'completed',
+            records: recordCount,
+            duration: 'N/A' // Duration tracking would require more detailed logging
+          }]
+        }
+      } catch (syncHistoryError: any) {
+        logger.warn('Could not fetch sync history data:', syncHistoryError)
+      }
+
       return view.render('pages/integrations/show', {
         user,
         connectedAccount,
-        accountMetrics,
         syncIssues,
+        syncHistory,
       })
     } catch (error) {
       logger.error('Error fetching connected account details:', error)

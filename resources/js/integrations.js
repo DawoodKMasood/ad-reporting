@@ -33,8 +33,22 @@ class IntegrationManager {
         const button = e.target.closest('[data-action="connect-platform"]');
         this.connectPlatform(button);
       }
+      
+      if (e.target.closest('[data-action="rename-account"]')) {
+        e.preventDefault();
+        const button = e.target.closest('[data-action="rename-account"]');
+        this.renameAccount(button);
+      }
     });
     
+   // Handle rename form submission
+   document.addEventListener('submit', (e) => {
+     if (e.target.id === 'renameAccountForm') {
+       e.preventDefault();
+       this.handleRenameAccountForm(e.target);
+     }
+   });
+   
     // Handle form submissions
     document.addEventListener('submit', (e) => {
       if (e.target.id === 'syncForm') {
@@ -201,6 +215,78 @@ class IntegrationManager {
     .catch(error => {
       console.error('Connection failed:', error);
       this.showNotification('Connection failed: ' + error.message, 'error');
+      // Restore button state
+      button.innerHTML = originalText;
+      button.disabled = false;
+    });
+  }
+  
+  renameAccount(button) {
+    const accountId = button.dataset.accountId;
+    const currentName = button.dataset.currentName || '';
+    
+    // Show rename modal
+    const modal = document.getElementById('renameAccountModal');
+    if (modal) {
+      // Set current name in input
+      const input = document.getElementById('renameAccountModal-input');
+      if (input) {
+        input.value = currentName;
+        input.dataset.currentName = currentName;
+        input.dataset.accountId = accountId;
+      }
+      
+      // Show modal
+      if (typeof window.renameAccountModal_show === 'function') {
+        window.renameAccountModal_show();
+      }
+    }
+  }
+  
+  handleRenameAccountForm(form) {
+    const formData = new FormData(form);
+    const accountId = formData.get('accountId');
+    const newName = formData.get('accountName');
+    const currentName = formData.get('currentName');
+    
+    if (!newName || newName === currentName) {
+      return;
+    }
+    
+    const url = `/integrations/${accountId}/name`;
+    
+    // Show loading state
+    const button = form.querySelector('button[type="submit"]');
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Renaming...';
+    button.disabled = true;
+    
+    // Make API request
+    fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+      },
+      body: JSON.stringify({ displayName: newName })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        this.showNotification('Account name updated successfully!', 'success');
+        // Reload page to show updated data
+        setTimeout(() => {
+          location.reload();
+        }, 1500);
+      } else {
+        this.showNotification('Rename failed: ' + data.message, 'error');
+      }
+    })
+    .catch(error => {
+      this.showNotification('Rename failed: ' + error.message, 'error');
+    })
+    .finally(() => {
       // Restore button state
       button.innerHTML = originalText;
       button.disabled = false;

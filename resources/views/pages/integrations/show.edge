@@ -39,6 +39,7 @@
         <div class="flex space-x-3">
           <button
             onclick="editAccountName('{{ connectedAccount.id }}', '{{ connectedAccount.displayName || connectedAccount.accountName || '' }}')"
+            data-account-id="{{ connectedAccount.id }}"
             class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             <i class="fas fa-edit mr-2"></i>
@@ -137,85 +138,6 @@
       </div>
     @end
 
-    <div class="mb-6">
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">
-          <i class="fas fa-chart-bar mr-2 text-blue-600"></i>
-          Account Metrics
-        </h2>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <!-- Total Spend -->
-          <div class="bg-gray-50 rounded-lg p-4">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-dollar-sign text-green-600"></i>
-                </div>
-              </div>
-              <div class="ml-3">
-                <p class="text-sm font-medium text-gray-500">Total Spend</p>
-                <p class="text-lg font-semibold text-gray-900">
-                  ${{ (Number(accountMetrics.totalSpend) || 0).toFixed(2) }}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Total Impressions -->
-          <div class="bg-gray-50 rounded-lg p-4">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-eye text-blue-600"></i>
-                </div>
-              </div>
-              <div class="ml-3">
-                <p class="text-sm font-medium text-gray-500">Impressions</p>
-                <p class="text-lg font-semibold text-gray-900">
-                  {{ (Number(accountMetrics.totalImpressions) || 0).toLocaleString() }}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Total Clicks -->
-          <div class="bg-gray-50 rounded-lg p-4">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-mouse-pointer text-purple-600"></i>
-                </div>
-              </div>
-              <div class="ml-3">
-                <p class="text-sm font-medium text-gray-500">Clicks</p>
-                <p class="text-lg font-semibold text-gray-900">
-                  {{ (Number(accountMetrics.totalClicks) || 0).toLocaleString() }}
-                </p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Total Conversions -->
-          <div class="bg-gray-50 rounded-lg p-4">
-            <div class="flex items-center">
-              <div class="flex-shrink-0">
-                <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <i class="fas fa-trophy text-orange-600"></i>
-                </div>
-              </div>
-              <div class="ml-3">
-                <p class="text-sm font-medium text-gray-500">Conversions</p>
-                <p class="text-lg font-semibold text-gray-900">
-                  {{ (Number(accountMetrics.totalConversions) || 0).toFixed(1) }}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- Sync History -->
     <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
       <h2 class="text-lg font-semibold text-gray-900 mb-4">
@@ -234,16 +156,47 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" colspan="4">
-                No sync history available
-              </td>
-            </tr>
+            @if(syncHistory && syncHistory.length > 0)
+              @each(history in syncHistory)
+                <tr>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
+                    {{ history.date.toFormat('LLL dd, yyyy HH:mm') }}
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Completed
+                    </span>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    {{ history.records }} records
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                    {{ history.duration }}
+                  </td>
+                </tr>
+              @end
+            @else
+              <tr>
+                <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500" colspan="4">
+                  No sync history available
+                </td>
+              </tr>
+            @end
           </tbody>
         </table>
       </div>
     </div>
   </div>
+
+  <!-- Rename Account Modal -->
+  @!component('components/rename-account-modal', {
+    id: 'renameAccountModal',
+    title: 'Rename Account',
+    message: 'Enter a new name for this account:',
+    currentName: connectedAccount.displayName || connectedAccount.accountName || '',
+    confirmButtonText: 'Rename',
+    cancelButtonText: 'Cancel'
+  })
 
   <script>
     // Auto-hide flash messages after 5 seconds
@@ -256,9 +209,11 @@
       });
     }, 5000);
 
-    // Edit account name function
-    function editAccountName(accountId, currentName) {
-      const newName = prompt('Enter a new name for this account:', currentName);
+    // Initialize rename account modal callbacks
+    window.renameAccountModal_onConfirm = function(newName) {
+      const accountId = document.querySelector('[onclick*="editAccountName"]').dataset.accountId;
+      const currentName = document.querySelector('#renameAccountModal-input').dataset.currentName;
+      
       if (newName && newName !== currentName) {
         fetch(`/integrations/${accountId}/name`, {
           method: 'PATCH',
@@ -283,6 +238,27 @@
         .catch(error => {
           window.integrationManager?.showNotification('Failed to update account name: ' + error.message, 'error');
         });
+      }
+    };
+    
+    window.renameAccountModal_onCancel = function() {
+      // Optional: Add any cleanup logic here if needed
+    };
+    
+    // Edit account name function - shows the modal
+    function editAccountName(accountId, currentName) {
+      // Set the current name in the input field
+      const input = document.getElementById('renameAccountModal-input');
+      if (input) {
+        input.value = currentName;
+        input.dataset.currentName = currentName;
+      }
+      
+      // Show the modal
+      if (typeof window.renameAccountModal_show === 'function') {
+        window.renameAccountModal_show();
+      } else {
+        console.error('Rename account modal show function not found');
       }
     }
 
