@@ -104,6 +104,7 @@ export default class ReportsController {
       // Fetch connected accounts
       const connectedAccounts = await ConnectedAccount.query()
         .where('user_id', user.id)
+        .where('is_active', true)
 
       if (connectedAccounts.length === 0) {
         return view.render('pages/reports/index', {
@@ -332,15 +333,103 @@ export default class ReportsController {
       const startDate = qs.start_date ? DateTime.fromISO(qs.start_date) : endDate.minus({ days: 30 })
       const platform = qs.platform || 'all'
 
-      // Similar logic to index but focused on performance metrics
+      // Fetch connected accounts
       const connectedAccounts = await ConnectedAccount.query()
         .where('user_id', user.id)
+        .where('is_active', true)
+
+      let performanceData = null
+      let hasData = false
+
+      if (connectedAccounts.length > 0) {
+        // Get account IDs and filter by platform if specified
+        let accountIds = connectedAccounts.map(account => account.id)
+        if (platform !== 'all') {
+          const filteredAccounts = connectedAccounts.filter(account => account.platform === platform)
+          accountIds = filteredAccounts.map(account => account.id)
+        }
+
+        // Fetch campaign data for the selected date range
+        const campaignData = await CampaignData.query()
+          .whereIn('connected_account_id', accountIds)
+          .whereBetween('date', [startDate.toJSDate(), endDate.toJSDate()])
+          .preload('connectedAccount')
+          .orderBy('date', 'asc')
+
+        if (campaignData.length > 0) {
+          hasData = true
+          
+          // Calculate performance metrics
+          const metrics = campaignData.reduce((acc, data) => {
+            acc.totalSpend += data.spend
+            acc.totalImpressions += data.impressions
+            acc.totalClicks += data.clicks
+            acc.totalConversions += data.conversions
+            return acc
+          }, { totalSpend: 0, totalImpressions: 0, totalClicks: 0, totalConversions: 0 })
+
+          // Calculate derived metrics
+          const ctr = metrics.totalImpressions > 0 ? (metrics.totalClicks / metrics.totalImpressions) * 100 : 0
+          const cpc = metrics.totalClicks > 0 ? metrics.totalSpend / metrics.totalClicks : 0
+          const cpm = metrics.totalImpressions > 0 ? (metrics.totalSpend / metrics.totalImpressions) * 1000 : 0
+          const cpa = metrics.totalConversions > 0 ? metrics.totalSpend / metrics.totalConversions : 0
+          const conversionRate = metrics.totalClicks > 0 ? (metrics.totalConversions / metrics.totalClicks) * 100 : 0
+
+          // Group data by date for charts
+          const dailyData: { [key: string]: any } = {}
+          campaignData.forEach(data => {
+            const dateStr = data.date.toISOString().split('T')[0]
+            if (!dailyData[dateStr]) {
+              dailyData[dateStr] = { spend: 0, clicks: 0, impressions: 0, conversions: 0 }
+            }
+            dailyData[dateStr].spend += data.spend
+            dailyData[dateStr].clicks += data.clicks
+            dailyData[dateStr].impressions += data.impressions
+            dailyData[dateStr].conversions += data.conversions
+          })
+
+          const sortedDates = Object.keys(dailyData).sort()
+          const chartData = {
+            labels: sortedDates.map(date => DateTime.fromISO(date).toFormat('MMM dd')),
+            datasets: [
+              {
+                label: 'Spend',
+                data: sortedDates.map(date => dailyData[date].spend),
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              },
+              {
+                label: 'Clicks',
+                data: sortedDates.map(date => dailyData[date].clicks),
+                borderColor: 'rgb(16, 185, 129)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              }
+            ]
+          }
+
+          performanceData = {
+            metrics: {
+              ...metrics,
+              ctr,
+              cpc,
+              cpm,
+              cpa,
+              conversionRate
+            },
+            chartData: JSON.stringify(chartData),
+            campaigns: campaignData.slice(0, 10) // Top 10 campaigns
+          }
+        }
+      }
 
       return view.render('pages/reports/performance', {
         user,
         connectedAccounts,
         selectedDateRange: { start: startDate.toISODate(), end: endDate.toISODate() },
         selectedPlatform: platform,
+        performanceData,
+        hasData,
+        formatNumber: this.formatNumber.bind(this),
       })
 
     } catch (error) {
@@ -351,7 +440,10 @@ export default class ReportsController {
         connectedAccounts: [],
         selectedDateRange: { start: DateTime.now().minus({ days: 30 }).toISODate(), end: DateTime.now().toISODate() },
         selectedPlatform: 'all',
+        performanceData: null,
+        hasData: false,
         error: 'Failed to load performance data',
+        formatNumber: this.formatNumber.bind(this),
       })
     }
   }
@@ -365,6 +457,7 @@ export default class ReportsController {
       
       const connectedAccounts = await ConnectedAccount.query()
         .where('user_id', user.id)
+        .where('is_active', true)
 
       return view.render('pages/reports/custom', {
         user,

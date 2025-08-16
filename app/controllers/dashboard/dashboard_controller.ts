@@ -36,6 +36,9 @@ export default class DashboardController {
    * Format number with commas for thousands separator
    */
   private formatNumber(num: number): string {
+    if (typeof num !== 'number' || isNaN(num)) {
+      return '0'
+    }
     return num.toLocaleString('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 2,
@@ -51,6 +54,7 @@ export default class DashboardController {
       // Fetch the user's connected ad accounts
       const connectedAccounts = await ConnectedAccount.query()
         .where('user_id', user.id)
+        .where('is_active', true)
         .orderBy('created_at', 'desc')
 
       // Initialize summary metrics
@@ -69,16 +73,17 @@ export default class DashboardController {
         // Retrieve recent campaign performance data for connected accounts
         const campaignData = await CampaignData.query()
           .whereIn('connected_account_id', accountIds)
+          .where('date', '>=', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)) // Last 30 days
           .orderBy('date', 'desc')
           .limit(100) // Limit to recent data to avoid performance issues
 
         // Calculate summary metrics
         stats = campaignData.reduce(
           (acc, data) => {
-            acc.totalSpend += data.spend
-            acc.totalImpressions += data.impressions
-            acc.totalClicks += data.clicks
-            acc.totalConversions += data.conversions
+            acc.totalSpend += Number(data.spend) || 0
+            acc.totalImpressions += Number(data.impressions) || 0
+            acc.totalClicks += Number(data.clicks) || 0
+            acc.totalConversions += Number(data.conversions) || 0
             return acc
           },
           {

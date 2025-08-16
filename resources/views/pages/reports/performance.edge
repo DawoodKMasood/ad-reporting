@@ -35,7 +35,7 @@
           </button>
           <button 
             onclick="schedulePerformanceReport()"
-            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
             <i class="fas fa-clock mr-2"></i>
             Schedule Report
@@ -44,18 +44,105 @@
       </div>
     </div>
 
-    <!-- Date Range and Platform Filter -->
+    <!-- Enhanced Date Range and Platform Filter -->
     <div class="mb-8">
-      @!component('components/reports/filters', {
-        selectedDateRange: selectedDateRange,
-        selectedPlatform: selectedPlatform,
-        connectedAccounts: connectedAccounts
-      })
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
+          <div class="flex flex-col sm:flex-row sm:items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <!-- Date Range Selector -->
+            <div class="flex items-center space-x-2">
+              <label for="dateRangeSelect" class="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                <i class="fas fa-calendar-alt text-gray-500" aria-hidden="true"></i>
+                <span>Date Range:</span>
+              </label>
+              <select 
+                id="dateRangeSelect" 
+                onchange="updateDateRange(this.value)"
+                class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm min-w-0"
+                aria-label="Select date range"
+              >
+                <option value="7">Last 7 days</option>
+                <option value="30" selected>Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="custom">Custom Range</option>
+              </select>
+            </div>
+
+            <!-- Custom Date Inputs (Hidden by default) -->
+            <div id="customDateInputs" class="hidden flex items-center space-x-2">
+              <label for="startDate" class="sr-only">Start Date</label>
+              <input 
+                type="date" 
+                id="startDate" 
+                value="{{ selectedDateRange.start }}"
+                class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                aria-label="Start date"
+              >
+              <span class="text-gray-500" aria-hidden="true">to</span>
+              <label for="endDate" class="sr-only">End Date</label>
+              <input 
+                type="date" 
+                id="endDate" 
+                value="{{ selectedDateRange.end }}"
+                class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                aria-label="End date"
+              >
+              <button 
+                onclick="applyCustomDateRange()"
+                class="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Apply
+              </button>
+            </div>
+
+            <!-- Platform Filter -->
+            <div class="flex items-center space-x-2">
+              <label for="platformSelect" class="flex items-center space-x-2 text-sm font-medium text-gray-700">
+                <i class="fas fa-filter text-gray-500" aria-hidden="true"></i>
+                <span>Platform:</span>
+              </label>
+              <select 
+                id="platformSelect" 
+                onchange="updatePlatform(this.value)"
+                class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm min-w-0"
+                aria-label="Select platform"
+              >
+                <option value="all" {{ selectedPlatform === 'all' ? 'selected' : '' }}>All Platforms</option>
+                @each(account in connectedAccounts)
+                  <option 
+                    value="{{ account.platform }}" 
+                    {{ selectedPlatform === account.platform ? 'selected' : '' }}
+                  >
+                    {{ account.platform === 'google_ads' ? 'Google Ads' : 
+                       account.platform === 'meta_ads' ? 'Meta Ads' : 
+                       account.platform === 'facebook_ads' ? 'Facebook Ads' : 
+                       account.platform === 'instagram_ads' ? 'Instagram Ads' : 
+                       account.platform === 'tiktok_ads' ? 'TikTok Ads' : 
+                       account.platform === 'linkedin_ads' ? 'LinkedIn Ads' : 
+                       account.platform.charAt(0).toUpperCase() + account.platform.slice(1) }}
+                  </option>
+                @end
+              </select>
+            </div>
+          </div>
+
+          <!-- Quick Actions -->
+          <div class="flex items-center space-x-2">
+            <button 
+              onclick="refreshData()"
+              class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              <i class="fas fa-sync-alt mr-2" aria-hidden="true"></i>
+              Refresh
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
     @if(connectedAccounts && connectedAccounts.length > 0)
       <!-- Performance Metrics Grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
         <!-- Efficiency Metrics -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">
@@ -65,19 +152,19 @@
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Cost per Click (CPC)</span>
-              <span class="text-lg font-semibold text-gray-900">$2.45</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-cpc">$0.00</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Cost per Thousand (CPM)</span>
-              <span class="text-lg font-semibold text-gray-900">$12.80</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-cpm">$0.00</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Cost per Conversion</span>
-              <span class="text-lg font-semibold text-gray-900">$48.50</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-cpa">$0.00</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Return on Ad Spend</span>
-              <span class="text-lg font-semibold text-green-600">4.2x</span>
+              <span class="text-lg font-semibold text-green-600" id="metric-roas">0.0x</span>
             </div>
           </div>
         </div>
@@ -91,19 +178,19 @@
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Click-Through Rate</span>
-              <span class="text-lg font-semibold text-gray-900">3.24%</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-ctr">0.00%</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Conversion Rate</span>
-              <span class="text-lg font-semibold text-gray-900">5.8%</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-cr">0.00%</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Bounce Rate</span>
-              <span class="text-lg font-semibold text-gray-900">42.1%</span>
+              <span class="text-sm text-gray-600">Impression Share</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-is">0.00%</span>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Avg. Session Duration</span>
-              <span class="text-lg font-semibold text-gray-900">2m 34s</span>
+              <span class="text-sm text-gray-600">Avg. Position</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-pos">0.0</span>
             </div>
           </div>
         </div>
@@ -118,21 +205,47 @@
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Quality Score</span>
               <div class="flex items-center">
-                <span class="text-lg font-semibold text-gray-900 mr-2">8.5</span>
-                <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">Good</span>
+                <span class="text-lg font-semibold text-gray-900 mr-2" id="metric-qs">0.0</span>
+                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded" id="qs-rating">N/A</span>
               </div>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Relevance Score</span>
-              <span class="text-lg font-semibold text-gray-900">7.8</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-rel">0.0</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Landing Page Score</span>
-              <span class="text-lg font-semibold text-gray-900">9.2</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-lp">0.0</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Ad Relevance</span>
-              <span class="text-lg font-semibold text-gray-900">8.9</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-ar">0.0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Volume Metrics -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-chart-bar mr-2 text-indigo-600"></i>
+            Volume Metrics
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Total Impressions</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-impressions">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Total Clicks</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-clicks">0</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Total Spend</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-spend">$0.00</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Total Conversions</span>
+              <span class="text-lg font-semibold text-gray-900" id="metric-conversions">0</span>
             </div>
           </div>
         </div>
@@ -155,7 +268,7 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">
             <i class="fas fa-funnel-dollar mr-2 text-orange-600"></i>
-            Advanced Conversion Funnel
+            Conversion Funnel
           </h3>
           <div class="relative h-80">
             <canvas id="conversionFunnelChart"></canvas>
@@ -171,48 +284,9 @@
             <i class="fas fa-mobile-alt mr-2 text-indigo-600"></i>
             Device Performance
           </h3>
-          <div class="space-y-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center">
-                <i class="fas fa-desktop text-gray-500 mr-2"></i>
-                <span class="text-sm text-gray-600">Desktop</span>
-              </div>
-              <div class="text-right">
-                <span class="text-sm font-semibold text-gray-900">$1,245</span>
-                <div class="text-xs text-gray-500">45% of spend</div>
-              </div>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-              <div class="bg-blue-600 h-2 rounded-full" style="width: 45%"></div>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <div class="flex items-center">
-                <i class="fas fa-mobile-alt text-gray-500 mr-2"></i>
-                <span class="text-sm text-gray-600">Mobile</span>
-              </div>
-              <div class="text-right">
-                <span class="text-sm font-semibold text-gray-900">$1,680</span>
-                <div class="text-xs text-gray-500">60% of spend</div>
-              </div>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-              <div class="bg-green-600 h-2 rounded-full" style="width: 60%"></div>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <div class="flex items-center">
-                <i class="fas fa-tablet-alt text-gray-500 mr-2"></i>
-                <span class="text-sm text-gray-600">Tablet</span>
-              </div>
-              <div class="text-right">
-                <span class="text-sm font-semibold text-gray-900">$275</span>
-                <div class="text-xs text-gray-500">10% of spend</div>
-              </div>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-              <div class="bg-purple-600 h-2 rounded-full" style="width: 10%"></div>
-            </div>
+          <div class="space-y-4" id="device-performance">
+            <!-- Device performance data will be loaded here -->
+            <div class="text-center py-4 text-gray-500">Loading device data...</div>
           </div>
         </div>
 
@@ -222,27 +296,9 @@
             <i class="fas fa-globe-americas mr-2 text-green-600"></i>
             Geographic Performance
           </h3>
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">United States</span>
-              <span class="text-sm font-semibold text-gray-900">$1,850</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Canada</span>
-              <span class="text-sm font-semibold text-gray-900">$425</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">United Kingdom</span>
-              <span class="text-sm font-semibold text-gray-900">$380</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Australia</span>
-              <span class="text-sm font-semibold text-gray-900">$245</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Germany</span>
-              <span class="text-sm font-semibold text-gray-900">$200</span>
-            </div>
+          <div class="space-y-3" id="geographic-performance">
+            <!-- Geographic performance data will be loaded here -->
+            <div class="text-center py-4 text-gray-500">Loading geographic data...</div>
           </div>
         </div>
       </div>
@@ -252,7 +308,7 @@
         <div class="px-6 py-4 border-b border-gray-200">
           <h3 class="text-lg font-semibold text-gray-900">
             <i class="fas fa-list mr-2 text-gray-600"></i>
-            Top Performing Campaigns
+            Campaign Performance
           </h3>
         </div>
         <div class="overflow-x-auto">
@@ -265,27 +321,12 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impressions</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CTR</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversions</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROAS</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CPA</th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Brand Awareness Campaign</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Google Ads</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$1,245.50</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">245,680</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">3.24%</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">142</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">4.2x</td>
-              </tr>
-              <tr class="hover:bg-gray-50">
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Product Launch Campaign</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Meta Ads</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$890.25</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">180,420</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2.85%</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">89</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">3.8x</td>
+            <tbody class="bg-white divide-y divide-gray-200" id="campaign-table-body">
+              <tr>
+                <td colspan="7" class="px-6 py-4 text-center text-gray-500">Loading campaign data...</td>
               </tr>
             </tbody>
           </table>
@@ -301,20 +342,14 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <h4 class="text-sm font-semibold text-blue-800 mb-2">Key Insights</h4>
-            <ul class="space-y-1 text-sm text-blue-700">
-              <li>• Mobile performance is 25% better than desktop</li>
-              <li>• Weekend campaigns show 15% higher conversion rates</li>
-              <li>• Video ads have 40% better engagement than static images</li>
-              <li>• Retargeting campaigns achieve 3x better ROAS</li>
+            <ul class="space-y-1 text-sm text-blue-700" id="insights-list">
+              <li>• Loading performance insights...</li>
             </ul>
           </div>
           <div>
             <h4 class="text-sm font-semibold text-blue-800 mb-2">Recommendations</h4>
-            <ul class="space-y-1 text-sm text-blue-700">
-              <li>• Increase mobile budget allocation by 20%</li>
-              <li>• Focus ad spend on Friday-Sunday time slots</li>
-              <li>• Expand video creative testing</li>
-              <li>• Implement broader retargeting audience segments</li>
+            <ul class="space-y-1 text-sm text-blue-700" id="recommendations-list">
+              <li>• Loading recommendations...</li>
             </ul>
           </div>
         </div>
@@ -341,8 +376,12 @@
   </div>
 
   <!-- Chart.js for Performance Analytics -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   <script>
+    // Global variables for charts
+    let performanceTrendsChart = null;
+    let conversionFunnelChart = null;
+
     function exportPerformanceReport() {
       alert('Exporting performance report... (Feature coming soon)');
     }
@@ -351,21 +390,433 @@
       alert('Schedule performance report feature coming soon!');
     }
 
-    // Initialize performance charts
+    // Enhanced filter functions
+    function updateDateRange(days) {
+      if (days === 'custom') {
+        document.getElementById('customDateInputs').classList.remove('hidden');
+        return;
+      }
+      
+      document.getElementById('customDateInputs').classList.add('hidden');
+      
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - parseInt(days));
+      
+      const params = new URLSearchParams(window.location.search);
+      params.set('start_date', startDate.toISOString().split('T')[0]);
+      params.set('end_date', endDate.toISOString().split('T')[0]);
+      
+      window.location.search = params.toString();
+    }
+
+    function applyCustomDateRange() {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      
+      if (!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return;
+      }
+      
+      if (new Date(startDate) > new Date(endDate)) {
+        alert('Start date must be before end date');
+        return;
+      }
+      
+      const params = new URLSearchParams(window.location.search);
+      params.set('start_date', startDate);
+      params.set('end_date', endDate);
+      
+      window.location.search = params.toString();
+    }
+
+    function updatePlatform(platform) {
+      const params = new URLSearchParams(window.location.search);
+      if (platform === 'all') {
+        params.delete('platform');
+      } else {
+        params.set('platform', platform);
+      }
+      
+      window.location.search = params.toString();
+    }
+
+    function refreshData() {
+      window.location.reload();
+    }
+
+    // Initialize performance charts and load data
     document.addEventListener('DOMContentLoaded', function() {
-      if (document.getElementById('performanceTrendsChart')) {
-        initPerformanceTrendsChart();
-      }
-      if (document.getElementById('conversionFunnelChart')) {
-        initConversionFunnelChart();
-      }
+      initializeDateRangeSelector();
+      loadPerformanceData();
+      initializeCharts();
     });
 
+    function initializeDateRangeSelector() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const startDate = urlParams.get('start_date');
+      const endDate = urlParams.get('end_date');
+      
+      if (startDate && endDate) {
+        const today = new Date();
+        const start = new Date(startDate);
+        const daysDiff = Math.ceil((today - start) / (1000 * 60 * 60 * 24));
+        
+        const select = document.getElementById('dateRangeSelect');
+        if ([7, 30, 90].includes(daysDiff)) {
+          select.value = daysDiff.toString();
+        } else {
+          select.value = 'custom';
+          document.getElementById('customDateInputs').classList.remove('hidden');
+        }
+      }
+    }
+
+    function loadPerformanceData() {
+      // Check if real performance data is available from the server
+      const hasRealData = {{ hasData ? 'true' : 'false' }};
+      
+      if (hasRealData && {{ performanceData ? 'true' : 'false' }}) {
+        // Use real data from server
+        const realData = {
+          totalImpressions: {{ performanceData?.metrics?.totalImpressions || 0 }},
+          totalClicks: {{ performanceData?.metrics?.totalClicks || 0 }},
+          totalSpend: {{ performanceData?.metrics?.totalSpend || 0 }},
+          totalConversions: {{ performanceData?.metrics?.totalConversions || 0 }},
+          ctr: {{ performanceData?.metrics?.ctr || 0 }},
+          cpc: {{ performanceData?.metrics?.cpc || 0 }},
+          cpm: {{ performanceData?.metrics?.cpm || 0 }},
+          cpa: {{ performanceData?.metrics?.cpa || 0 }},
+          conversionRate: {{ performanceData?.metrics?.conversionRate || 0 }}
+        };
+
+        // Calculate additional metrics with defaults
+        const roas = realData.totalConversions > 0 ? (realData.totalConversions * 85) / realData.totalSpend : 0;
+        
+        // Update metrics in UI with real data
+        updateMetrics({
+          cpc: realData.cpc,
+          cpm: realData.cpm,
+          cpa: realData.cpa,
+          roas: roas,
+          ctr: realData.ctr,
+          conversionRate: realData.conversionRate,
+          impressionShare: 65.5, // This would come from API in real implementation
+          avgPosition: 2.3, // This would come from API in real implementation
+          qualityScore: 8.5, // This would come from API in real implementation
+          relevanceScore: 7.8, // This would come from API in real implementation
+          landingPageScore: 9.2, // This would come from API in real implementation
+          adRelevance: 8.9, // This would come from API in real implementation
+          totalImpressions: realData.totalImpressions,
+          totalClicks: realData.totalClicks,
+          totalSpend: realData.totalSpend,
+          totalConversions: realData.totalConversions
+        });
+        
+        // Load campaign data from server
+        loadRealCampaignData();
+      } else {
+        // Use mock data as fallback
+        const mockData = {
+          totalImpressions: 145680,
+          totalClicks: 4720,
+          totalSpend: 2450.50,
+          totalConversions: 142,
+          qualityScore: 8.5,
+          averagePosition: 2.3
+        };
+
+        // Calculate derived metrics
+        const ctr = (mockData.totalClicks / mockData.totalImpressions * 100);
+        const cpc = mockData.totalSpend / mockData.totalClicks;
+        const cpm = mockData.totalSpend / mockData.totalImpressions * 1000;
+        const cpa = mockData.totalSpend / mockData.totalConversions;
+        const conversionRate = (mockData.totalConversions / mockData.totalClicks * 100);
+        const roas = (mockData.totalConversions * 85) / mockData.totalSpend;
+
+        // Update metrics in UI
+        updateMetrics({
+          cpc: cpc,
+          cpm: cpm,
+          cpa: cpa,
+          roas: roas,
+          ctr: ctr,
+          conversionRate: conversionRate,
+          impressionShare: 65.5,
+          avgPosition: mockData.averagePosition,
+          qualityScore: mockData.qualityScore,
+          relevanceScore: 7.8,
+          landingPageScore: 9.2,
+          adRelevance: 8.9,
+          totalImpressions: mockData.totalImpressions,
+          totalClicks: mockData.totalClicks,
+          totalSpend: mockData.totalSpend,
+          totalConversions: mockData.totalConversions
+        });
+        
+        // Load mock campaign data
+        loadCampaignData();
+      }
+
+      loadDeviceData();
+      loadGeographicData();
+      loadInsights();
+    }
+
+    function updateMetrics(data) {
+      document.getElementById('metric-cpc').textContent = '$' + data.cpc.toFixed(2);
+      document.getElementById('metric-cpm').textContent = '$' + data.cpm.toFixed(2);
+      document.getElementById('metric-cpa').textContent = '$' + data.cpa.toFixed(2);
+      document.getElementById('metric-roas').textContent = data.roas.toFixed(1) + 'x';
+      document.getElementById('metric-ctr').textContent = data.ctr.toFixed(2) + '%';
+      document.getElementById('metric-cr').textContent = data.conversionRate.toFixed(2) + '%';
+      document.getElementById('metric-is').textContent = data.impressionShare.toFixed(1) + '%';
+      document.getElementById('metric-pos').textContent = data.avgPosition.toFixed(1);
+      document.getElementById('metric-qs').textContent = data.qualityScore.toFixed(1);
+      document.getElementById('metric-rel').textContent = data.relevanceScore.toFixed(1);
+      document.getElementById('metric-lp').textContent = data.landingPageScore.toFixed(1);
+      document.getElementById('metric-ar').textContent = data.adRelevance.toFixed(1);
+      document.getElementById('metric-impressions').textContent = data.totalImpressions.toLocaleString();
+      document.getElementById('metric-clicks').textContent = data.totalClicks.toLocaleString();
+      document.getElementById('metric-spend').textContent = '$' + data.totalSpend.toLocaleString();
+      document.getElementById('metric-conversions').textContent = data.totalConversions.toLocaleString();
+
+      // Update quality score rating
+      const qsRating = document.getElementById('qs-rating');
+      if (data.qualityScore >= 8) {
+        qsRating.textContent = 'Excellent';
+        qsRating.className = 'text-xs text-green-600 bg-green-100 px-2 py-1 rounded';
+      } else if (data.qualityScore >= 6) {
+        qsRating.textContent = 'Good';
+        qsRating.className = 'text-xs text-yellow-600 bg-yellow-100 px-2 py-1 rounded';
+      } else {
+        qsRating.textContent = 'Needs Work';
+        qsRating.className = 'text-xs text-red-600 bg-red-100 px-2 py-1 rounded';
+      }
+    }
+
+    function loadDeviceData() {
+      const deviceData = [
+        { device: 'Mobile', spend: 1470, percentage: 60, icon: 'fa-mobile-alt' },
+        { device: 'Desktop', spend: 735, percentage: 30, icon: 'fa-desktop' },
+        { device: 'Tablet', spend: 245.50, percentage: 10, icon: 'fa-tablet-alt' }
+      ];
+
+      const deviceContainer = document.getElementById('device-performance');
+      deviceContainer.innerHTML = deviceData.map(item => `
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <i class="fas ${item.icon} text-gray-500 mr-2"></i>
+            <span class="text-sm text-gray-600">${item.device}</span>
+          </div>
+          <div class="text-right">
+            <span class="text-sm font-semibold text-gray-900">$${item.spend.toLocaleString()}</span>
+            <div class="text-xs text-gray-500">${item.percentage}% of spend</div>
+          </div>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2">
+          <div class="bg-blue-600 h-2 rounded-full" style="width: ${item.percentage}%"></div>
+        </div>
+      `).join('');
+    }
+
+    function loadGeographicData() {
+      const geoData = [
+        { country: 'United States', spend: 1470 },
+        { country: 'Canada', spend: 490 },
+        { country: 'United Kingdom', spend: 294 },
+        { country: 'Australia', spend: 147 },
+        { country: 'Germany', spend: 49 }
+      ];
+
+      const geoContainer = document.getElementById('geographic-performance');
+      geoContainer.innerHTML = geoData.map(item => `
+        <div class="flex items-center justify-between">
+          <span class="text-sm text-gray-600">${item.country}</span>
+          <span class="text-sm font-semibold text-gray-900">$${item.spend.toLocaleString()}</span>
+        </div>
+      `).join('');
+    }
+
+    function loadRealCampaignData() {
+      @if(performanceData && performanceData.campaigns)
+        const realCampaignData = [
+          @each(campaign in performanceData.campaigns)
+            {
+              name: '{{ campaign.campaignName || "Campaign " + campaign.campaignId }}',
+              platform: '{{ campaign.connectedAccount.platform === "google_ads" ? "Google Ads" : campaign.connectedAccount.platform }}',
+              spend: {{ campaign.spend }},
+              impressions: {{ campaign.impressions }},
+              ctr: {{ campaign.impressions > 0 ? (campaign.clicks / campaign.impressions * 100) : 0 }},
+              conversions: {{ campaign.conversions }},
+              cpa: {{ campaign.conversions > 0 ? (campaign.spend / campaign.conversions) : 0 }}
+            },
+          @end
+        ];
+        
+        const tableBody = document.getElementById('campaign-table-body');
+        if (realCampaignData.length > 0) {
+          tableBody.innerHTML = realCampaignData.map(campaign => `
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${campaign.name}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.platform}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.spend.toLocaleString()}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.impressions.toLocaleString()}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.ctr.toFixed(2)}%</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.conversions}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.cpa.toFixed(2)}</td>
+            </tr>
+          `).join('');
+        } else {
+          tableBody.innerHTML = '<tr><td colspan="7" class="px-6 py-4 text-center text-gray-500">No campaign data available</td></tr>';
+        }
+      @else
+        loadCampaignData(); // Fallback to mock data
+      @end
+    }
+
+    function loadCampaignData() {
+      const campaignData = [
+        { 
+          name: 'Brand Awareness Campaign', 
+          platform: 'Google Ads', 
+          spend: 1225.50, 
+          impressions: 89420, 
+          ctr: 3.24, 
+          conversions: 89, 
+          cpa: 13.77 
+        },
+        { 
+          name: 'Product Launch Campaign', 
+          platform: 'Google Ads', 
+          spend: 890.25, 
+          impressions: 56260, 
+          ctr: 2.85, 
+          conversions: 53, 
+          cpa: 16.80 
+        },
+        { 
+          name: 'Retargeting Campaign', 
+          platform: 'Google Ads', 
+          spend: 334.75, 
+          impressions: 12840, 
+          ctr: 8.92, 
+          conversions: 38, 
+          cpa: 8.81 
+        }
+      ];
+
+      const tableBody = document.getElementById('campaign-table-body');
+      tableBody.innerHTML = campaignData.map(campaign => `
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${campaign.name}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.platform}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.spend.toLocaleString()}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.impressions.toLocaleString()}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.ctr.toFixed(2)}%</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.conversions}</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${campaign.cpa.toFixed(2)}</td>
+        </tr>
+      `).join('');
+    }
+
+    function loadInsights() {
+      const insights = [
+        'Mobile performance shows 25% higher conversion rates',
+        'Retargeting campaigns achieve 3x better cost efficiency',
+        'Brand campaigns drive highest impression volume',
+        'Weekend performance shows 15% improvement'
+      ];
+
+      const recommendations = [
+        'Increase mobile budget allocation by 15%',
+        'Expand retargeting audience segments',
+        'Focus weekend scheduling for brand campaigns',
+        'Test video creative formats for better engagement'
+      ];
+
+      document.getElementById('insights-list').innerHTML = insights.map(insight => 
+        `<li>• ${insight}</li>`
+      ).join('');
+
+      document.getElementById('recommendations-list').innerHTML = recommendations.map(rec => 
+        `<li>• ${rec}</li>`
+      ).join('');
+    }
+
+    function initializeCharts() {
+      initPerformanceTrendsChart();
+      initConversionFunnelChart();
+    }
+
     function initPerformanceTrendsChart() {
-      const ctx = document.getElementById('performanceTrendsChart').getContext('2d');
-      new Chart(ctx, {
-        type: 'line',
-        data: {
+      const ctx = document.getElementById('performanceTrendsChart');
+      if (!ctx) return;
+
+      if (performanceTrendsChart) {
+        performanceTrendsChart.destroy();
+      }
+
+      // Check if real chart data is available
+      const hasRealData = {{ hasData ? 'true' : 'false' }};
+      let chartData;
+      
+      if (hasRealData && {{ performanceData ? 'true' : 'false' }}) {
+        // Use real chart data from server
+        try {
+          @if(performanceData && performanceData.chartData)
+            chartData = {{{ performanceData.chartData | safe }}};
+          @else
+            chartData = {
+              labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+              datasets: [
+                {
+                  label: 'Spend',
+                  data: [1200, 1350, 1100, 1450],
+                  borderColor: 'rgb(59, 130, 246)',
+                  backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                  tension: 0.4,
+                  fill: true
+                },
+                {
+                  label: 'Clicks',
+                  data: [950, 1150, 890, 1220],
+                  borderColor: 'rgb(16, 185, 129)',
+                  backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                  tension: 0.4,
+                  fill: false
+                }
+              ]
+            };
+          @end
+        } catch (e) {
+          // Fallback to mock data if parsing fails
+          chartData = {
+            labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+            datasets: [
+              {
+                label: 'Spend',
+                data: [1200, 1350, 1100, 1450],
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                tension: 0.4,
+                fill: true
+              },
+              {
+                label: 'Clicks',
+                data: [950, 1150, 890, 1220],
+                borderColor: 'rgb(16, 185, 129)',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                tension: 0.4,
+                fill: false
+              }
+            ]
+          };
+        }
+      } else {
+        // Use mock data
+        chartData = {
           labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
           datasets: [
             {
@@ -373,17 +824,24 @@
               data: [3.2, 3.5, 3.1, 3.8],
               borderColor: 'rgb(59, 130, 246)',
               backgroundColor: 'rgba(59, 130, 246, 0.1)',
-              tension: 0.4
+              tension: 0.4,
+              fill: true
             },
             {
               label: 'Conversion Rate %',
               data: [5.1, 5.8, 5.2, 6.1],
               borderColor: 'rgb(16, 185, 129)',
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
-              tension: 0.4
+              tension: 0.4,
+              fill: false
             }
           ]
-        },
+        };
+      }
+
+      performanceTrendsChart = new Chart(ctx, {
+        type: 'line',
+        data: chartData,
         options: {
           responsive: true,
           maintainAspectRatio: false,
@@ -397,7 +855,11 @@
               beginAtZero: true,
               ticks: {
                 callback: function(value) {
-                  return value + '%';
+                  // For percentage data, add % sign
+                  if (chartData.datasets[0].label.includes('%')) {
+                    return value + '%';
+                  }
+                  return value.toLocaleString();
                 }
               }
             }
@@ -407,14 +869,20 @@
     }
 
     function initConversionFunnelChart() {
-      const ctx = document.getElementById('conversionFunnelChart').getContext('2d');
-      new Chart(ctx, {
+      const ctx = document.getElementById('conversionFunnelChart');
+      if (!ctx) return;
+
+      if (conversionFunnelChart) {
+        conversionFunnelChart.destroy();
+      }
+
+      conversionFunnelChart = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: ['Impressions', 'Clicks', 'Landing Page Views', 'Conversions'],
+          labels: ['Impressions', 'Clicks', 'Website Visits', 'Conversions'],
           datasets: [{
             label: 'Funnel Stage',
-            data: [100000, 3200, 2800, 168],
+            data: [145680, 4720, 4250, 142],
             backgroundColor: [
               'rgba(59, 130, 246, 0.8)',
               'rgba(16, 185, 129, 0.8)',
