@@ -8,7 +8,7 @@ export const createCustomReportValidator = vine.compile(
   vine.object({
     name: vine.string().minLength(3).maxLength(255),
     description: vine.string().optional(),
-    connectedAccountId: vine.number().positive().optional(),
+    connectedAccountId: vine.number().positive(),
     platform: vine.enum(['google_ads', 'meta_ads', 'tiktok_ads']).optional(),
     filters: vine.any().optional(),
     metrics: vine.array(vine.string()).optional(),
@@ -31,6 +31,7 @@ export const updateCustomReportValidator = vine.compile(
   vine.object({
     name: vine.string().minLength(3).maxLength(255).optional(),
     description: vine.string().optional(),
+    connectedAccountId: vine.number().positive().optional(),
     filters: vine.any().optional(),
     metrics: vine.array(vine.string()).optional(),
     dimensions: vine.array(vine.string()).optional(),
@@ -50,9 +51,11 @@ export const updateCustomReportValidator = vine.compile(
 export const saveLayoutValidator = vine.compile(
   vine.object({
     reportId: vine.number().positive().optional(),
-    widgetLayout: vine.array(vine.any()),
+    connectedAccountId: vine.number().positive().optional(),
+    widgetLayout: vine.array(vine.any()).minLength(1),
     name: vine.string().minLength(3).maxLength(255).optional(),
-    description: vine.string().optional()
+    description: vine.string().optional(),
+    platform: vine.enum(['google_ads', 'meta_ads', 'tiktok_ads']).optional()
   })
 )
 
@@ -61,7 +64,8 @@ export const saveLayoutValidator = vine.compile(
  */
 export const previewReportValidator = vine.compile(
   vine.object({
-    widgetLayout: vine.array(vine.any()),
-    reportId: vine.number().positive().optional()
+    widgetLayout: vine.array(vine.any()).minLength(1),
+    reportId: vine.number().positive().optional(),
+    connectedAccountId: vine.number().positive().optional()
   })
 )

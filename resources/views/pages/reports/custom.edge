@@ -25,13 +25,6 @@
         <!-- Report Actions -->
         <div class="flex items-center space-x-3">
           <button 
-            id="loadReportBtn"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-          >
-            <i class="fas fa-folder-open mr-2"></i>
-            Load Report
-          </button>
-          <button 
             id="saveReportBtn"
             class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
           >
@@ -50,6 +43,64 @@
     </div>
 
     @if(connectedAccounts && connectedAccounts.length > 0)
+      <!-- Account Selection -->
+      <div class="mb-8">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h2 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-user-circle mr-2 text-purple-600"></i>
+            Select Account <span class="text-red-500">*</span>
+          </h2>
+          <p class="text-sm text-gray-600 mb-4">Choose the account you want to create this report for:</p>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" id="accountSelection">
+            @each(account in connectedAccounts)
+              <div 
+                class="account-option cursor-pointer flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-purple-300 transition-colors"
+                data-account-id="{{ account.id }}"
+                data-account-name="{{ account.accountDisplayName }}"
+                data-platform="{{ account.platform }}"
+              >
+                <div class="flex-shrink-0">
+                  @!component('components/platform-logo', { 
+                    platform: account.platform, 
+                    size: 'sm' 
+                  })
+                </div>
+                <div class="ml-3 flex-1">
+                  <h3 class="text-sm font-medium text-gray-900">
+                    {{ account.accountDisplayName }}
+                  </h3>
+                  <p class="text-xs text-gray-500">
+                    {{ account.platform === 'google_ads' ? 'Google Ads' : account.platform === 'meta_ads' ? 'Meta Ads' : account.platform === 'tiktok_ads' ? 'TikTok Ads' : account.platform.replace('_', ' ') }}
+                  </p>
+                </div>
+                <div class="flex-shrink-0">
+                  @if(account.isActive)
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      <i class="fas fa-check-circle mr-1"></i>
+                      Active
+                    </span>
+                  @else
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                      <i class="fas fa-exclamation-circle mr-1"></i>
+                      Inactive
+                    </span>
+                  @end
+                </div>
+                <div class="flex-shrink-0 ml-2">
+                  <i class="fas fa-check-circle text-xl text-purple-600 hidden account-selected-icon"></i>
+                </div>
+              </div>
+            @end
+          </div>
+          
+          <div id="accountRequiredError" class="mt-2 text-sm text-red-600 hidden">
+            <i class="fas fa-exclamation-circle mr-1"></i>
+            Please select an account before saving or previewing the report.
+          </div>
+        </div>
+      </div>
+
       <!-- Report Builder Interface -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Widget Library Sidebar -->
@@ -70,6 +121,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="metric"
                     data-widget-config='{"type": "spend", "title": "Total Spend", "icon": "fa-dollar-sign", "color": "green"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-dollar-sign text-green-600 mr-2"></i>
@@ -81,6 +133,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="metric"
                     data-widget-config='{"type": "impressions", "title": "Impressions", "icon": "fa-eye", "color": "blue"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-eye text-blue-600 mr-2"></i>
@@ -92,6 +145,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="metric"
                     data-widget-config='{"type": "clicks", "title": "Clicks", "icon": "fa-mouse-pointer", "color": "purple"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-mouse-pointer text-purple-600 mr-2"></i>
@@ -103,6 +157,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="metric"
                     data-widget-config='{"type": "conversions", "title": "Conversions", "icon": "fa-trophy", "color": "orange"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-trophy text-orange-600 mr-2"></i>
@@ -114,6 +169,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="metric"
                     data-widget-config='{"type": "ctr", "title": "Click-Through Rate", "icon": "fa-percentage", "color": "indigo"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-percentage text-indigo-600 mr-2"></i>
@@ -125,6 +181,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="metric"
                     data-widget-config='{"type": "cpc", "title": "Cost Per Click", "icon": "fa-coins", "color": "yellow"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-coins text-yellow-600 mr-2"></i>
@@ -142,6 +199,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="chart"
                     data-widget-config='{"type": "line", "title": "Performance Over Time", "icon": "fa-chart-line"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-chart-line text-blue-600 mr-2"></i>
@@ -153,6 +211,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="chart"
                     data-widget-config='{"type": "bar", "title": "Platform Comparison", "icon": "fa-chart-bar"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-chart-bar text-green-600 mr-2"></i>
@@ -164,6 +223,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="chart"
                     data-widget-config='{"type": "pie", "title": "Spend Distribution", "icon": "fa-chart-pie"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-chart-pie text-purple-600 mr-2"></i>
@@ -175,6 +235,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="chart"
                     data-widget-config='{"type": "doughnut", "title": "Conversion Funnel", "icon": "fa-chart-donut"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-chart-pie text-pink-600 mr-2"></i>
@@ -192,6 +253,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="table"
                     data-widget-config='{"type": "campaign", "title": "Campaign Performance", "icon": "fa-table"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-table text-gray-600 mr-2"></i>
@@ -203,6 +265,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="table"
                     data-widget-config='{"type": "platform", "title": "Platform Breakdown", "icon": "fa-list"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-list text-indigo-600 mr-2"></i>
@@ -214,6 +277,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="table"
                     data-widget-config='{"type": "keywords", "title": "Top Keywords", "icon": "fa-search"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-search text-green-600 mr-2"></i>
@@ -231,6 +295,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="text"
                     data-widget-config='{"type": "heading", "title": "Report Heading", "icon": "fa-heading"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-heading text-gray-600 mr-2"></i>
@@ -242,6 +307,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="text"
                     data-widget-config='{"type": "description", "title": "Description Text", "icon": "fa-align-left"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-align-left text-gray-600 mr-2"></i>
@@ -253,6 +319,7 @@
                     class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
                     data-widget-type="text"
                     data-widget-config='{"type": "divider", "title": "Section Divider", "icon": "fa-minus"}'
+                    draggable="true"
                   >
                     <div class="flex items-center">
                       <i class="fas fa-minus text-gray-600 mr-2"></i>
@@ -305,6 +372,11 @@
               <!-- Dynamic Widget Container -->
               <div id="widgetContainer" class="hidden space-y-6"></div>
             </div>
+            
+            <div id="canvasRequiredError" class="mt-2 text-sm text-red-600 hidden">
+              <i class="fas fa-exclamation-circle mr-1"></i>
+              Please add at least one widget to the canvas before saving or previewing the report.
+            </div>
           </div>
         </div>
       </div>
@@ -352,23 +424,7 @@
     </div>
   </div>
 
-  <!-- Load Report Modal -->
-  <div id="loadReportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-      <div class="mt-3">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Load Existing Report</h3>
-        <div id="reportsList" class="max-h-60 overflow-y-auto">
-          <!-- Reports will be loaded here -->
-        </div>
-        <div class="flex justify-end mt-4">
-          <button type="button" id="cancelLoadBtn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <!-- Required Libraries -->
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
 @endslot
 @end

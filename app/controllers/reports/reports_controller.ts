@@ -82,12 +82,19 @@ export default class ReportsController {
       const user = auth.getUserOrFail()
       const data = await request.validateUsing(createCustomReportValidator)
 
+      // Verify the connected account belongs to the user
+      const connectedAccount = await ConnectedAccount.query()
+        .where('id', data.connectedAccountId)
+        .where('user_id', user.id)
+        .where('is_active', true)
+        .firstOrFail()
+
       const customReport = await CustomReport.create({
         userId: user.id,
         connectedAccountId: data.connectedAccountId,
         name: data.name,
         description: data.description,
-        platform: data.platform || 'google_ads',
+        platform: data.platform || connectedAccount.platform,
         filters: data.filters,
         metrics: data.metrics || ['impressions', 'clicks', 'cost'],
         dimensions: data.dimensions,
@@ -155,6 +162,15 @@ export default class ReportsController {
         .where('id', params.id)
         .where('user_id', user.id)
         .firstOrFail()
+
+      // If connectedAccountId is being updated, verify it belongs to the user
+      if (data.connectedAccountId) {
+        await ConnectedAccount.query()
+          .where('id', data.connectedAccountId)
+          .where('user_id', user.id)
+          .where('is_active', true)
+          .firstOrFail()
+      }
 
       await customReport.merge(data).save()
 
@@ -230,18 +246,44 @@ export default class ReportsController {
           .where('user_id', user.id)
           .firstOrFail()
 
+        // If connectedAccountId is provided, verify it belongs to the user
+        if (data.connectedAccountId) {
+          await ConnectedAccount.query()
+            .where('id', data.connectedAccountId)
+            .where('user_id', user.id)
+            .where('is_active', true)
+            .firstOrFail()
+          
+          customReport.connectedAccountId = data.connectedAccountId
+        }
+
         await customReport.merge({ widgetLayout: data.widgetLayout }).save()
         return response.json({ success: true, report: customReport })
       } else {
-        // Create new report
+        // Create new report - connectedAccountId is required for new reports
+        if (!data.connectedAccountId) {
+          return response.status(400).json({ 
+            success: false, 
+            error: 'Connected account is required for new reports' 
+          })
+        }
+
+        // Verify the connected account belongs to the user
+        const connectedAccount = await ConnectedAccount.query()
+          .where('id', data.connectedAccountId)
+          .where('user_id', user.id)
+          .where('is_active', true)
+          .firstOrFail()
+
         const customReport = await CustomReport.create({
           userId: user.id,
+          connectedAccountId: data.connectedAccountId,
           name: data.name || `Custom Report ${new Date().toISOString().split('T')[0]}`,
           description: data.description || '',
-          platform: 'google_ads', // Default platform
+          platform: data.platform || connectedAccount.platform,
           metrics: ['impressions', 'clicks', 'cost'], // Default metrics
           dateRangeType: 'last_30_days',
-          status: 'draft',
+          status: 'active',
           widgetLayout: data.widgetLayout
         })
 
@@ -279,6 +321,15 @@ export default class ReportsController {
     try {
       const user = auth.getUserOrFail()
       const data = await request.validateUsing(previewReportValidator)
+
+      // If connectedAccountId is provided, verify it belongs to the user
+      if (data.connectedAccountId) {
+        await ConnectedAccount.query()
+          .where('id', data.connectedAccountId)
+          .where('user_id', user.id)
+          .where('is_active', true)
+          .firstOrFail()
+      }
 
       // If reportId is provided, get actual data, otherwise use sample data
       let reportData = null

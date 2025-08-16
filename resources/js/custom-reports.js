@@ -6,6 +6,8 @@
 class CustomReportBuilder {
   constructor() {
     this.currentReportId = null;
+    this.selectedAccountId = null;
+    this.selectedAccountData = null;
     this.widgetCounter = 0;
     this.widgetHistory = [];
     this.reportCanvas = null;
@@ -24,7 +26,8 @@ class CustomReportBuilder {
     }
     
     this.setupElements();
-    this.initializeSortable();
+    this.setupAccountSelection();
+    this.initializeDragAndDrop();
     this.setupEventListeners();
     this.loadExistingReport();
   }
@@ -35,45 +38,94 @@ class CustomReportBuilder {
     this.emptyState = document.getElementById('emptyState');
   }
 
-  initializeSortable() {
-    // Initialize widget sources (make them draggable)
-    const widgetSections = ['metricWidgets', 'chartWidgets', 'tableWidgets', 'textWidgets'];
+  setupAccountSelection() {
+    const accountOptions = document.querySelectorAll('.account-option');
     
-    widgetSections.forEach(sectionId => {
-      const section = document.getElementById(sectionId);
-      if (section) {
-        new Sortable(section, {
-          group: {
-            name: 'widgets',
-            pull: 'clone',
-            put: false
-          },
-          animation: 150,
-          sort: false,
-          onEnd: (evt) => {
-            // Remove the dragged element from source after successful drop
-            if (evt.to !== evt.from) {
-              evt.item.remove();
-            }
-          }
+    accountOptions.forEach(option => {
+      option.addEventListener('click', (e) => {
+        // Remove selection from all other options
+        accountOptions.forEach(opt => {
+          opt.classList.remove('border-purple-500', 'bg-purple-50');
+          const icon = opt.querySelector('.account-selected-icon');
+          if (icon) icon.classList.add('hidden');
         });
+        
+        // Select this option
+        option.classList.add('border-purple-500', 'bg-purple-50');
+        const selectedIcon = option.querySelector('.account-selected-icon');
+        if (selectedIcon) selectedIcon.classList.remove('hidden');
+        
+        // Store selected account data
+        this.selectedAccountId = option.dataset.accountId;
+        this.selectedAccountData = {
+          id: option.dataset.accountId,
+          name: option.dataset.accountName,
+          platform: option.dataset.platform
+        };
+        
+        // Hide error message if showing
+        const errorElement = document.getElementById('accountRequiredError');
+        if (errorElement) {
+          errorElement.classList.add('hidden');
+        }
+        
+        this.showNotification(`Selected account: ${this.selectedAccountData.name}`, 'success');
+      });
+    });
+  }
+
+  initializeDragAndDrop() {
+    // Setup native HTML5 drag and drop for widget sources
+    const widgetSources = document.querySelectorAll('.widget-source');
+    
+    widgetSources.forEach(source => {
+      source.addEventListener('dragstart', (e) => {
+        const widgetData = {
+          type: source.dataset.widgetType,
+          config: JSON.parse(source.dataset.widgetConfig)
+        };
+        e.dataTransfer.setData('application/json', JSON.stringify(widgetData));
+        e.dataTransfer.effectAllowed = 'copy';
+        source.style.opacity = '0.5';
+      });
+      
+      source.addEventListener('dragend', (e) => {
+        source.style.opacity = '1';
+      });
+    });
+
+    // Setup drop zone on canvas
+    this.reportCanvas.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      this.reportCanvas.classList.add('border-purple-400', 'bg-purple-25');
+    });
+
+    this.reportCanvas.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      this.reportCanvas.classList.remove('border-purple-400', 'bg-purple-25');
+    });
+
+    this.reportCanvas.addEventListener('drop', (e) => {
+      e.preventDefault();
+      this.reportCanvas.classList.remove('border-purple-400', 'bg-purple-25');
+      
+      try {
+        const widgetData = JSON.parse(e.dataTransfer.getData('application/json'));
+        this.handleWidgetAdd(widgetData);
+      } catch (error) {
+        console.error('Error handling drop:', error);
+        this.showNotification('Error adding widget. Please try again.', 'error');
       }
     });
 
-    // Initialize canvas (make it droppable and sortable)
+    // Initialize sortable for the widget container to allow reordering
     if (this.widgetContainer) {
       this.sortableCanvas = new Sortable(this.widgetContainer, {
-        group: {
-          name: 'widgets',
-          pull: true,
-          put: true
-        },
         animation: 150,
         chosenClass: 'opacity-50',
         ghostClass: 'opacity-25',
-        onAdd: (evt) => {
-          this.handleWidgetAdd(evt);
-        },
+        handle: '.widget-item',
         onUpdate: (evt) => {
           this.saveToHistory();
         }
@@ -81,31 +133,35 @@ class CustomReportBuilder {
     }
   }
 
-  handleWidgetAdd(evt) {
-    const item = evt.item;
-    const widgetType = item.dataset.widgetType;
-    const widgetConfig = JSON.parse(item.dataset.widgetConfig);
-    
+  handleWidgetAdd(widgetData) {
     // Generate unique widget ID
     this.widgetCounter++;
     const widgetId = `widget-${this.widgetCounter}`;
     
     // Create the actual widget element
-    const widgetElement = this.createWidget(widgetId, widgetType, widgetConfig);
+    const widgetElement = this.createWidget(widgetId, widgetData.type, widgetData.config);
     
-    // Replace the dragged placeholder with the actual widget
-    item.outerHTML = widgetElement;
+    // Add to container
+    if (this.widgetContainer) {
+      this.widgetContainer.insertAdjacentHTML('beforeend', widgetElement);
+    }
     
     // Show widget container and hide empty state
     this.showWidgetContainer();
     
     // Initialize any charts in the new widget
     setTimeout(() => {
-      this.initializeWidgetCharts(widgetId, widgetType, widgetConfig);
+      this.initializeWidgetCharts(widgetId, widgetData.type, widgetData.config);
     }, 100);
     
     // Save to history
     this.saveToHistory();
+    
+    // Hide canvas error if showing
+    const canvasError = document.getElementById('canvasRequiredError');
+    if (canvasError) {
+      canvasError.classList.add('hidden');
+    }
   }
 
   createWidget(id, type, config) {
@@ -255,12 +311,6 @@ class CustomReportBuilder {
       saveBtn.addEventListener('click', () => this.showSaveModal());
     }
     
-    // Load report button
-    const loadBtn = document.getElementById('loadReportBtn');
-    if (loadBtn) {
-      loadBtn.addEventListener('click', () => this.showLoadModal());
-    }
-    
     // Preview report button
     const previewBtn = document.getElementById('previewReportBtn');
     if (previewBtn) {
@@ -285,11 +335,6 @@ class CustomReportBuilder {
       cancelSaveBtn.addEventListener('click', () => this.hideSaveModal());
     }
     
-    const cancelLoadBtn = document.getElementById('cancelLoadBtn');
-    if (cancelLoadBtn) {
-      cancelLoadBtn.addEventListener('click', () => this.hideLoadModal());
-    }
-    
     const saveForm = document.getElementById('saveReportForm');
     if (saveForm) {
       saveForm.addEventListener('submit', (e) => this.saveReport(e));
@@ -298,15 +343,44 @@ class CustomReportBuilder {
     // Close modals when clicking outside
     window.addEventListener('click', (event) => {
       const saveModal = document.getElementById('saveReportModal');
-      const loadModal = document.getElementById('loadReportModal');
       
       if (event.target === saveModal) {
         this.hideSaveModal();
       }
-      if (event.target === loadModal) {
-        this.hideLoadModal();
-      }
     });
+  }
+
+  // Validation Functions
+  validateRequiredFields() {
+    let isValid = true;
+    const errors = [];
+
+    // Check account selection
+    if (!this.selectedAccountId) {
+      const accountError = document.getElementById('accountRequiredError');
+      if (accountError) {
+        accountError.classList.remove('hidden');
+      }
+      errors.push('Please select an account');
+      isValid = false;
+    }
+
+    // Check if at least one widget exists
+    const currentLayout = this.getCurrentLayout();
+    if (currentLayout.length === 0) {
+      const canvasError = document.getElementById('canvasRequiredError');
+      if (canvasError) {
+        canvasError.classList.remove('hidden');
+      }
+      errors.push('Please add at least one widget to the canvas');
+      isValid = false;
+    }
+
+    if (!isValid) {
+      this.showNotification(errors.join(' and ') + '.', 'warning');
+    }
+
+    return isValid;
   }
 
   // Helper Functions
@@ -561,10 +635,10 @@ class CustomReportBuilder {
 
   // Modal Functions
   showSaveModal() {
-    if (this.getCurrentLayout().length === 0) {
-      this.showNotification('Please add some widgets before saving the report.', 'warning');
+    if (!this.validateRequiredFields()) {
       return;
     }
+    
     const modal = document.getElementById('saveReportModal');
     if (modal) {
       modal.classList.remove('hidden');
@@ -582,56 +656,12 @@ class CustomReportBuilder {
     }
   }
 
-  showLoadModal() {
-    const modal = document.getElementById('loadReportModal');
-    if (modal) {
-      modal.classList.remove('hidden');
-    }
-    this.loadReportsList();
-  }
-
-  hideLoadModal() {
-    const modal = document.getElementById('loadReportModal');
-    if (modal) {
-      modal.classList.add('hidden');
-    }
-  }
-
-  async loadReportsList() {
-    try {
-      const response = await fetch('/reports', {
-        headers: {
-          'Accept': 'application/json'
-        }
-      });
-      
-      if (response.ok) {
-        // For now, show placeholder - would need to modify controller to return JSON
-        const listElement = document.getElementById('reportsList');
-        if (listElement) {
-          listElement.innerHTML = `
-            <div class="text-center py-4">
-              <p class="text-gray-500">Loading saved reports...</p>
-              <p class="text-xs text-gray-400 mt-2">Feature implementation in progress</p>
-            </div>
-          `;
-        }
-      }
-    } catch (error) {
-      console.error('Error loading reports:', error);
-      const listElement = document.getElementById('reportsList');
-      if (listElement) {
-        listElement.innerHTML = `
-          <div class="text-center py-4">
-            <p class="text-red-500">Error loading reports</p>
-          </div>
-        `;
-      }
-    }
-  }
-
   async saveReport(event) {
     event.preventDefault();
+    
+    if (!this.validateRequiredFields()) {
+      return;
+    }
     
     const formData = new FormData(event.target);
     const currentLayout = this.getCurrentLayout();
@@ -639,7 +669,9 @@ class CustomReportBuilder {
     const reportData = {
       name: formData.get('name'),
       description: formData.get('description'),
+      connectedAccountId: parseInt(this.selectedAccountId),
       widgetLayout: currentLayout,
+      platform: this.selectedAccountData.platform,
       ajax: true
     };
     
@@ -674,12 +706,11 @@ class CustomReportBuilder {
   }
 
   async previewReport() {
-    const currentLayout = this.getCurrentLayout();
-    
-    if (currentLayout.length === 0) {
-      this.showNotification('Please add some widgets before previewing the report.', 'warning');
+    if (!this.validateRequiredFields()) {
       return;
     }
+    
+    const currentLayout = this.getCurrentLayout();
     
     try {
       const response = await fetch('/reports/preview', {
@@ -691,7 +722,8 @@ class CustomReportBuilder {
         },
         body: JSON.stringify({
           widgetLayout: currentLayout,
-          reportId: this.currentReportId
+          reportId: this.currentReportId,
+          connectedAccountId: parseInt(this.selectedAccountId)
         })
       });
       
@@ -728,6 +760,9 @@ class CustomReportBuilder {
       widgetsHtml += cleanWidget;
     });
     
+    const accountInfo = this.selectedAccountData ? 
+      `<p class="text-gray-600">Account: ${this.selectedAccountData.name} (${this.selectedAccountData.platform.replace('_', ' ')})</p>` : '';
+    
     return `
       <!DOCTYPE html>
       <html>
@@ -742,6 +777,7 @@ class CustomReportBuilder {
           <div class="mb-8 text-center">
             <h1 class="text-3xl font-bold text-gray-900 mb-2">Custom Marketing Report</h1>
             <p class="text-gray-600">Generated on ${new Date().toLocaleDateString()}</p>
+            ${accountInfo}
           </div>
           <div class="space-y-6">
             ${widgetsHtml}
