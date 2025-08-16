@@ -156,7 +156,7 @@
               <div class="ml-3">
                 <p class="text-sm font-medium text-gray-500">Total Spend</p>
                 <p class="text-lg font-semibold text-gray-900">
-                  ${{ accountMetrics.totalSpend.toFixed(2) }}
+                  ${{ (Number(accountMetrics.totalSpend) || 0).toFixed(2) }}
                 </p>
               </div>
             </div>
@@ -173,7 +173,7 @@
               <div class="ml-3">
                 <p class="text-sm font-medium text-gray-500">Impressions</p>
                 <p class="text-lg font-semibold text-gray-900">
-                  {{ accountMetrics.totalImpressions.toLocaleString() }}
+                  {{ (Number(accountMetrics.totalImpressions) || 0).toLocaleString() }}
                 </p>
               </div>
             </div>
@@ -190,7 +190,7 @@
               <div class="ml-3">
                 <p class="text-sm font-medium text-gray-500">Clicks</p>
                 <p class="text-lg font-semibold text-gray-900">
-                  {{ accountMetrics.totalClicks.toLocaleString() }}
+                  {{ (Number(accountMetrics.totalClicks) || 0).toLocaleString() }}
                 </p>
               </div>
             </div>
@@ -207,7 +207,7 @@
               <div class="ml-3">
                 <p class="text-sm font-medium text-gray-500">Conversions</p>
                 <p class="text-lg font-semibold text-gray-900">
-                  {{ accountMetrics.totalConversions.toFixed(1) }}
+                  {{ (Number(accountMetrics.totalConversions) || 0).toFixed(1) }}
                 </p>
               </div>
             </div>

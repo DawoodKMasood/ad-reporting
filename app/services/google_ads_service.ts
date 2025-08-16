@@ -211,6 +211,7 @@ export class GoogleAdsService {
         
         // If we get here, the manager account truly has no accessible data
         logger.warn('Manager account has no accessible campaigns or child accounts')
+        logger.info('Note: Only campaigns with ENABLED or PAUSED status are queried for metrics')
         
         // Return empty array instead of throwing error to prevent cascading failures
         return []
@@ -265,8 +266,8 @@ export class GoogleAdsService {
                 val: [startDate, endDate]
               }, {
                 key: 'campaign.status',
-                op: '!=',
-                val: 'REMOVED'
+                op: 'IN',
+                val: ['ENABLED', 'PAUSED']
               }],
               order_by: 'segments.date'
             })
@@ -301,13 +302,13 @@ export class GoogleAdsService {
                 'segments.date'
               ],
               constraints: [{
-                key: 'segments.date',
-                op: 'DURING',
-                val: duringClause
+              key: 'segments.date',
+              op: 'DURING',
+              val: duringClause
               }, {
-                key: 'campaign.status',
-                op: '!=',
-                val: 'REMOVED'
+              key: 'campaign.status',
+              op: 'IN',
+              val: ['ENABLED', 'PAUSED']
               }],
               order_by: 'segments.date'
             })
@@ -321,6 +322,17 @@ export class GoogleAdsService {
           }))
           
           allCampaignData.push(...enrichedResults)
+          // Log campaign statuses for debugging
+          if (results && results.length > 0) {
+            const statuses = results.map(r => r.campaign?.status).filter(Boolean)
+            const uniqueStatuses = [...new Set(statuses)]
+            logger.info('Found campaigns with statuses for child account:', { 
+              childCustomerId,
+              statuses: uniqueStatuses, 
+              count: statuses.length 
+            })
+          }
+          
           logger.info('Fetched campaign data for child account', { 
             childCustomerId, 
             dataCount: results.length 
@@ -366,6 +378,59 @@ export class GoogleAdsService {
       logger.info('Getting customer client', { connectedAccountId, userId })
       const customer = await this.getCustomerClient(connectedAccountId, userId)
       logger.info('Got customer client successfully')
+      
+      // First, let's check what campaigns exist with any status for debugging
+      try {
+        const allCampaignsQuery = `
+          SELECT campaign.id, campaign.name, campaign.status
+          FROM campaign
+          LIMIT 50
+        `
+        const allCampaigns = await customer.query(allCampaignsQuery)
+        logger.info('Debug: All campaigns in account (any status):', { 
+          count: allCampaigns?.length || 0,
+          campaigns: allCampaigns?.map(c => ({ 
+            id: c.campaign?.id, 
+            name: c.campaign?.name, 
+            status: c.campaign?.status 
+          })) || []
+        })
+        
+        // If we have campaigns but they might be pending, try a simpler query without date segments
+        if (allCampaigns && allCampaigns.length > 0) {
+          const specialStatusCampaigns = allCampaigns.filter(c => 
+            c.campaign?.status && !['ENABLED', 'PAUSED', 'REMOVED'].includes(c.campaign.status)
+          )
+          
+          if (specialStatusCampaigns.length > 0) {
+            logger.info('Found campaigns with special status, will return basic campaign info without metrics', {
+              specialStatusCount: specialStatusCampaigns.length
+            })
+            
+            // Return basic campaign data for campaigns with special status without metrics
+            return specialStatusCampaigns.map(campaign => ({
+              campaign: {
+                id: campaign.campaign?.id,
+                name: campaign.campaign?.name,
+                status: campaign.campaign?.status,
+                advertising_channel_type: null,
+                advertising_channel_sub_type: null
+              },
+              segments: {
+                date: startDate
+              },
+              metrics: {
+                impressions: 0,
+                clicks: 0,
+                cost_micros: 0,
+                conversions: 0
+              }
+            }))
+          }
+        }
+      } catch (debugError) {
+        logger.warn('Debug query failed (expected for some accounts):', debugError.message)
+      }
 
       let results: any[]
       if (dateRange.type === 'custom' || dateRange.type === 'today') {
@@ -393,8 +458,8 @@ export class GoogleAdsService {
             val: [startDate, endDate]
           }, {
             key: 'campaign.status',
-            op: '!=',
-            val: 'REMOVED'
+            op: 'IN',
+            val: ['ENABLED', 'PAUSED']
           }],
           order_by: 'segments.date'
         })
@@ -434,17 +499,67 @@ export class GoogleAdsService {
             val: duringClause
           }, {
             key: 'campaign.status',
-            op: '!=',
-            val: 'REMOVED'
+            op: 'IN',
+            val: ['ENABLED', 'PAUSED']
           }],
           order_by: 'segments.date'
         })
       }
       
       logger.info('Direct campaign data fetch successful', { results: results?.length || 0 })
+      
+      // Log campaign statuses for debugging
+      if (results && results.length > 0) {
+        const statuses = results.map(r => r.campaign?.status).filter(Boolean)
+        const uniqueStatuses = [...new Set(statuses)]
+        logger.info('Found campaigns with statuses:', { statuses: uniqueStatuses, count: statuses.length })
+      }
       return results || []
     } catch (error: any) {
       logger.error('Error in direct campaign data fetch:', error)
+      
+      // If the metrics query fails, try to get basic campaign info without metrics
+      try {
+        logger.info('Metrics query failed, attempting to get basic campaign data without date segments')
+        const customer = await this.getCustomerClient(connectedAccountId, userId)
+        
+        const basicCampaignsQuery = `
+          SELECT campaign.id, campaign.name, campaign.status, 
+                 campaign.advertising_channel_type, campaign.advertising_channel_sub_type
+          FROM campaign
+          WHERE campaign.status IN ('ENABLED', 'PAUSED')
+          LIMIT 50
+        `
+        
+        const basicCampaigns = await customer.query(basicCampaignsQuery)
+        
+        if (basicCampaigns && basicCampaigns.length > 0) {
+          logger.info('Found campaigns via basic query (no metrics):', { count: basicCampaigns.length })
+          
+          // Return basic campaign data structure
+          return basicCampaigns.map(campaign => ({
+            campaign: {
+              id: campaign.campaign?.id,
+              name: campaign.campaign?.name,
+              status: campaign.campaign?.status,
+              advertising_channel_type: campaign.campaign?.advertising_channel_type,
+              advertising_channel_sub_type: campaign.campaign?.advertising_channel_sub_type
+            },
+            segments: {
+              date: startDate
+            },
+            metrics: {
+              impressions: 0,
+              clicks: 0,
+              cost_micros: 0,
+              conversions: 0
+            }
+          }))
+        }
+      } catch (fallbackError: any) {
+        logger.error('Fallback query also failed:', fallbackError)
+      }
+      
       throw error
     }
   }
@@ -757,8 +872,8 @@ export class GoogleAdsService {
         val: 'LAST_30_DAYS'
       }, {
         key: 'campaign.status',
-        op: '!=',
-        val: 'REMOVED'
+        op: 'IN',
+        val: ['ENABLED', 'PAUSED']
       }],
       order_by: 'campaign.id'
     })

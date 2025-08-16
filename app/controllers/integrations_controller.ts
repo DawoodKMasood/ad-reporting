@@ -78,11 +78,17 @@ export default class IntegrationsController {
         
         // Calculate totals
         accountMetrics = campaignData.reduce((acc, data) => ({
-          totalSpend: acc.totalSpend + (data.spend || 0),
-          totalImpressions: acc.totalImpressions + (data.impressions || 0),
-          totalClicks: acc.totalClicks + (data.clicks || 0),
-          totalConversions: acc.totalConversions + (data.conversions || 0)
+          totalSpend: acc.totalSpend + (Number(data.spend) || 0),
+          totalImpressions: acc.totalImpressions + (Number(data.impressions) || 0),
+          totalClicks: acc.totalClicks + (Number(data.clicks) || 0),
+          totalConversions: acc.totalConversions + (Number(data.conversions) || 0)
         }), accountMetrics)
+        
+        // Ensure all values are numbers
+        accountMetrics.totalSpend = Number(accountMetrics.totalSpend) || 0
+        accountMetrics.totalImpressions = Number(accountMetrics.totalImpressions) || 0
+        accountMetrics.totalClicks = Number(accountMetrics.totalClicks) || 0
+        accountMetrics.totalConversions = Number(accountMetrics.totalConversions) || 0
         
       } catch (metricsError: any) {
         logger.warn('Could not fetch account metrics:', metricsError)
