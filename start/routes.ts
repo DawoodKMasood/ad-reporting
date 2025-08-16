@@ -14,6 +14,7 @@ import './routes/auth.js'
 import './routes/dashboard.js'
 import './routes/integrations.js'
 import './routes/google_ads.js'
+import './routes/reports.js'
 import './routes/test.js'
 
 // Home route - redirects based on auth status

@@ -53,7 +53,7 @@ export default class IntegrationsController {
         .where('user_id', user.id)
         .firstOrFail()
 
-      // Get summary metrics for the last 30 days
+      // Get existing campaign data from database for metrics
       let accountMetrics = {
         totalSpend: 0,
         totalImpressions: 0,
@@ -68,21 +68,25 @@ export default class IntegrationsController {
       }
 
       try {
-        const campaignData = await googleAdsService.getEnrichedCampaignData(
-          connectedAccount.id,
-          user.id,
-          { type: 'last_30_days' }
-        )
+        // Check if there's existing campaign data in the database (last 30 days)
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
         
-        syncIssues.hasData = campaignData.length > 0
+        const existingData = await CampaignData.query()
+          .where('connected_account_id', connectedAccount.id)
+          .where('date', '>=', thirtyDaysAgo.toISOString().split('T')[0])
         
-        // Calculate totals
-        accountMetrics = campaignData.reduce((acc, data) => ({
-          totalSpend: acc.totalSpend + (Number(data.spend) || 0),
-          totalImpressions: acc.totalImpressions + (Number(data.impressions) || 0),
-          totalClicks: acc.totalClicks + (Number(data.clicks) || 0),
-          totalConversions: acc.totalConversions + (Number(data.conversions) || 0)
-        }), accountMetrics)
+        syncIssues.hasData = existingData.length > 0
+        
+        // Calculate totals from existing data
+        if (existingData.length > 0) {
+          accountMetrics = existingData.reduce((acc, data) => ({
+            totalSpend: acc.totalSpend + (Number(data.spend) || 0),
+            totalImpressions: acc.totalImpressions + (Number(data.impressions) || 0),
+            totalClicks: acc.totalClicks + (Number(data.clicks) || 0),
+            totalConversions: acc.totalConversions + (Number(data.conversions) || 0)
+          }), accountMetrics)
+        }
         
         // Ensure all values are numbers
         accountMetrics.totalSpend = Number(accountMetrics.totalSpend) || 0
@@ -91,15 +95,8 @@ export default class IntegrationsController {
         accountMetrics.totalConversions = Number(accountMetrics.totalConversions) || 0
         
       } catch (metricsError: any) {
-        logger.warn('Could not fetch account metrics:', metricsError)
+        logger.warn('Could not fetch existing campaign data:', metricsError)
         syncIssues.lastSyncError = metricsError.message
-        
-        // Check if this is a manager account with no children case
-        if (connectedAccount.isManagerAccount && 
-            metricsError.message && 
-            metricsError.message.includes('no accessible child accounts')) {
-          syncIssues.isManagerWithNoChildren = true
-        }
       }
 
       return view.render('pages/integrations/show', {

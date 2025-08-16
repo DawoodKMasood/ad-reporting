@@ -1,0 +1,667 @@
+@layout.app({ title: 'Custom Reports' })
+
+@slot('main')
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto py-6">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="flex items-center">
+            <a 
+              href="{{ route('reports.index') }}" 
+              class="text-gray-500 hover:text-gray-700 mr-3"
+            >
+              <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900">
+              <i class="fas fa-chart-pie mr-3 text-purple-600"></i>
+              Custom Report Builder
+            </h1>
+          </div>
+          <p class="mt-2 text-gray-600">
+            Create custom reports with drag-and-drop widgets and advanced filtering
+          </p>
+        </div>
+        
+        <!-- Report Actions -->
+        <div class="flex items-center space-x-3">
+          <button 
+            onclick="loadTemplate()"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <i class="fas fa-folder-open mr-2"></i>
+            Load Template
+          </button>
+          <button 
+            onclick="saveTemplate()"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <i class="fas fa-save mr-2"></i>
+            Save Template
+          </button>
+          <button 
+            onclick="previewReport()"
+            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700"
+          >
+            <i class="fas fa-eye mr-2"></i>
+            Preview Report
+          </button>
+        </div>
+      </div>
+    </div>
+
+    @if(connectedAccounts && connectedAccounts.length > 0)
+      <!-- Report Builder Interface -->
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <!-- Widget Library Sidebar -->
+        <div class="lg:col-span-1">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 sticky top-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              <i class="fas fa-puzzle-piece mr-2 text-purple-600"></i>
+              Widget Library
+            </h3>
+            
+            <!-- Widget Categories -->
+            <div class="space-y-4">
+              <!-- Metrics Widgets -->
+              <div>
+                <h4 class="text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">Metrics</h4>
+                <div class="space-y-2">
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "spend", "title": "Total Spend"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-dollar-sign text-green-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Total Spend</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "impressions", "title": "Impressions"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-eye text-blue-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Impressions</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "clicks", "title": "Clicks"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-mouse-pointer text-purple-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Clicks</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "conversions", "title": "Conversions"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-trophy text-orange-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Conversions</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Chart Widgets -->
+              <div>
+                <h4 class="text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">Charts</h4>
+                <div class="space-y-2">
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="chart"
+                    data-widget-config='{"type": "line", "title": "Performance Over Time"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-chart-line text-blue-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Line Chart</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="chart"
+                    data-widget-config='{"type": "bar", "title": "Platform Comparison"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-chart-bar text-green-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Bar Chart</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="chart"
+                    data-widget-config='{"type": "pie", "title": "Spend Distribution"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-chart-pie text-purple-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Pie Chart</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="chart"
+                    data-widget-config='{"type": "funnel", "title": "Conversion Funnel"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-funnel-dollar text-orange-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Funnel Chart</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Table Widgets -->
+              <div>
+                <h4 class="text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">Tables</h4>
+                <div class="space-y-2">
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="table"
+                    data-widget-config='{"type": "campaign", "title": "Campaign Performance"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-table text-gray-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Campaign Table</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="table"
+                    data-widget-config='{"type": "platform", "title": "Platform Breakdown"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-list text-indigo-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Platform Table</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Text Widgets -->
+              <div>
+                <h4 class="text-sm font-medium text-gray-700 mb-2 uppercase tracking-wide">Content</h4>
+                <div class="space-y-2">
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="text"
+                    data-widget-config='{"type": "heading", "title": "Report Heading"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-heading text-gray-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Text Heading</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-item p-3 border border-gray-200 rounded-md cursor-pointer hover:bg-gray-50 hover:border-blue-300"
+                    draggable="true"
+                    data-widget-type="text"
+                    data-widget-config='{"type": "description", "title": "Description Text"}'
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-align-left text-gray-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Description</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Report Canvas -->
+        <div class="lg:col-span-3">
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div class="flex items-center justify-between mb-6">
+              <h3 class="text-lg font-semibold text-gray-900">
+                <i class="fas fa-layout mr-2 text-purple-600"></i>
+                Report Canvas
+              </h3>
+              <div class="flex items-center space-x-2">
+                <button 
+                  onclick="clearCanvas()"
+                  class="px-3 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-md hover:bg-red-200"
+                >
+                  <i class="fas fa-trash mr-1"></i>
+                  Clear All
+                </button>
+                <button 
+                  onclick="undoLastAction()"
+                  class="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                >
+                  <i class="fas fa-undo mr-1"></i>
+                  Undo
+                </button>
+              </div>
+            </div>
+
+            <!-- Drop Zone -->
+            <div 
+              id="reportCanvas" 
+              class="min-h-screen border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50"
+              ondrop="dropWidget(event)" 
+              ondragover="allowDrop(event)"
+            >
+              <div id="emptyState" class="text-center py-12">
+                <i class="fas fa-mouse-pointer text-4xl text-gray-400 mb-4"></i>
+                <h4 class="text-lg font-medium text-gray-600 mb-2">Drag widgets here to build your report</h4>
+                <p class="text-gray-500">Start by dragging metrics, charts, or tables from the widget library</p>
+              </div>
+
+              <!-- Dynamic Widget Container -->
+              <div id="widgetContainer" class="hidden space-y-6"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report Settings Panel (Hidden by default) -->
+      <div id="settingsPanel" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50">
+        <div class="absolute right-0 top-0 h-full w-96 bg-white shadow-lg p-6 overflow-y-auto">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">Widget Settings</h3>
+            <button onclick="closeSettingsPanel()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <div id="settingsContent">
+            <!-- Dynamic settings content will be inserted here -->
+          </div>
+        </div>
+      </div>
+    @else
+      <!-- No Data State -->
+      <div class="text-center py-12">
+        <div class="max-w-md mx-auto">
+          <i class="fas fa-chart-pie text-6xl text-gray-300 mb-6"></i>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No Connected Accounts</h3>
+          <p class="text-gray-500 mb-6">
+            Connect your advertising accounts to start building custom reports.
+          </p>
+          <a 
+            href="{{ route('integrations.index') }}"
+            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
+          >
+            <i class="fas fa-plug mr-2"></i>
+            Connect Your First Account
+          </a>
+        </div>
+      </div>
+    @endif
+  </div>
+
+  <!-- Chart.js for Widget Previews -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script>
+    let widgetCounter = 0;
+    let reportData = [];
+
+    // Drag and Drop Functions
+    function allowDrop(ev) {
+      ev.preventDefault();
+      ev.currentTarget.classList.add('border-blue-400', 'bg-blue-50');
+    }
+
+    function dropWidget(ev) {
+      ev.preventDefault();
+      ev.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
+      
+      const widgetType = ev.dataTransfer.getData('widget-type');
+      const widgetConfig = JSON.parse(ev.dataTransfer.getData('widget-config'));
+      
+      addWidgetToCanvas(widgetType, widgetConfig);
+    }
+
+    // Drag Start Event
+    document.addEventListener('DOMContentLoaded', function() {
+      const widgets = document.querySelectorAll('.widget-item');
+      widgets.forEach(widget => {
+        widget.addEventListener('dragstart', function(e) {
+          e.dataTransfer.setData('widget-type', this.dataset.widgetType);
+          e.dataTransfer.setData('widget-config', this.dataset.widgetConfig);
+        });
+      });
+    });
+
+    function addWidgetToCanvas(type, config) {
+      widgetCounter++;
+      const widgetId = `widget-${widgetCounter}`;
+      
+      // Hide empty state and show widget container
+      document.getElementById('emptyState').style.display = 'none';
+      document.getElementById('widgetContainer').classList.remove('hidden');
+      
+      let widgetHtml = '';
+      
+      switch(type) {
+        case 'metric':
+          widgetHtml = createMetricWidget(widgetId, config);
+          break;
+        case 'chart':
+          widgetHtml = createChartWidget(widgetId, config);
+          break;
+        case 'table':
+          widgetHtml = createTableWidget(widgetId, config);
+          break;
+        case 'text':
+          widgetHtml = createTextWidget(widgetId, config);
+          break;
+      }
+      
+      document.getElementById('widgetContainer').innerHTML += widgetHtml;
+      
+      // Store widget data
+      reportData.push({
+        id: widgetId,
+        type: type,
+        config: config
+      });
+      
+      // Initialize charts if needed
+      if (type === 'chart') {
+        setTimeout(() => initializeChart(widgetId, config), 100);
+      }
+    }
+
+    function createMetricWidget(id, config) {
+      const sampleValue = getSampleMetricValue(config.type);
+      return `
+        <div id="${id}" class="widget-container bg-white border border-gray-200 rounded-lg p-4 relative group">
+          <div class="widget-controls absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onclick="editWidget('${id}')" class="p-1 text-gray-400 hover:text-blue-600">
+              <i class="fas fa-edit text-xs"></i>
+            </button>
+            <button onclick="removeWidget('${id}')" class="p-1 text-gray-400 hover:text-red-600 ml-1">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+          <div class="flex items-center">
+            <div class="flex-1">
+              <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">${config.title}</h4>
+              <p class="text-2xl font-bold text-gray-900">${sampleValue}</p>
+            </div>
+            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+              <i class="fas ${getMetricIcon(config.type)} text-blue-600"></i>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function createChartWidget(id, config) {
+      return `
+        <div id="${id}" class="widget-container bg-white border border-gray-200 rounded-lg p-4 relative group">
+          <div class="widget-controls absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onclick="editWidget('${id}')" class="p-1 text-gray-400 hover:text-blue-600">
+              <i class="fas fa-edit text-xs"></i>
+            </button>
+            <button onclick="removeWidget('${id}')" class="p-1 text-gray-400 hover:text-red-600 ml-1">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">${config.title}</h3>
+          <div class="relative h-64">
+            <canvas id="${id}-chart"></canvas>
+          </div>
+        </div>
+      `;
+    }
+
+    function createTableWidget(id, config) {
+      return `
+        <div id="${id}" class="widget-container bg-white border border-gray-200 rounded-lg overflow-hidden relative group">
+          <div class="widget-controls absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+            <button onclick="editWidget('${id}')" class="p-1 text-gray-400 hover:text-blue-600">
+              <i class="fas fa-edit text-xs"></i>
+            </button>
+            <button onclick="removeWidget('${id}')" class="p-1 text-gray-400 hover:text-red-600 ml-1">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+          <div class="px-4 py-3 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-900">${config.title}</h3>
+          </div>
+          <div class="overflow-x-auto">
+            ${getSampleTableData(config.type)}
+          </div>
+        </div>
+      `;
+    }
+
+    function createTextWidget(id, config) {
+      const content = config.type === 'heading' ? 
+        '<h2 class="text-2xl font-bold text-gray-900">Report Heading</h2>' :
+        '<p class="text-gray-700">This is a description text widget. Click edit to customize the content.</p>';
+      
+      return `
+        <div id="${id}" class="widget-container bg-white border border-gray-200 rounded-lg p-4 relative group">
+          <div class="widget-controls absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button onclick="editWidget('${id}')" class="p-1 text-gray-400 hover:text-blue-600">
+              <i class="fas fa-edit text-xs"></i>
+            </button>
+            <button onclick="removeWidget('${id}')" class="p-1 text-gray-400 hover:text-red-600 ml-1">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+          ${content}
+        </div>
+      `;
+    }
+
+    // Helper Functions
+    function getSampleMetricValue(type) {
+      const values = {
+        spend: '$2,450.50',
+        impressions: '145,680',
+        clicks: '4,720',
+        conversions: '142'
+      };
+      return values[type] || '$0';
+    }
+
+    function getMetricIcon(type) {
+      const icons = {
+        spend: 'fa-dollar-sign',
+        impressions: 'fa-eye',
+        clicks: 'fa-mouse-pointer',
+        conversions: 'fa-trophy'
+      };
+      return icons[type] || 'fa-chart-bar';
+    }
+
+    function getSampleTableData(type) {
+      if (type === 'campaign') {
+        return `
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Campaign</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Spend</th>
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">CTR</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr><td class="px-4 py-3 text-sm">Brand Campaign</td><td class="px-4 py-3 text-sm">$1,250</td><td class="px-4 py-3 text-sm">3.2%</td></tr>
+              <tr><td class="px-4 py-3 text-sm">Product Campaign</td><td class="px-4 py-3 text-sm">$890</td><td class="px-4 py-3 text-sm">2.8%</td></tr>
+            </tbody>
+          </table>
+        `;
+      }
+      return '<p class="p-4 text-gray-500">Sample table data</p>';
+    }
+
+    function initializeChart(widgetId, config) {
+      const ctx = document.getElementById(`${widgetId}-chart`);
+      if (!ctx) return;
+      
+      let chartConfig = {
+        type: config.type === 'funnel' ? 'bar' : config.type,
+        data: getSampleChartData(config.type),
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: config.type === 'pie' ? 'bottom' : 'top'
+            }
+          }
+        }
+      };
+      
+      new Chart(ctx, chartConfig);
+    }
+
+    function getSampleChartData(type) {
+      switch(type) {
+        case 'line':
+          return {
+            labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5'],
+            datasets: [{
+              label: 'Performance',
+              data: [12, 19, 15, 25, 22],
+              borderColor: 'rgb(59, 130, 246)',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              tension: 0.4
+            }]
+          };
+        case 'bar':
+          return {
+            labels: ['Google Ads', 'Meta Ads', 'LinkedIn Ads'],
+            datasets: [{
+              label: 'Spend',
+              data: [1200, 800, 400],
+              backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6']
+            }]
+          };
+        case 'pie':
+          return {
+            labels: ['Google Ads', 'Meta Ads', 'LinkedIn Ads'],
+            datasets: [{
+              data: [50, 30, 20],
+              backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6']
+            }]
+          };
+        default:
+          return { labels: [], datasets: [] };
+      }
+    }
+
+    // Widget Management Functions
+    function removeWidget(widgetId) {
+      document.getElementById(widgetId).remove();
+      reportData = reportData.filter(widget => widget.id !== widgetId);
+      
+      if (reportData.length === 0) {
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('widgetContainer').classList.add('hidden');
+      }
+    }
+
+    function editWidget(widgetId) {
+      // Open settings panel for widget editing
+      document.getElementById('settingsPanel').classList.remove('hidden');
+      // Populate settings based on widget type
+    }
+
+    function closeSettingsPanel() {
+      document.getElementById('settingsPanel').classList.add('hidden');
+    }
+
+    function clearCanvas() {
+      if (confirm('Are you sure you want to clear all widgets?')) {
+        document.getElementById('widgetContainer').innerHTML = '';
+        document.getElementById('emptyState').style.display = 'block';
+        document.getElementById('widgetContainer').classList.add('hidden');
+        reportData = [];
+        widgetCounter = 0;
+      }
+    }
+
+    function undoLastAction() {
+      if (reportData.length > 0) {
+        const lastWidget = reportData[reportData.length - 1];
+        removeWidget(lastWidget.id);
+      }
+    }
+
+    // Template and Report Functions
+    function loadTemplate() {
+      alert('Load template feature coming soon!');
+    }
+
+    function saveTemplate() {
+      if (reportData.length === 0) {
+        alert('Please add some widgets before saving the template.');
+        return;
+      }
+      alert('Save template feature coming soon!');
+    }
+
+    function previewReport() {
+      if (reportData.length === 0) {
+        alert('Please add some widgets before previewing the report.');
+        return;
+      }
+      
+      // Create a new window with the report preview
+      const previewWindow = window.open('', '_blank', 'width=1200,height=800');
+      const reportHtml = generateReportPreviewHtml();
+      previewWindow.document.write(reportHtml);
+      previewWindow.document.close();
+    }
+
+    function generateReportPreviewHtml() {
+      const widgets = document.getElementById('widgetContainer').innerHTML;
+      return `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Custom Report Preview</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+          <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+        </head>
+        <body class="bg-gray-50 p-8">
+          <div class="max-w-7xl mx-auto">
+            <div class="mb-8 text-center">
+              <h1 class="text-3xl font-bold text-gray-900 mb-2">Custom Marketing Report</h1>
+              <p class="text-gray-600">Generated on ${new Date().toLocaleDateString()}</p>
+            </div>
+            <div class="space-y-6">
+              ${widgets.replace(/widget-controls[^}]*}/g, '').replace(/<button[^>]*>.*?<\/button>/g, '')}
+            </div>
+          </div>
+        </body>
+        </html>
+      `;
+    }
+  </script>
+@endslot
+@end

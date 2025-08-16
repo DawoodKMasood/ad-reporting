@@ -1,0 +1,492 @@
+@layout.app({ title: 'Reports' })
+
+@slot('main')
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto py-6">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">
+            <i class="fas fa-chart-line mr-3 text-blue-600"></i>
+            Reports & Analytics
+          </h1>
+          <p class="mt-2 text-gray-600">
+            Comprehensive insights across all your advertising platforms
+          </p>
+        </div>
+        
+        <!-- Report Actions -->
+        <div class="flex items-center space-x-3">
+          <a 
+            href="{{ route('reports.performance') }}"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <i class="fas fa-tachometer-alt mr-2"></i>
+            Performance Report
+          </a>
+          <a 
+            href="{{ route('reports.custom') }}"
+            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <i class="fas fa-plus mr-2"></i>
+            Create Custom Report
+          </a>
+        </div>
+      </div>
+    </div>
+
+    @if(!hasData)
+      <!-- No Data State -->
+      <div class="text-center py-12">
+        <div class="max-w-md mx-auto">
+          <i class="fas fa-chart-bar text-6xl text-gray-300 mb-6"></i>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No Report Data Available</h3>
+          <p class="text-gray-500 mb-6">
+            Connect your advertising accounts to start generating comprehensive reports and analytics.
+          </p>
+          <a 
+            href="{{ route('integrations.index') }}"
+            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+          >
+            <i class="fas fa-plug mr-2"></i>
+            Connect Your First Account
+          </a>
+        </div>
+      </div>
+    @else
+      <!-- Date Range and Platform Filter -->
+      <div class="mb-8">
+        @!component('components/reports/filters', {
+          selectedDateRange: selectedDateRange,
+          selectedPlatform: selectedPlatform,
+          connectedAccounts: connectedAccounts
+        })
+      </div>
+
+      <!-- Key Metrics Overview -->
+      <div class="mb-8">
+        @!component('components/reports/metrics-overview', {
+          metrics: metrics,
+          formatNumber: formatNumber
+        })
+      </div>
+
+      <!-- Charts and Visualizations -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+        <!-- Performance Over Time Chart -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-900">
+              <i class="fas fa-chart-line mr-2 text-blue-600"></i>
+              Performance Over Time
+            </h3>
+            <div class="flex items-center space-x-2">
+              <button 
+                onclick="toggleChartType('performanceChart', 'line')"
+                class="chart-type-btn active px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-md"
+                data-type="line"
+              >
+                Line
+              </button>
+              <button 
+                onclick="toggleChartType('performanceChart', 'bar')"
+                class="chart-type-btn px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
+                data-type="bar"
+              >
+                Bar
+              </button>
+            </div>
+          </div>
+          <div class="relative h-80">
+            <canvas id="performanceChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Platform Distribution -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-chart-pie mr-2 text-green-600"></i>
+            Spend by Platform
+          </h3>
+          <div class="relative h-80">
+            <canvas id="platformChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Platform Performance Table -->
+      <div class="mb-8">
+        @!component('components/reports/platform-table', {
+          platformReports: platformReports,
+          formatNumber: formatNumber
+        })
+      </div>
+
+      <!-- Additional Analytics Widgets -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+        <!-- CTR Trends -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h4 class="text-md font-semibold text-gray-900 mb-4">
+            <i class="fas fa-mouse-pointer mr-2 text-purple-600"></i>
+            Click-Through Rate Trends
+          </h4>
+          <div class="relative h-48">
+            <canvas id="ctrChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Conversion Funnel -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h4 class="text-md font-semibold text-gray-900 mb-4">
+            <i class="fas fa-funnel-dollar mr-2 text-orange-600"></i>
+            Conversion Funnel
+          </h4>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Impressions</span>
+              <span class="text-sm font-medium">{{ formatNumber(metrics.find(m => m.name === 'Impressions')?.value || 0, 'number') }}</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-blue-600 h-2 rounded-full" style="width: 100%"></div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Clicks</span>
+              <span class="text-sm font-medium">{{ formatNumber(metrics.find(m => m.name === 'Clicks')?.value || 0, 'number') }}</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-green-600 h-2 rounded-full" style="width: {{ (metrics.find(m => m.name === 'Clicks')?.value || 0) / Math.max(metrics.find(m => m.name === 'Impressions')?.value || 1, 1) * 100 }}%"></div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Conversions</span>
+              <span class="text-sm font-medium">{{ formatNumber(metrics.find(m => m.name === 'Conversions')?.value || 0, 'number') }}</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-orange-600 h-2 rounded-full" style="width: {{ (metrics.find(m => m.name === 'Conversions')?.value || 0) / Math.max(metrics.find(m => m.name === 'Clicks')?.value || 1, 1) * 100 }}%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cost Efficiency -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h4 class="text-md font-semibold text-gray-900 mb-4">
+            <i class="fas fa-dollar-sign mr-2 text-green-600"></i>
+            Cost Efficiency
+          </h4>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Avg. CPC</span>
+              <div class="text-right">
+                <span class="text-lg font-semibold text-gray-900">
+                  {{ formatNumber(metrics.find(m => m.name === 'CPC')?.value || 0, 'currency') }}
+                </span>
+                <div class="text-xs {{ metrics.find(m => m.name === 'CPC')?.changeType === 'increase' ? 'text-red-600' : 'text-green-600' }}">
+                  <i class="fas fa-arrow-{{ metrics.find(m => m.name === 'CPC')?.changeType === 'increase' ? 'up' : 'down' }} mr-1"></i>
+                  {{ Math.abs(metrics.find(m => m.name === 'CPC')?.change || 0).toFixed(1) }}%
+                </div>
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Conversion Rate</span>
+              <div class="text-right">
+                <span class="text-lg font-semibold text-gray-900">
+                  {{ (metrics.find(m => m.name === 'Conversion Rate')?.value || 0).toFixed(2) }}%
+                </span>
+                <div class="text-xs {{ metrics.find(m => m.name === 'Conversion Rate')?.changeType === 'increase' ? 'text-green-600' : 'text-red-600' }}">
+                  <i class="fas fa-arrow-{{ metrics.find(m => m.name === 'Conversion Rate')?.changeType === 'increase' ? 'up' : 'down' }} mr-1"></i>
+                  {{ Math.abs(metrics.find(m => m.name === 'Conversion Rate')?.change || 0).toFixed(1) }}%
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Export and Share Options -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">
+          <i class="fas fa-share-alt mr-2 text-indigo-600"></i>
+          Export & Share Report
+        </h3>
+        <div class="flex items-center space-x-4">
+          <button 
+            onclick="exportReport('pdf')"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <i class="fas fa-file-pdf mr-2 text-red-600"></i>
+            Export as PDF
+          </button>
+          <button 
+            onclick="exportReport('csv')"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <i class="fas fa-file-csv mr-2 text-green-600"></i>
+            Export as CSV
+          </button>
+          <button 
+            onclick="shareReport()"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <i class="fas fa-link mr-2 text-blue-600"></i>
+            Share Dashboard Link
+          </button>
+          <button 
+            onclick="scheduleReport()"
+            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700"
+          >
+            <i class="fas fa-clock mr-2"></i>
+            Schedule Report
+          </button>
+        </div>
+      </div>
+    @end
+  </div>
+
+  <!-- Chart.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+
+  @if(hasData && chartData)
+  <script>
+    // Parse chart data
+    const chartData = {!! chartData !!};
+    let performanceChart;
+    let platformChart;
+    let ctrChart;
+
+    // Color palette
+    const colors = {
+      primary: 'rgb(59, 130, 246)',
+      secondary: 'rgb(16, 185, 129)',
+      accent: 'rgb(245, 158, 11)',
+      danger: 'rgb(239, 68, 68)',
+      purple: 'rgb(147, 51, 234)',
+      indigo: 'rgb(99, 102, 241)',
+      pink: 'rgb(236, 72, 153)',
+      gray: 'rgb(107, 114, 128)'
+    };
+
+    // Initialize Performance Chart
+    function initPerformanceChart() {
+      const ctx = document.getElementById('performanceChart').getContext('2d');
+      performanceChart = new Chart(ctx, {
+        type: 'line',
+        data: chartData,
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: 'white',
+              bodyColor: 'white',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderWidth: 1,
+              cornerRadius: 8,
+              displayColors: true,
+              callbacks: {
+                label: function(context) {
+                  if (context.dataset.label === 'Spend') {
+                    return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`;
+                  }
+                  return `${context.dataset.label}: ${context.parsed.y.toLocaleString()}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            },
+            y: {
+              display: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return '$' + value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Initialize Platform Distribution Chart
+    function initPlatformChart() {
+      const platformData = @json(platformReports);
+      const labels = platformData.map(p => p.displayName);
+      const spendData = platformData.map(p => p.totalSpend);
+      const backgroundColors = [
+        colors.primary,
+        colors.secondary,
+        colors.accent,
+        colors.purple,
+        colors.indigo,
+        colors.pink,
+        colors.gray
+      ];
+
+      const ctx = document.getElementById('platformChart').getContext('2d');
+      platformChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: spendData,
+            backgroundColor: backgroundColors.slice(0, labels.length),
+            borderWidth: 2,
+            borderColor: '#ffffff'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                padding: 20,
+                usePointStyle: true,
+                pointStyle: 'circle'
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: 'white',
+              bodyColor: 'white',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderWidth: 1,
+              cornerRadius: 8,
+              callbacks: {
+                label: function(context) {
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  const percentage = ((context.parsed / total) * 100).toFixed(1);
+                  return `${context.label}: $${context.parsed.toLocaleString()} (${percentage}%)`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Initialize CTR Chart
+    function initCTRChart() {
+      const ctx = document.getElementById('ctrChart').getContext('2d');
+      ctrChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            label: 'CTR %',
+            data: chartData.datasets[1].data.map((clicks, index) => {
+              const impressions = chartData.datasets[0].data[index] / 2; // Rough estimation
+              return impressions > 0 ? (clicks / impressions * 100) : 0;
+            }),
+            borderColor: colors.purple,
+            backgroundColor: `${colors.purple}20`,
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              backgroundColor: 'rgba(0, 0, 0, 0.8)',
+              titleColor: 'white',
+              bodyColor: 'white',
+              borderColor: 'rgba(255, 255, 255, 0.1)',
+              borderWidth: 1,
+              cornerRadius: 8,
+              callbacks: {
+                label: function(context) {
+                  return `CTR: ${context.parsed.y.toFixed(2)}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              display: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            },
+            y: {
+              display: true,
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              },
+              ticks: {
+                callback: function(value) {
+                  return value.toFixed(1) + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Toggle chart type
+    function toggleChartType(chartId, type) {
+      if (chartId === 'performanceChart' && performanceChart) {
+        performanceChart.config.type = type;
+        performanceChart.update();
+        
+        // Update button states
+        document.querySelectorAll('.chart-type-btn').forEach(btn => {
+          btn.classList.remove('active', 'bg-blue-100', 'text-blue-800');
+          btn.classList.add('bg-gray-100', 'text-gray-700');
+        });
+        document.querySelector(`[data-type="${type}"]`).classList.remove('bg-gray-100', 'text-gray-700');
+        document.querySelector(`[data-type="${type}"]`).classList.add('active', 'bg-blue-100', 'text-blue-800');
+      }
+    }
+
+    // Export functions
+    function exportReport(format) {
+      alert(`Exporting report as ${format.toUpperCase()}... (Feature coming soon)`);
+    }
+
+    function shareReport() {
+      navigator.clipboard.writeText(window.location.href).then(() => {
+        alert('Dashboard link copied to clipboard!');
+      });
+    }
+
+    function scheduleReport() {
+      alert('Schedule report feature coming soon!');
+    }
+
+    // Initialize charts when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      initPerformanceChart();
+      initPlatformChart();
+      initCTRChart();
+    });
+  </script>
+  @end
+@endslot
+@end

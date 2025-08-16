@@ -1,0 +1,456 @@
+@layout.app({ title: 'Performance Report' })
+
+@slot('main')
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto py-6">
+    <!-- Page Header -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <div class="flex items-center">
+            <a 
+              href="{{ route('reports.index') }}" 
+              class="text-gray-500 hover:text-gray-700 mr-3"
+            >
+              <i class="fas fa-arrow-left"></i>
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900">
+              <i class="fas fa-tachometer-alt mr-3 text-green-600"></i>
+              Performance Report
+            </h1>
+          </div>
+          <p class="mt-2 text-gray-600">
+            Detailed performance analytics with advanced metrics and insights
+          </p>
+        </div>
+        
+        <!-- Report Actions -->
+        <div class="flex items-center space-x-3">
+          <button 
+            onclick="exportPerformanceReport()"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+          >
+            <i class="fas fa-download mr-2"></i>
+            Export Report
+          </button>
+          <button 
+            onclick="schedulePerformanceReport()"
+            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
+          >
+            <i class="fas fa-clock mr-2"></i>
+            Schedule Report
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Date Range and Platform Filter -->
+    <div class="mb-8">
+      @!component('components/reports/filters', {
+        selectedDateRange: selectedDateRange,
+        selectedPlatform: selectedPlatform,
+        connectedAccounts: connectedAccounts
+      })
+    </div>
+
+    @if(connectedAccounts && connectedAccounts.length > 0)
+      <!-- Performance Metrics Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+        <!-- Efficiency Metrics -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-chart-line mr-2 text-blue-600"></i>
+            Efficiency Metrics
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Cost per Click (CPC)</span>
+              <span class="text-lg font-semibold text-gray-900">$2.45</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Cost per Thousand (CPM)</span>
+              <span class="text-lg font-semibold text-gray-900">$12.80</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Cost per Conversion</span>
+              <span class="text-lg font-semibold text-gray-900">$48.50</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Return on Ad Spend</span>
+              <span class="text-lg font-semibold text-green-600">4.2x</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Engagement Metrics -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-users mr-2 text-purple-600"></i>
+            Engagement Metrics
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Click-Through Rate</span>
+              <span class="text-lg font-semibold text-gray-900">3.24%</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Conversion Rate</span>
+              <span class="text-lg font-semibold text-gray-900">5.8%</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Bounce Rate</span>
+              <span class="text-lg font-semibold text-gray-900">42.1%</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Avg. Session Duration</span>
+              <span class="text-lg font-semibold text-gray-900">2m 34s</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quality Metrics -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-star mr-2 text-yellow-600"></i>
+            Quality Metrics
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Quality Score</span>
+              <div class="flex items-center">
+                <span class="text-lg font-semibold text-gray-900 mr-2">8.5</span>
+                <span class="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">Good</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Relevance Score</span>
+              <span class="text-lg font-semibold text-gray-900">7.8</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Landing Page Score</span>
+              <span class="text-lg font-semibold text-gray-900">9.2</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Ad Relevance</span>
+              <span class="text-lg font-semibold text-gray-900">8.9</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Charts -->
+      <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
+        <!-- Performance Trends -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-chart-area mr-2 text-blue-600"></i>
+            Performance Trends
+          </h3>
+          <div class="relative h-80">
+            <canvas id="performanceTrendsChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Conversion Funnel -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-funnel-dollar mr-2 text-orange-600"></i>
+            Advanced Conversion Funnel
+          </h3>
+          <div class="relative h-80">
+            <canvas id="conversionFunnelChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Device and Demographics Breakdown -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Device Performance -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-mobile-alt mr-2 text-indigo-600"></i>
+            Device Performance
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <i class="fas fa-desktop text-gray-500 mr-2"></i>
+                <span class="text-sm text-gray-600">Desktop</span>
+              </div>
+              <div class="text-right">
+                <span class="text-sm font-semibold text-gray-900">$1,245</span>
+                <div class="text-xs text-gray-500">45% of spend</div>
+              </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-blue-600 h-2 rounded-full" style="width: 45%"></div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <i class="fas fa-mobile-alt text-gray-500 mr-2"></i>
+                <span class="text-sm text-gray-600">Mobile</span>
+              </div>
+              <div class="text-right">
+                <span class="text-sm font-semibold text-gray-900">$1,680</span>
+                <div class="text-xs text-gray-500">60% of spend</div>
+              </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-green-600 h-2 rounded-full" style="width: 60%"></div>
+            </div>
+
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <i class="fas fa-tablet-alt text-gray-500 mr-2"></i>
+                <span class="text-sm text-gray-600">Tablet</span>
+              </div>
+              <div class="text-right">
+                <span class="text-sm font-semibold text-gray-900">$275</span>
+                <div class="text-xs text-gray-500">10% of spend</div>
+              </div>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-purple-600 h-2 rounded-full" style="width: 10%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Geographic Performance -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-globe-americas mr-2 text-green-600"></i>
+            Geographic Performance
+          </h3>
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">United States</span>
+              <span class="text-sm font-semibold text-gray-900">$1,850</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Canada</span>
+              <span class="text-sm font-semibold text-gray-900">$425</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">United Kingdom</span>
+              <span class="text-sm font-semibold text-gray-900">$380</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Australia</span>
+              <span class="text-sm font-semibold text-gray-900">$245</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-sm text-gray-600">Germany</span>
+              <span class="text-sm font-semibold text-gray-900">$200</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Campaign Performance Table -->
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div class="px-6 py-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-gray-900">
+            <i class="fas fa-list mr-2 text-gray-600"></i>
+            Top Performing Campaigns
+          </h3>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campaign</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Platform</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spend</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impressions</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CTR</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Conversions</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ROAS</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Brand Awareness Campaign</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Google Ads</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$1,245.50</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">245,680</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">3.24%</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">142</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">4.2x</td>
+              </tr>
+              <tr class="hover:bg-gray-50">
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">Product Launch Campaign</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Meta Ads</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$890.25</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">180,420</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2.85%</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">89</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">3.8x</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Performance Insights -->
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-6">
+        <h3 class="text-lg font-semibold text-blue-900 mb-4">
+          <i class="fas fa-lightbulb mr-2 text-blue-600"></i>
+          Performance Insights & Recommendations
+        </h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h4 class="text-sm font-semibold text-blue-800 mb-2">Key Insights</h4>
+            <ul class="space-y-1 text-sm text-blue-700">
+              <li>• Mobile performance is 25% better than desktop</li>
+              <li>• Weekend campaigns show 15% higher conversion rates</li>
+              <li>• Video ads have 40% better engagement than static images</li>
+              <li>• Retargeting campaigns achieve 3x better ROAS</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="text-sm font-semibold text-blue-800 mb-2">Recommendations</h4>
+            <ul class="space-y-1 text-sm text-blue-700">
+              <li>• Increase mobile budget allocation by 20%</li>
+              <li>• Focus ad spend on Friday-Sunday time slots</li>
+              <li>• Expand video creative testing</li>
+              <li>• Implement broader retargeting audience segments</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    @else
+      <!-- No Data State -->
+      <div class="text-center py-12">
+        <div class="max-w-md mx-auto">
+          <i class="fas fa-tachometer-alt text-6xl text-gray-300 mb-6"></i>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No Performance Data Available</h3>
+          <p class="text-gray-500 mb-6">
+            Connect your advertising accounts to start generating detailed performance reports.
+          </p>
+          <a 
+            href="{{ route('integrations.index') }}"
+            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700"
+          >
+            <i class="fas fa-plug mr-2"></i>
+            Connect Your First Account
+          </a>
+        </div>
+      </div>
+    @endif
+  </div>
+
+  <!-- Chart.js for Performance Analytics -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  <script>
+    function exportPerformanceReport() {
+      alert('Exporting performance report... (Feature coming soon)');
+    }
+
+    function schedulePerformanceReport() {
+      alert('Schedule performance report feature coming soon!');
+    }
+
+    // Initialize performance charts
+    document.addEventListener('DOMContentLoaded', function() {
+      if (document.getElementById('performanceTrendsChart')) {
+        initPerformanceTrendsChart();
+      }
+      if (document.getElementById('conversionFunnelChart')) {
+        initConversionFunnelChart();
+      }
+    });
+
+    function initPerformanceTrendsChart() {
+      const ctx = document.getElementById('performanceTrendsChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+          datasets: [
+            {
+              label: 'CTR %',
+              data: [3.2, 3.5, 3.1, 3.8],
+              borderColor: 'rgb(59, 130, 246)',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              tension: 0.4
+            },
+            {
+              label: 'Conversion Rate %',
+              data: [5.1, 5.8, 5.2, 6.1],
+              borderColor: 'rgb(16, 185, 129)',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'top',
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return value + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function initConversionFunnelChart() {
+      const ctx = document.getElementById('conversionFunnelChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Impressions', 'Clicks', 'Landing Page Views', 'Conversions'],
+          datasets: [{
+            label: 'Funnel Stage',
+            data: [100000, 3200, 2800, 168],
+            backgroundColor: [
+              'rgba(59, 130, 246, 0.8)',
+              'rgba(16, 185, 129, 0.8)',
+              'rgba(245, 158, 11, 0.8)',
+              'rgba(239, 68, 68, 0.8)'
+            ],
+            borderColor: [
+              'rgb(59, 130, 246)',
+              'rgb(16, 185, 129)',
+              'rgb(245, 158, 11)',
+              'rgb(239, 68, 68)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return value.toLocaleString();
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  </script>
+@endslot
+@end

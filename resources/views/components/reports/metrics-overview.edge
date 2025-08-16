@@ -1,0 +1,121 @@
+<!-- Key Metrics Overview -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+  @each(metric in metrics)
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+      <div class="flex items-center justify-between">
+        <div class="flex-1">
+          <h4 class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+            {{ metric.name }}
+          </h4>
+          <p class="text-xl font-bold text-gray-900 mb-1">
+            @if(metric.format === 'currency')
+              {{ formatNumber(metric.value, 'currency') }}
+            @elseif(metric.format === 'percentage')
+              {{ metric.value.toFixed(2) }}%
+            @else
+              {{ formatNumber(metric.value, 'number') }}
+            @endif
+          </p>
+          
+          <!-- Change Indicator -->
+          @if(metric.change !== 0)
+            <div class="flex items-center text-xs">
+              @if(metric.changeType === 'increase')
+                <i class="fas fa-arrow-up mr-1 {{ metric.name === 'CPC' ? 'text-red-500' : 'text-green-500' }}"></i>
+                <span class="{{ metric.name === 'CPC' ? 'text-red-600' : 'text-green-600' }}">
+                  +{{ Math.abs(metric.change).toFixed(1) }}%
+                </span>
+              @else
+                <i class="fas fa-arrow-down mr-1 {{ metric.name === 'CPC' ? 'text-green-500' : 'text-red-500' }}"></i>
+                <span class="{{ metric.name === 'CPC' ? 'text-green-600' : 'text-red-600' }}">
+                  -{{ Math.abs(metric.change).toFixed(1) }}%
+                </span>
+              @endif
+            </div>
+          @else
+            <div class="text-xs text-gray-400">
+              <i class="fas fa-minus mr-1"></i>
+              <span>No change</span>
+            </div>
+          @endif
+        </div>
+        
+        <!-- Icon -->
+        <div class="flex-shrink-0 ml-3">
+          @if(metric.name === 'Total Spend')
+            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-dollar-sign text-green-600 text-sm"></i>
+            </div>
+          @elseif(metric.name === 'Impressions')
+            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-eye text-blue-600 text-sm"></i>
+            </div>
+          @elseif(metric.name === 'Clicks')
+            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-mouse-pointer text-purple-600 text-sm"></i>
+            </div>
+          @elseif(metric.name === 'Conversions')
+            <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-trophy text-orange-600 text-sm"></i>
+            </div>
+          @elseif(metric.name === 'CTR')
+            <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-percentage text-indigo-600 text-sm"></i>
+            </div>
+          @elseif(metric.name === 'CPC')
+            <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-coins text-yellow-600 text-sm"></i>
+            </div>
+          @elseif(metric.name === 'Conversion Rate')
+            <div class="w-8 h-8 bg-pink-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-chart-line text-pink-600 text-sm"></i>
+            </div>
+          @else
+            <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
+              <i class="fas fa-chart-bar text-gray-600 text-sm"></i>
+            </div>
+          @endif
+        </div>
+      </div>
+      
+      <!-- Trend Sparkline (placeholder for now) -->
+      <div class="mt-3 h-6 flex items-end justify-between space-x-1 opacity-25">
+        @for(i = 0; i < 12; i++)
+          <div class="bg-{{ metric.changeType === 'increase' ? 'green' : 'red' }}-300 rounded-sm" 
+               style="height: {{ Math.random() * 100 }}%; width: 6px;"></div>
+        @end
+      </div>
+    </div>
+  @end
+</div>
+
+<!-- Metrics Summary -->
+<div class="mt-6 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200 p-4">
+  <div class="flex items-center justify-between">
+    <div class="flex items-center">
+      <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+        <i class="fas fa-chart-line text-blue-600"></i>
+      </div>
+      <div>
+        <h3 class="text-sm font-semibold text-blue-900">Performance Summary</h3>
+        <p class="text-xs text-blue-700">
+          Based on the selected date range and platform filters
+        </p>
+      </div>
+    </div>
+    
+    <div class="text-right">
+      @set('totalSpendMetric', metrics.find(m => m.name === 'Total Spend'))
+      @set('conversionsMetric', metrics.find(m => m.name === 'Conversions'))
+      @if(totalSpendMetric && conversionsMetric && totalSpendMetric.value > 0)
+        <div class="text-lg font-bold text-blue-900">
+          {{ formatNumber(conversionsMetric.value / totalSpendMetric.value * 1000, 'currency') }}
+        </div>
+        <div class="text-xs text-blue-700">Cost per Conversion</div>
+      @else
+        <div class="text-lg font-bold text-blue-900">--</div>
+        <div class="text-xs text-blue-700">Cost per Conversion</div>
+      @endif
+    </div>
+  </div>
+</div>

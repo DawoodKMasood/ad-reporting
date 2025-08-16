@@ -352,31 +352,7 @@
       }
     }
 
-    // Check sync status periodically for newly connected accounts
-    function checkSyncStatus() {
-      const accountId = '{{ connectedAccount.id }}';
-      fetch(`/integrations/${accountId}/sync-status`, {
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest'
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success && !data.account.hasData && !data.account.lastSyncAt) {
-          // This is a newly connected account with no data - trigger initial sync
-          console.log('New account detected, triggering initial sync...');
-          syncAccount(accountId);
-        }
-      })
-      .catch(error => {
-        console.warn('Could not check sync status:', error);
-      });
-    }
 
-    // Check sync status on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      setTimeout(checkSyncStatus, 2000); // Check after 2 seconds
-    });
     
     // Simple notification system if integrationManager is not available
     if (!window.integrationManager) {
