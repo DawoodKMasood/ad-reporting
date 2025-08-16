@@ -9,9 +9,21 @@ import { GoogleAdsApi, services, enums, MutateOperation } from 'google-ads-api'
 export class GoogleAdsService {
   private cache: Map<string, any> = new Map()
   private cacheExpiry: Map<string, DateTime> = new Map()
+  private customerClientCache: Map<string, any> = new Map()
+  private managerAccountCache: Map<number, boolean> = new Map()
+  private childAccountsCache: Map<number, any[]> = new Map()
   private cacheTtl: number = 10
+  private customerClientCacheTtl: number = 300000 // 5 minutes
+  private managerAccountCacheTtl: number = 600000 // 10 minutes
 
   private async getCustomerClient(connectedAccountId: number, userId: number) {
+    const cacheKey = `customer_${connectedAccountId}`
+    const cached = this.customerClientCache.get(cacheKey)
+    
+    if (cached && (Date.now() - cached.timestamp) < this.customerClientCacheTtl) {
+      return cached.client
+    }
+
     try {
       logger.info('Getting customer client', { connectedAccountId, userId })
       const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
@@ -34,6 +46,13 @@ export class GoogleAdsService {
       logger.info('Creating customer instance with config', { config })
       const customer = client.Customer(config)
       logger.info('Created customer instance successfully')
+      
+      // Cache the customer client
+      this.customerClientCache.set(cacheKey, { 
+        client: customer, 
+        timestamp: Date.now() 
+      })
+      
       return customer
     } catch (error: any) {
       logger.error('Error getting customer client:', {
@@ -67,6 +86,14 @@ export class GoogleAdsService {
   }
 
   public async getChildAccounts(connectedAccountId: number, userId: number) {
+    const cacheKey = connectedAccountId
+    const cached = this.childAccountsCache.get(cacheKey)
+    
+    if (cached && Array.isArray(cached)) {
+      logger.info('Returning cached child accounts', { count: cached.length })
+      return cached
+    }
+
     try {
       logger.info('Getting child accounts for manager account', { connectedAccountId })
       const customer = await this.getCustomerClient(connectedAccountId, userId)
@@ -87,19 +114,32 @@ export class GoogleAdsService {
 
       const results = await customer.query(query)
       logger.info('Child accounts query result', { count: results?.length || 0 })
-      return results || []
+      
+      const childAccounts = results || []
+      // Cache the results
+      this.childAccountsCache.set(cacheKey, childAccounts)
+      
+      return childAccounts
     } catch (error: any) {
       logger.error('Error fetching child accounts:', error)
-      throw new Error(`Failed to fetch child accounts: ${error.message}`)
+      // Cache empty result to prevent repeated failures
+      this.childAccountsCache.set(cacheKey, [])
+      return []
     }
   }
 
   public async isManagerAccount(connectedAccountId: number, userId: number): Promise<boolean> {
+    const cached = this.managerAccountCache.get(connectedAccountId)
+    if (cached !== undefined) {
+      return cached
+    }
+
     try {
       const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
       
       // Check if we already know this is a manager account
       if (connectedAccount.isManagerAccount !== null && connectedAccount.isManagerAccount !== undefined) {
+        this.managerAccountCache.set(connectedAccountId, connectedAccount.isManagerAccount)
         return connectedAccount.isManagerAccount
       }
 
@@ -121,10 +161,14 @@ export class GoogleAdsService {
       connectedAccount.isManagerAccount = isManager
       await connectedAccount.save()
       
+      // Cache the result
+      this.managerAccountCache.set(connectedAccountId, isManager)
+      
       return isManager
     } catch (error: any) {
       logger.error('Error checking if manager account:', error)
-      // Default to false if we can't determine
+      // Default to false if we can't determine and cache it
+      this.managerAccountCache.set(connectedAccountId, false)
       return false
     }
   }
@@ -136,10 +180,11 @@ export class GoogleAdsService {
       type: 'today' | 'last_7_days' | 'last_30_days' | 'custom',
       startDate?: string,
       endDate?: string
-    } = { type: 'last_30_days' }
+    } = { type: 'last_30_days' },
+    isDirectAttempt: boolean = false
   ) {
     try {
-      logger.info('Fetching campaign data for manager account', { connectedAccountId })
+      logger.info('Fetching campaign data for manager account', { connectedAccountId, isDirectAttempt })
       
       // Get child accounts
       const childAccounts = await this.getChildAccounts(connectedAccountId, userId)
@@ -148,26 +193,27 @@ export class GoogleAdsService {
       if (childAccounts.length === 0) {
         logger.warn('No child accounts found for manager account - trying direct campaign access')
         
-        // Try to fetch campaigns directly from the manager account
-        // Some manager accounts might have their own campaigns
-        try {
-          logger.info('Attempting to fetch campaigns directly from manager account')
-          const managerCampaigns = await this.fetchCampaignData(connectedAccountId, userId, dateRange)
-          
-          if (managerCampaigns.length > 0) {
-            logger.info('Found campaigns directly on manager account', { count: managerCampaigns.length })
-            return managerCampaigns
+        // Only try direct access if this isn't already a direct attempt to prevent infinite recursion
+        if (!isDirectAttempt) {
+          try {
+            logger.info('Attempting to fetch campaigns directly from manager account')
+            const managerCampaigns = await this.fetchCampaignDataDirect(connectedAccountId, userId, dateRange)
+            
+            if (managerCampaigns.length > 0) {
+              logger.info('Found campaigns directly on manager account', { count: managerCampaigns.length })
+              return managerCampaigns
+            }
+          } catch (managerError: any) {
+            logger.warn('Manager account direct campaign fetch failed:', managerError.message)
+            // This is expected for most manager accounts
           }
-        } catch (managerError: any) {
-          logger.warn('Manager account direct campaign fetch failed:', managerError.message)
-          // This is expected for most manager accounts
         }
         
         // If we get here, the manager account truly has no accessible data
         logger.warn('Manager account has no accessible campaigns or child accounts')
         
-        // Throw a specific error that the controller can catch
-        throw new Error('Manager account has no accessible child accounts or campaigns')
+        // Return empty array instead of throwing error to prevent cascading failures
+        return []
       }
 
       const allCampaignData: any[] = []
@@ -298,7 +344,108 @@ export class GoogleAdsService {
       
     } catch (error: any) {
       logger.error('Error fetching campaign data for manager account:', error)
-      throw new Error(`Failed to fetch campaign data for manager account: ${error.message}`)
+      // Return empty array instead of throwing to prevent cascading failures
+      return []
+    }
+  }
+
+  private async fetchCampaignDataDirect(
+    connectedAccountId: number,
+    userId: number,
+    dateRange: {
+      type: 'today' | 'last_7_days' | 'last_30_days' | 'custom',
+      startDate?: string,
+      endDate?: string
+    } = { type: 'last_30_days' }
+  ) {
+    try {
+      logger.info('Starting direct campaign data fetch', { connectedAccountId, userId, dateRange })
+      const { startDate, endDate } = this.calculateDateRange(dateRange)
+      logger.info('Calculated date range', { startDate, endDate })
+
+      logger.info('Getting customer client', { connectedAccountId, userId })
+      const customer = await this.getCustomerClient(connectedAccountId, userId)
+      logger.info('Got customer client successfully')
+
+      let results: any[]
+      if (dateRange.type === 'custom' || dateRange.type === 'today') {
+        results = await customer.report({
+          entity: 'campaign',
+          attributes: [
+            'campaign.id',
+            'campaign.name',
+            'campaign.status',
+            'campaign.advertising_channel_type',
+            'campaign.advertising_channel_sub_type'
+          ],
+          metrics: [
+            'metrics.impressions',
+            'metrics.clicks',
+            'metrics.cost_micros',
+            'metrics.conversions'
+          ],
+          segments: [
+            'segments.date'
+          ],
+          constraints: [{
+            key: 'segments.date',
+            op: 'BETWEEN',
+            val: [startDate, endDate]
+          }, {
+            key: 'campaign.status',
+            op: '!=',
+            val: 'REMOVED'
+          }],
+          order_by: 'segments.date'
+        })
+      } else {
+        let duringClause: string
+        switch (dateRange.type) {
+          case 'last_7_days':
+            duringClause = 'LAST_7_DAYS'
+            break
+          case 'last_30_days':
+          default:
+            duringClause = 'LAST_30_DAYS'
+            break
+        }
+        
+        results = await customer.report({
+          entity: 'campaign',
+          attributes: [
+            'campaign.id',
+            'campaign.name',
+            'campaign.status',
+            'campaign.advertising_channel_type',
+            'campaign.advertising_channel_sub_type'
+          ],
+          metrics: [
+            'metrics.impressions',
+            'metrics.clicks',
+            'metrics.cost_micros',
+            'metrics.conversions'
+          ],
+          segments: [
+            'segments.date'
+          ],
+          constraints: [{
+            key: 'segments.date',
+            op: 'DURING',
+            val: duringClause
+          }, {
+            key: 'campaign.status',
+            op: '!=',
+            val: 'REMOVED'
+          }],
+          order_by: 'segments.date'
+        })
+      }
+      
+      logger.info('Direct campaign data fetch successful', { results: results?.length || 0 })
+      return results || []
+    } catch (error: any) {
+      logger.error('Error in direct campaign data fetch:', error)
+      throw error
     }
   }
 
@@ -326,139 +473,17 @@ export class GoogleAdsService {
       const customer = await this.getCustomerClient(connectedAccountId, userId)
       logger.info('Got customer client successfully')
 
-      // For incremental syncs, we still need to use BETWEEN, but for standard ranges we can use DURING
-      let query: string;
-      if (dateRange.type === 'custom' || dateRange.type === 'today') {
-        // Use BETWEEN for custom date ranges
-        query = `
-          SELECT
-            campaign.id,
-            campaign.name,
-            campaign.status,
-            campaign.advertising_channel_type,
-            campaign.advertising_channel_sub_type,
-            segments.date,
-            metrics.impressions,
-            metrics.clicks,
-            metrics.cost_micros,
-            metrics.conversions
-          FROM campaign
-          WHERE segments.date BETWEEN '${startDate}' AND '${endDate}'
-          AND campaign.status != 'REMOVED'
-          ORDER BY segments.date DESC, campaign.id
-        `;
-      } else {
-        // Use DURING for standard date ranges
-        let duringClause: string;
-        switch (dateRange.type) {
-          case 'last_7_days':
-            duringClause = 'LAST_7_DAYS';
-            break;
-          case 'last_30_days':
-          default:
-            duringClause = 'LAST_30_DAYS';
-            break;
-        }
-        
-        query = `
-          SELECT
-            campaign.id,
-            campaign.name,
-            campaign.status,
-            campaign.advertising_channel_type,
-            campaign.advertising_channel_sub_type,
-            segments.date,
-            metrics.impressions,
-            metrics.clicks,
-            metrics.cost_micros,
-            metrics.conversions
-          FROM campaign
-          WHERE segments.date DURING ${duringClause}
-          AND campaign.status != 'REMOVED'
-          ORDER BY segments.date DESC, campaign.id
-        `;
-      }
-
-      logger.info('Google Ads API Query:', { query, dateRange, startDate, endDate })
+      logger.info('Google Ads API Query:', { dateRange, startDate, endDate })
       
       try {
-        // Try using the report method instead of query
-        let results: any[];
-        if (dateRange.type === 'custom' || dateRange.type === 'today') {
-          // Use report method with constraints for custom date ranges
-          results = await customer.report({
-            entity: 'campaign',
-            attributes: [
-              'campaign.id',
-              'campaign.name',
-              'campaign.status',
-              'campaign.advertising_channel_type',
-              'campaign.advertising_channel_sub_type'
-            ],
-            metrics: [
-              'metrics.impressions',
-              'metrics.clicks',
-              'metrics.cost_micros',
-              'metrics.conversions'
-            ],
-            segments: [
-              'segments.date'
-            ],
-            constraints: [{
-              key: 'segments.date',
-              op: 'BETWEEN',
-              val: [startDate, endDate]
-            }, {
-              key: 'campaign.status',
-              op: '!=',
-              val: 'REMOVED'
-            }],
-            order_by: 'segments.date'
-          })
-        } else {
-          // Use report method with DURING for standard date ranges
-          let duringClause: string;
-          switch (dateRange.type) {
-            case 'last_7_days':
-              duringClause = 'LAST_7_DAYS';
-              break;
-            case 'last_30_days':
-            default:
-              duringClause = 'LAST_30_DAYS';
-              break;
-          }
-          
-          results = await customer.report({
-            entity: 'campaign',
-            attributes: [
-              'campaign.id',
-              'campaign.name',
-              'campaign.status',
-              'campaign.advertising_channel_type',
-              'campaign.advertising_channel_sub_type'
-            ],
-            metrics: [
-              'metrics.impressions',
-              'metrics.clicks',
-              'metrics.cost_micros',
-              'metrics.conversions'
-            ],
-            segments: [
-              'segments.date'
-            ],
-            constraints: [{
-              key: 'segments.date',
-              op: 'DURING',
-              val: duringClause
-            }, {
-              key: 'campaign.status',
-              op: '!=',
-              val: 'REMOVED'
-            }],
-            order_by: 'segments.date'
-          })
-        }
+        // Try direct fetch first
+        const results = await this.fetchCampaignDataDirect(connectedAccountId, userId, dateRange)
         logger.info('Google Ads API Response:', { results: results?.length || 0 })
+        
+        // Cache the results
+        this.cache.set(cacheKey, results)
+        this.cacheExpiry.set(cacheKey, DateTime.now().plus({ minutes: this.cacheTtl }))
+        
         return results
       } catch (reportError: any) {
         logger.error('Error executing Google Ads API report:', {
@@ -487,8 +512,11 @@ export class GoogleAdsService {
           connectedAccount.isManagerAccount = true
           await connectedAccount.save()
           
-          // Try fetching data for manager account instead
-          return await this.fetchCampaignDataForManagerAccount(connectedAccountId, userId, dateRange)
+          // Cache manager account status
+          this.managerAccountCache.set(connectedAccountId, true)
+          
+          // Try fetching data for manager account instead (mark as direct attempt)
+          return await this.fetchCampaignDataForManagerAccount(connectedAccountId, userId, dateRange, true)
         }
         
         // Better error formatting to avoid [object Object] issue
@@ -639,14 +667,6 @@ export class GoogleAdsService {
       return campaignData.map(data => this.enrichCampaignData(data))
     } catch (error: any) {
       logger.error('Error getting enriched campaign data:', error)
-      
-      // Check for manager account with no accessible child accounts
-      if (error.message && error.message.includes('no accessible campaigns or child accounts')) {
-        const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
-        if (connectedAccount.isManagerAccount) {
-          throw new Error('Manager account has no accessible child accounts or campaigns')
-        }
-      }
       
       // For manager accounts with no accessible child accounts, return existing data instead of throwing
       if (error.message && (error.message.includes('manager account') || error.message.includes('child accounts'))) {

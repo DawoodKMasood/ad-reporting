@@ -8,12 +8,18 @@ import { DateTime } from 'luxon'
 import securityMonitoringService from '#services/security_monitoring_service'
 
 const revokedTokens: Set<string> = new Set()
-const tokenAccessAttempts: Map<string, { count: number; timestamp: number }> = new Map()
+const tokenAccessAttempts: Map<string, { count: number; timestamp: number; lastAttempt: number }> = new Map()
+const clientCache: Map<string, { client: any; timestamp: number }> = new Map()
+const failedTokenAttempts: Set<string> = new Set()
 
 export class GoogleAdsOAuthService {
   private oauth2Client: any
-  private static readonly MAX_ACCESS_ATTEMPTS = 5
-  private static readonly ACCESS_WINDOW_MS = 60000
+  private static readonly MAX_ACCESS_ATTEMPTS = 5  // Reduced back to 5
+  private static readonly ACCESS_WINDOW_MS = 60000  // 1 minute window
+  private static readonly CLIENT_CACHE_TTL = 600000  // 10 minutes cache
+  private static readonly BACKOFF_BASE_MS = 2000
+  private static readonly MAX_BACKOFF_MS = 60000
+  private static readonly RETRY_AFTER_FAIL_MS = 300000 // 5 minutes before retrying failed tokens
 
   constructor() {
     const redirectUri = this.buildRedirectUri()
@@ -218,6 +224,13 @@ Please ensure that:
     isManagerAccount: boolean,
     parentAccountId?: string
   }> {
+    const cacheKey = `customer_info_${customerId}`
+    const cached = clientCache.get(cacheKey)
+    
+    if (cached && (Date.now() - cached.timestamp) < GoogleAdsOAuthService.CLIENT_CACHE_TTL) {
+      return cached.client
+    }
+
     try {
       const client = new GoogleAdsApi({
         client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
@@ -253,12 +266,17 @@ Please ensure that:
         isTest: info.customer?.test_account
       })
       
-      return {
+      const result = {
         name: info.customer?.descriptive_name || `Account ${customerId}`,
         timezone: info.customer?.time_zone || 'UTC',
         isTestAccount: info.customer?.test_account || false,
         isManagerAccount: isManager
       }
+
+      // Cache the result
+      clientCache.set(cacheKey, { client: result, timestamp: Date.now() })
+      
+      return result
     } catch (error: any) {
       console.warn('Could not fetch customer info:', error.message)
       // For safety, assume it might be a manager account if we can't determine
@@ -407,9 +425,18 @@ Please ensure that:
   }
 
   public async retrieveTokens(connectedAccountId: number, userId?: number) {
+    const failKey = `failed_${connectedAccountId}`
+    
+    // Check if this token recently failed and we should wait before retrying
+    if (failedTokenAttempts.has(failKey)) {
+      logger.info('Security event: token_access_rate_limit_exceeded')
+      throw new Error('Rate limit exceeded for token access')
+    }
+
     try {
       if (userId && this.shouldRateLimit(userId)) {
-        throw new Error('Rate limit exceeded for token access')
+        securityMonitoringService.logSecurityEvent('token_access_rate_limit_exceeded', { userId })
+        await this.waitWithBackoff(userId)
       }
       
       const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
@@ -443,11 +470,25 @@ Please ensure that:
     } catch (error: any) {
       console.error('❌ Retrieve tokens error:', error)
       logger.error('Error retrieving tokens', error)
-      throw new Error(`Failed to retrieve tokens: ${error.message || 'Unknown error'}`)
+      
+      // Mark this token as failed for a period
+      failedTokenAttempts.add(failKey)
+      setTimeout(() => {
+        failedTokenAttempts.delete(failKey)
+      }, GoogleAdsOAuthService.RETRY_AFTER_FAIL_MS)
+      
+      throw new Error(`Rate limit exceeded for token access`)
     }
   }
 
   public async getAuthenticatedClient(connectedAccountId: number, userId?: number) {
+    const cacheKey = `auth_client_${connectedAccountId}`
+    const cached = clientCache.get(cacheKey)
+    
+    if (cached && (Date.now() - cached.timestamp) < GoogleAdsOAuthService.CLIENT_CACHE_TTL) {
+      return cached.client
+    }
+
     const { accessToken, refreshToken } = await this.retrieveTokens(connectedAccountId, userId)
     
     this.oauth2Client.setCredentials({
@@ -455,10 +496,18 @@ Please ensure that:
       refresh_token: refreshToken,
     })
     
+    clientCache.set(cacheKey, { client: this.oauth2Client, timestamp: Date.now() })
     return this.oauth2Client
   }
 
   public async getGoogleAdsClient(connectedAccountId: number, userId?: number) {
+    const cacheKey = `ads_client_${connectedAccountId}`
+    const cached = clientCache.get(cacheKey)
+    
+    if (cached && (Date.now() - cached.timestamp) < GoogleAdsOAuthService.CLIENT_CACHE_TTL) {
+      return cached.client
+    }
+
     const { accessToken, refreshToken } = await this.retrieveTokens(connectedAccountId, userId)
     
     if (!refreshToken) {
@@ -472,10 +521,13 @@ Please ensure that:
       developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
     })
     
-    return {
+    const result = {
       client,
-      refreshToken // Return refresh token to be used in Customer() calls
+      refreshToken
     }
+
+    clientCache.set(cacheKey, { client: result, timestamp: Date.now() })
+    return result
   }
 
   public isTokenRevoked(tokenHash: string): boolean {
@@ -493,19 +545,39 @@ Please ensure that:
     const attempt = tokenAccessAttempts.get(key)
     
     if (!attempt || now - attempt.timestamp > GoogleAdsOAuthService.ACCESS_WINDOW_MS) {
-      tokenAccessAttempts.set(key, { count: 1, timestamp: now })
+      tokenAccessAttempts.set(key, { count: 1, timestamp: now, lastAttempt: now })
       return false
     }
     
-    attempt.count++
-    tokenAccessAttempts.set(key, attempt)
+    // Check if we should implement exponential backoff
+    const timeSinceLastAttempt = now - attempt.lastAttempt
+    const minBackoffTime = GoogleAdsOAuthService.BACKOFF_BASE_MS * Math.pow(2, Math.max(0, attempt.count - 3))
     
-    if (attempt.count > GoogleAdsOAuthService.MAX_ACCESS_ATTEMPTS) {
-      securityMonitoringService.logSecurityEvent('token_access_rate_limit_exceeded', { userId, attempts: attempt.count })
+    if (timeSinceLastAttempt < minBackoffTime) {
+      // Still in backoff period, don't increment counter but still rate limit
       return true
     }
     
-    return false
+    attempt.count++
+    attempt.lastAttempt = now
+    tokenAccessAttempts.set(key, attempt)
+    
+    return attempt.count > GoogleAdsOAuthService.MAX_ACCESS_ATTEMPTS
+  }
+
+  private async waitWithBackoff(userId: number): Promise<void> {
+    const key = `token_access_${userId}`
+    const attempt = tokenAccessAttempts.get(key)
+    
+    if (!attempt) return
+    
+    const backoffMs = Math.min(
+      GoogleAdsOAuthService.BACKOFF_BASE_MS * Math.pow(2, attempt.count - GoogleAdsOAuthService.MAX_ACCESS_ATTEMPTS),
+      GoogleAdsOAuthService.MAX_BACKOFF_MS
+    )
+    
+    logger.info(`Rate limit hit, waiting ${backoffMs}ms before retry`, { userId, attempts: attempt.count })
+    await new Promise(resolve => setTimeout(resolve, backoffMs))
   }
 
   private decryptIfNeeded(data: string): string {
