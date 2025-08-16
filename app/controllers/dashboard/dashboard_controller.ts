@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import ConnectedAccount from '#models/connected_account'
 import CampaignData from '#models/campaign_data'
+import CustomReport from '#models/custom_report'
 import logger from '@adonisjs/core/services/logger'
 
 interface Stats {
@@ -56,6 +57,14 @@ export default class DashboardController {
         .where('user_id', user.id)
         .where('is_active', true)
         .orderBy('created_at', 'desc')
+
+      // Fetch custom reports for this user
+      const customReports = await CustomReport.query()
+        .where('user_id', user.id)
+        .where('status', 'active')
+        .preload('connectedAccount')
+        .orderBy('updated_at', 'desc')
+        .limit(5) // Show only recent 5 reports on dashboard
 
       // Initialize summary metrics
       let stats: Stats = {
@@ -123,6 +132,7 @@ export default class DashboardController {
         user,
         stats,
         connectedAccounts,
+        customReports,
         availablePlatforms,
         formatNumber: this.formatNumber.bind(this),
       })
@@ -164,6 +174,7 @@ export default class DashboardController {
           totalConversions: 0,
         },
         connectedAccounts: [],
+        customReports: [],
         availablePlatforms,
         error: 'Failed to load dashboard data',
         formatNumber: this.formatNumber.bind(this),

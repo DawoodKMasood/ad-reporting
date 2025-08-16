@@ -2,6 +2,7 @@ import { DateTime } from 'luxon'
 import { BaseModel, column, belongsTo, hasMany } from '@adonisjs/lucid/orm'
 import User from './user.js'
 import CampaignData from './campaign_data.js'
+import CustomReport from './custom_report.js'
 import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import databaseSecurityService from '#services/database_security_service'
 import logger from '@adonisjs/core/services/logger'
@@ -81,6 +82,9 @@ export default class ConnectedAccount extends BaseModel {
 
   @hasMany(() => CampaignData)
   declare campaignData: HasMany<typeof CampaignData>
+
+  @hasMany(() => CustomReport)
+  declare customReports: HasMany<typeof CustomReport>
 
   /**
    * Hook to encrypt tokens before saving

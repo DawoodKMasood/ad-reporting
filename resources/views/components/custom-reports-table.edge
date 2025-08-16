@@ -1,197 +1,247 @@
-<!-- Custom Reports Table Component -->
+<!-- Custom Reports Component -->
 <div class="bg-white rounded-lg shadow-sm border border-gray-200">
   <div class="p-6">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-gray-900">
-        <i class="fas fa-chart-pie mr-2 text-purple-600"></i>
+        <i class="fas fa-chart-bar mr-2 text-blue-600"></i>
         Custom Reports
       </h2>
-      <a 
-        href="{{ route('reports.custom') }}"
-        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200"
-      >
-        <i class="fas fa-plus mr-2"></i>
-        Create Report
-      </a>
+      <div class="flex items-center space-x-3">
+        <span class="text-sm text-gray-500">{{ (customReports && customReports.length) || 0 }} reports</span>
+      </div>
     </div>
     
-    @if(connectedAccounts && connectedAccounts.length > 0)
-      <!-- Quick Actions -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <a 
-          href="{{ route('reports.index') }}"
-          class="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-300 transition-colors"
-        >
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-chart-bar text-blue-600"></i>
-              </div>
-            </div>
-            <div class="ml-3">
-              <h3 class="text-sm font-medium text-gray-900">Standard Reports</h3>
-              <p class="text-xs text-gray-500">Pre-built analytics dashboards</p>
-            </div>
-          </div>
-        </a>
-        
-        <a 
-          href="{{ route('reports.performance') }}"
-          class="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-300 transition-colors"
-        >
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-chart-line text-green-600"></i>
-              </div>
-            </div>
-            <div class="ml-3">
-              <h3 class="text-sm font-medium text-gray-900">Performance Reports</h3>
-              <p class="text-xs text-gray-500">Campaign performance analysis</p>
-            </div>
-          </div>
-        </a>
-        
-        <a 
-          href="{{ route('reports.custom') }}"
-          class="block p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-purple-300 transition-colors"
-        >
-          <div class="flex items-center">
-            <div class="flex-shrink-0">
-              <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                <i class="fas fa-puzzle-piece text-purple-600"></i>
-              </div>
-            </div>
-            <div class="ml-3">
-              <h3 class="text-sm font-medium text-gray-900">Custom Builder</h3>
-              <p class="text-xs text-gray-500">Build custom reports</p>
-            </div>
-          </div>
-        </a>
-      </div>
-
-      <!-- Recent Reports Table -->
-      <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-200">
-          <thead class="bg-gray-50">
-            <tr>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Report Name</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Range</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Generated</th>
-              <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody class="bg-white divide-y divide-gray-200">
-            <!-- Standard Reports Row -->
-            <tr class="hover:bg-gray-50">
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 h-8 w-8">
-                    <div class="h-8 w-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <i class="fas fa-chart-bar text-blue-600 text-sm"></i>
-                    </div>
-                  </div>
-                  <div class="ml-3">
-                    <p class="text-sm font-medium text-gray-900">Campaign Overview</p>
-                    <p class="text-xs text-gray-500">All connected platforms</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                  Standard
-                </span>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Last 30 days</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Just now</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                <a href="{{ route('reports.index') }}" class="text-purple-600 hover:text-purple-900 mr-3">View</a>
-                <a href="{{ route('reports.index') }}?download=pdf" class="text-gray-600 hover:text-gray-900">Download</a>
-              </td>
-            </tr>
-
-            <!-- Performance Reports Row -->
-            <tr class="hover:bg-gray-50">
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 h-8 w-8">
-                    <div class="h-8 w-8 bg-green-100 rounded-lg flex items-center justify-center">
-                      <i class="fas fa-chart-line text-green-600 text-sm"></i>
-                    </div>
-                  </div>
-                  <div class="ml-3">
-                    <p class="text-sm font-medium text-gray-900">Performance Analysis</p>
-                    <p class="text-xs text-gray-500">CTR, CPC, Conversion metrics</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  Performance
-                </span>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Last 7 days</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">2 hours ago</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                <a href="{{ route('reports.performance') }}" class="text-purple-600 hover:text-purple-900 mr-3">View</a>
-                <a href="{{ route('reports.performance') }}?download=pdf" class="text-gray-600 hover:text-gray-900">Download</a>
-              </td>
-            </tr>
-
-            @if(connectedAccounts.find(account => account.platform === 'google_ads'))
-            <!-- Google Ads Specific Report -->
-            <tr class="hover:bg-gray-50">
-              <td class="px-4 py-3 whitespace-nowrap">
-                <div class="flex items-center">
-                  <div class="flex-shrink-0 h-8 w-8">
-                    <div class="h-8 w-8 bg-red-100 rounded-lg flex items-center justify-center">
-                      <i class="fab fa-google text-red-600 text-sm"></i>
-                    </div>
-                  </div>
-                  <div class="ml-3">
-                    <p class="text-sm font-medium text-gray-900">Google Ads Report</p>
-                    <p class="text-xs text-gray-500">Google Ads campaigns only</p>
-                  </div>
-                </div>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                  Platform
-                </span>
-              </td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">Last 14 days</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-500">1 day ago</td>
-              <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">
-                <a href="{{ route('reports.index') }}?platform=google_ads" class="text-purple-600 hover:text-purple-900 mr-3">View</a>
-                <a href="{{ route('reports.index') }}?platform=google_ads&download=pdf" class="text-gray-600 hover:text-gray-900">Download</a>
-              </td>
-            </tr>
-            @end
-          </tbody>
-        </table>
-      </div>
-      
-      <div class="mt-4 text-center">
-        <a href="{{ route('reports.index') }}" class="text-purple-600 hover:text-purple-800 text-sm font-medium">
-          View all reports
-          <i class="fas fa-arrow-right ml-1"></i>
+    @if(!customReports || customReports.length === 0)
+      <div class="text-center py-8">
+        <i class="fas fa-chart-line text-4xl text-gray-300 mb-4"></i>
+        <h3 class="text-lg font-medium text-gray-900 mb-2">No Custom Reports</h3>
+        <p class="text-gray-500 mb-4">Create custom reports to track specific metrics and performance data</p>
+        <a href="{{ route('reports.custom') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+          <i class="fas fa-plus mr-2"></i>
+          Create Your First Report
         </a>
       </div>
     @else
-      <!-- No Data State -->
-      <div class="text-center py-8">
-        <i class="fas fa-chart-pie text-4xl text-gray-300 mb-4"></i>
-        <h3 class="text-lg font-medium text-gray-900 mb-2">No Reports Available</h3>
-        <p class="text-gray-500 mb-4">Connect your advertising accounts to start generating reports</p>
-        <a 
-          href="{{ route('integrations.index') }}"
-          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-purple-600 hover:bg-purple-700"
-        >
-          <i class="fas fa-plus mr-2"></i>
-          Connect Account
-        </a>
+      <div class="space-y-4">
+        @each(report in customReports)
+          <a href="{{ route('reports.show', { id: report.id }) }}" class="block">
+            <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-blue-300 transition-all duration-200 cursor-pointer group">
+              <div class="flex items-center flex-1">
+                <div class="flex-shrink-0">
+                  @!component('components/platform-logo', { 
+                    platform: report.platform, 
+                    size: 'md' 
+                  })
+                </div>
+                <div class="ml-4 flex-1">
+                  <h3 class="text-sm font-medium text-gray-900">
+                    {{ report.name }}
+                    @if(report.isScheduled)
+                      <span class="inline-flex items-center px-2 rounded-full text-xs font-medium bg-green-100 text-green-800 ml-1">
+                        <i class="fas fa-clock mr-1"></i>
+                        Scheduled
+                      </span>
+                    @end
+                    @if(report.isRecentlyGenerated)
+                      <span class="inline-flex items-center px-2 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-1">
+                        <i class="fas fa-sync-alt mr-1"></i>
+                        Recent
+                      </span>
+                    @end
+                  </h3>
+                  <p class="text-xs text-gray-500 mt-1">
+                    {{ report.platformDisplayName }}
+                    @if(report.connectedAccount && report.connectedAccount.accountDisplayName)
+                      · {{ report.connectedAccount.accountDisplayName }}
+                    @end
+                  </p>
+                  @if(report.description)
+                    <p class="text-xs text-gray-600 mt-1">{{ report.description }}</p>
+                  @end
+                  <div class="flex items-center mt-2 space-x-3">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                      {{ report.dateRangeDisplay }}
+                    </span>
+                    <span class="text-xs text-gray-500">
+                      Metrics: {{ report.metricsDisplay }}
+                    </span>
+                    <span class="text-xs text-gray-500">
+                      @if(report.lastGeneratedAt)
+                        Generated {{ report.lastGeneratedAt.toRelative() }}
+                      @else
+                        Created {{ report.createdAt.toRelative() }}
+                      @end
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button 
+                  onclick="event.preventDefault(); event.stopPropagation(); generateReport('{{ report.id }}')"
+                  data-action="generate-report"
+                  data-report-id="{{ report.id }}"
+                  class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                  title="Generate Report"
+                >
+                  <i class="fas fa-play mr-1"></i>
+                  Generate
+                </button>
+                <div class="relative">
+                  <button 
+                    onclick="event.preventDefault(); event.stopPropagation(); toggleReportMenu('{{ report.id }}')"
+                    data-action="toggle-menu"
+                    data-report-id="{{ report.id }}"
+                    class="inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                    title="More Options"
+                  >
+                    <i class="fas fa-ellipsis-v"></i>
+                  </button>
+                  <!-- Dropdown Menu -->
+                  <div id="report-menu-{{ report.id }}" class="hidden absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                    <div class="py-1">
+                      <a 
+                        href="{{ route('reports.show', { id: report.id }) }}"
+                        class="block px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                      >
+                        <i class="fas fa-eye mr-2"></i>
+                        View
+                      </a>
+                      <button 
+                        onclick="editReport('{{ report.id }}')"
+                        class="w-full text-left block px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                      >
+                        <i class="fas fa-edit mr-2"></i>
+                        Edit
+                      </button>
+                      <button 
+                        onclick="duplicateReport('{{ report.id }}')"
+                        class="w-full text-left block px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                      >
+                        <i class="fas fa-copy mr-2"></i>
+                        Duplicate
+                      </button>
+                      <button 
+                        onclick="archiveReport('{{ report.id }}')"
+                        class="w-full text-left block px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
+                      >
+                        <i class="fas fa-archive mr-2"></i>
+                        Archive
+                      </button>
+                      <button 
+                        onclick="deleteReport('{{ report.id }}')"
+                        class="w-full text-left block px-4 py-2 text-xs text-red-600 hover:bg-red-50"
+                      >
+                        <i class="fas fa-trash mr-2"></i>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex-shrink-0">
+                  <i class="fas fa-chevron-right text-gray-400 group-hover:text-blue-500 transition-colors"></i>
+                </div>
+              </div>
+            </div>
+          </a>
+        @end
       </div>
     @end
   </div>
 </div>
+
+<script>
+// Report management functions
+function generateReport(reportId) {
+  console.log('Generating report:', reportId);
+  // TODO: Implement report generation
+  alert('Report generation feature coming soon!');
+}
+
+function toggleReportMenu(reportId) {
+  const menu = document.getElementById(`report-menu-${reportId}`);
+  
+  // Hide all other menus first
+  document.querySelectorAll('[id^="report-menu-"]').forEach(m => {
+    if (m.id !== `report-menu-${reportId}`) {
+      m.classList.add('hidden');
+    }
+  });
+  
+  // Toggle current menu
+  menu.classList.toggle('hidden');
+}
+
+function editReport(reportId) {
+  console.log('Editing report:', reportId);
+  // TODO: Implement edit functionality
+  alert('Edit report feature coming soon!');
+}
+
+function duplicateReport(reportId) {
+  console.log('Duplicating report:', reportId);
+  // TODO: Implement duplicate functionality
+  alert('Duplicate report feature coming soon!');
+}
+
+function archiveReport(reportId) {
+  if (confirm('Are you sure you want to archive this report?')) {
+    // Make a form submission to archive the report
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/reports/${reportId}/archive`;
+    form.style.display = 'none';
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (csrfToken) {
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = '_token';
+      csrfInput.value = csrfToken;
+      form.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+
+function deleteReport(reportId) {
+  if (confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+    // Make a form submission to delete the report
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/reports/${reportId}`;
+    form.style.display = 'none';
+    
+    // Add method override for DELETE
+    const methodInput = document.createElement('input');
+    methodInput.type = 'hidden';
+    methodInput.name = '_method';
+    methodInput.value = 'DELETE';
+    form.appendChild(methodInput);
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (csrfToken) {
+      const csrfInput = document.createElement('input');
+      csrfInput.type = 'hidden';
+      csrfInput.name = '_token';
+      csrfInput.value = csrfToken;
+      form.appendChild(csrfInput);
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+  }
+}
+
+// Close menus when clicking outside
+document.addEventListener('click', function(event) {
+  if (!event.target.closest('[data-action="toggle-menu"]')) {
+    document.querySelectorAll('[id^="report-menu-"]').forEach(menu => {
+      menu.classList.add('hidden');
+    });
+  }
+});
+</script>

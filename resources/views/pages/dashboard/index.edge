@@ -103,7 +103,7 @@
     <!-- Custom Reports Section -->
     <div class="mb-8">
       @!component('components/custom-reports-table', { 
-        connectedAccounts: connectedAccounts,
+        customReports: customReports || [],
         user: user
       })
     </div>

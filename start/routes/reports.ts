@@ -7,8 +7,12 @@ const ReportsController = () => import('#controllers/reports/reports_controller'
 router
   .group(() => {
     router.get('/', [ReportsController, 'index']).as('reports.index')
-    router.get('/performance', [ReportsController, 'performance']).as('reports.performance')
     router.get('/custom', [ReportsController, 'custom']).as('reports.custom')
+    router.post('/', [ReportsController, 'store']).as('reports.store')
+    router.get('/:id', [ReportsController, 'show']).as('reports.show')
+    router.put('/:id', [ReportsController, 'update']).as('reports.update')
+    router.delete('/:id', [ReportsController, 'destroy']).as('reports.destroy')
+    router.post('/:id/archive', [ReportsController, 'archive']).as('reports.archive')
   })
   .prefix('/reports')
   .middleware([middleware.auth()])
