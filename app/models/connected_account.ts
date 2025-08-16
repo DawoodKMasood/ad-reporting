@@ -3,6 +3,7 @@ import { BaseModel, column, belongsTo, hasMany } from '@adonisjs/lucid/orm'
 import User from './user.js'
 import CampaignData from './campaign_data.js'
 import CustomReport from './custom_report.js'
+import SyncHistory from './sync_history.js'
 import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
 import databaseSecurityService from '#services/database_security_service'
 import logger from '@adonisjs/core/services/logger'
@@ -85,6 +86,9 @@ export default class ConnectedAccount extends BaseModel {
 
   @hasMany(() => CustomReport)
   declare customReports: HasMany<typeof CustomReport>
+
+  @hasMany(() => SyncHistory)
+  declare syncHistory: HasMany<typeof SyncHistory>
 
   /**
    * Hook to encrypt tokens before saving

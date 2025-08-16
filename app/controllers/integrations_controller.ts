@@ -1,6 +1,7 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import ConnectedAccount from '#models/connected_account'
 import CampaignData from '#models/campaign_data'
+import SyncHistory from '#models/sync_history'
 import { connectValidator, disconnectValidator, syncValidator } from '#validators/integrations'
 import logger from '@adonisjs/core/services/logger'
 import googleAdsService from '#services/google_ads_service'
@@ -79,25 +80,20 @@ export default class IntegrationsController {
       // Fetch sync history data
       let syncHistory: { id: number; date: DateTime; status: string; records: number; duration: string }[] = []
       try {
-        // For now, we'll create a basic sync history based on the last sync time
-        // In a more advanced implementation, this would come from a dedicated sync history table
-        if (connectedAccount.lastSyncAt) {
-          // Get count of campaign data records for this account
-          const campaignDataCount = await CampaignData.query()
-            .where('connected_account_id', connectedAccount.id)
-            .count('* as total')
-          
-          const recordCount = campaignDataCount[0].$extras.total || 0
-          
-          // Create a single sync history entry based on the last sync
-          syncHistory = [{
-            id: 1,
-            date: connectedAccount.lastSyncAt,
-            status: 'completed',
-            records: recordCount,
-            duration: 'N/A' // Duration tracking would require more detailed logging
-          }]
-        }
+        // Fetch actual sync history from the database
+        const syncHistoryRecords = await SyncHistory.query()
+          .where('connected_account_id', connectedAccount.id)
+          .orderBy('synced_at', 'desc')
+          .limit(50) // Limit to last 50 sync events to prevent performance issues
+        
+        // Transform the data to match the expected format
+        syncHistory = syncHistoryRecords.map(record => ({
+          id: record.id,
+          date: record.syncedAt,
+          status: record.status,
+          records: record.recordsSynced,
+          duration: record.formattedDuration
+        }))
       } catch (syncHistoryError: any) {
         logger.warn('Could not fetch sync history data:', syncHistoryError)
       }
@@ -290,6 +286,9 @@ export default class IntegrationsController {
   }
 
   async sync({ params, request, auth, response }: HttpContext) {
+    let syncHistoryRecord: SyncHistory | null = null;
+    const startTime = Date.now();
+    
     try {
       const user = auth.getUserOrFail()
       const payload = await request.validateUsing(syncValidator)
@@ -312,11 +311,33 @@ export default class IntegrationsController {
         .where('user_id', user.id)
         .firstOrFail()
 
+      // Create a sync history record with "in_progress" status
+      syncHistoryRecord = await SyncHistory.create({
+        connectedAccountId: connectedAccount.id,
+        syncedAt: DateTime.now(),
+        status: 'in_progress',
+        recordsSynced: 0,
+        durationMs: 0
+      })
+
       const enrichedData = await googleAdsService.getEnrichedCampaignData(
         connectedAccount.id,
         user.id,
         { type: 'last_7_days' }
       )
+
+      // Update the sync history record with success status
+      const durationMs = Date.now() - startTime;
+      if (syncHistoryRecord) {
+        syncHistoryRecord.status = 'completed';
+        syncHistoryRecord.recordsSynced = enrichedData.length;
+        syncHistoryRecord.durationMs = durationMs;
+        await syncHistoryRecord.save();
+      }
+
+      // Update the connected account's lastSyncAt timestamp
+      connectedAccount.lastSyncAt = DateTime.now();
+      await connectedAccount.save();
 
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
@@ -331,6 +352,15 @@ export default class IntegrationsController {
       return response.redirect().back()
     } catch (error) {
       logger.error('Error syncing account data:', error)
+
+      // Update the sync history record with failed status
+      if (syncHistoryRecord) {
+        const durationMs = Date.now() - startTime;
+        syncHistoryRecord.status = 'failed';
+        syncHistoryRecord.durationMs = durationMs;
+        syncHistoryRecord.errorMessage = error.message || 'Unknown error';
+        await syncHistoryRecord.save();
+      }
 
       // Better error formatting to provide more details to the user
       let errorMessage = 'Unknown error occurred during sync'
