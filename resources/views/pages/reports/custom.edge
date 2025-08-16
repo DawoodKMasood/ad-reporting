@@ -335,13 +335,13 @@
       
       // Clear all selections
       document.querySelectorAll('.account-option').forEach(opt => {
-        opt.classList.remove('border-green-600');
+        opt.classList.remove('border-blue-500');
         opt.classList.add('border-gray-200');
       });
       
       // Select this one
       element.classList.remove('border-gray-200');
-      element.classList.add('border-green-600');
+      element.classList.add('border-blue-500');
       
       // Store selection
       selectedAccountId = element.dataset.accountId;
