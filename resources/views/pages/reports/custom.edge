@@ -26,20 +26,13 @@
         <div class="flex items-center space-x-3">
           <button 
             id="saveReportBtn"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
             onclick="handleSaveClick()"
           >
             <i class="fas fa-save mr-2"></i>
             Save Report
           </button>
-          <button 
-            id="previewReportBtn"
-            class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            onclick="handlePreviewClick()"
-          >
-            <i class="fas fa-eye mr-2"></i>
-            Preview Report
-          </button>
+
         </div>
       </div>
     </div>
@@ -172,6 +165,34 @@
                       <span class="text-sm text-gray-900">Conversions</span>
                     </div>
                   </div>
+                  
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "ctr", "title": "Click-Through Rate", "icon": "fa-percentage", "color": "indigo"}'
+                    draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-percentage text-indigo-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Click-Through Rate</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="metric"
+                    data-widget-config='{"type": "cpc", "title": "Cost Per Click", "icon": "fa-hand-pointer", "color": "red"}'
+                    draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-hand-pointer text-red-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Cost Per Click</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -206,6 +227,34 @@
                       <span class="text-sm text-gray-900">Bar Chart</span>
                     </div>
                   </div>
+                  
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="chart"
+                    data-widget-config='{"type": "pie", "title": "Spend Distribution", "icon": "fa-chart-pie"}'
+                    draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-chart-pie text-purple-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Pie Chart</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="chart"
+                    data-widget-config='{"type": "area", "title": "Trend Analysis", "icon": "fa-chart-area"}'
+                    draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-chart-area text-orange-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Area Chart</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -224,6 +273,34 @@
                     <div class="flex items-center">
                       <i class="fas fa-table text-gray-600 mr-2"></i>
                       <span class="text-sm text-gray-900">Campaign Table</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="table"
+                    data-widget-config='{"type": "adgroup", "title": "Ad Group Performance", "icon": "fa-list"}'
+                    draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-list text-blue-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Ad Group Table</span>
+                    </div>
+                  </div>
+                  
+                  <div 
+                    class="widget-source cursor-move p-3 border border-gray-200 rounded-md hover:bg-gray-50 hover:border-blue-300"
+                    data-widget-type="table"
+                    data-widget-config='{"type": "keyword", "title": "Keyword Performance", "icon": "fa-key"}'
+                    draggable="true"
+                    ondragstart="handleDragStart(event, this)"
+                    ondragend="handleDragEnd(event, this)"
+                  >
+                    <div class="flex items-center">
+                      <i class="fas fa-key text-green-600 mr-2"></i>
+                      <span class="text-sm text-gray-900">Keyword Table</span>
                     </div>
                   </div>
                 </div>
@@ -298,28 +375,7 @@
     @endif
   </div>
 
-  <!-- Save Report Modal -->
-  <div id="saveReportModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-      <div class="mt-3">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Save Custom Report</h3>
-        <form id="saveReportForm" onsubmit="handleSaveSubmit(event)">
-          <div class="mb-4">
-            <label for="reportName" class="block text-sm font-medium text-gray-700 mb-2">Report Name</label>
-            <input type="text" id="reportName" name="name" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter report name" required>
-          </div>
-          <div class="mb-4">
-            <label for="reportDescription" class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
-            <textarea id="reportDescription" name="description" rows="3" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="Enter report description"></textarea>
-          </div>
-          <div class="flex justify-end space-x-3">
-            <button type="button" onclick="hideModal()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
-            <button type="submit" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700">Save Report</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  </div>
+
 
   <!-- Page-specific JavaScript -->
   <script>
@@ -353,8 +409,6 @@
       
       // Hide error
       document.getElementById('accountRequiredError').classList.add('hidden');
-      
-      showNotification('Account selected: ' + selectedAccountData.name, 'success');
     }
 
     // Drag and drop handlers
@@ -423,119 +477,73 @@
         container.classList.remove('hidden');
         container.insertAdjacentHTML('beforeend', html);
         
-        // Init chart if needed
-        if (data.type === 'chart') {
-          setTimeout(() => initChart(id, data.config), 100);
-        }
+
         
         // Hide error
         document.getElementById('canvasRequiredError').classList.add('hidden');
-        
-        showNotification('Widget added!', 'success');
       }
     }
 
     // Widget creators
     function createMetricWidget(id, config) {
-      const values = {
-        spend: '$2,450.50',
-        impressions: '145,680',
-        clicks: '4,720',
-        conversions: '142'
-      };
-      const colors = {
-        green: 'bg-green-500',
-        blue: 'bg-blue-500',
-        purple: 'bg-purple-500',
-        orange: 'bg-orange-500'
+      const descriptions = {
+        spend: 'Shows the total amount spent on advertising campaigns',
+        impressions: 'Displays the total number of times your ads were shown',
+        clicks: 'Shows the total number of clicks on your advertisements',
+        conversions: 'Displays the total number of desired actions completed',
+        ctr: 'Shows the click-through rate as a percentage of impressions',
+        cpc: 'Displays the average cost per click across campaigns'
       };
       
       return `
         <div id="${id}" class="widget-item bg-white border rounded-lg p-4 relative group" data-widget-type="metric" data-widget-config='${JSON.stringify(config)}'>
-          <button onclick="removeWidget('${id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100">×</button>
-          <div class="flex items-center">
-            <div class="flex-1">
-              <h4 class="text-sm text-gray-500 uppercase">${config.title}</h4>
-              <p class="text-2xl font-bold">${values[config.type] || '0'}</p>
-            </div>
-            <div class="w-12 h-12 ${colors[config.color] || 'bg-gray-500'} rounded flex items-center justify-center">
-              <i class="fas ${config.icon} text-white"></i>
-            </div>
+          <button onclick="removeWidget('${id}')" class="absolute top-2 right-2 w-6 h-6 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-full hover:bg-red-100" title="Remove widget">×</button>
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-2">${config.title}</h4>
+            <p class="text-sm text-gray-600">${descriptions[config.type] || 'Metric widget for tracking performance'}</p>
           </div>
         </div>
       `;
     }
 
     function createChartWidget(id, config) {
+      const descriptions = {
+        line: 'Displays performance trends over time with a line chart visualization',
+        bar: 'Shows comparative data across different platforms or categories using bar charts',
+        pie: 'Shows the distribution of spending or other metrics as proportional segments',
+        area: 'Displays trend data with filled areas to show volume and changes over time'
+      };
+      
       return `
         <div id="${id}" class="widget-item bg-white border rounded-lg p-4 relative group" data-widget-type="chart" data-widget-config='${JSON.stringify(config)}'>
-          <button onclick="removeWidget('${id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100">×</button>
-          <h3 class="text-lg font-semibold mb-4">${config.title}</h3>
-          <canvas id="${id}-chart" style="max-height: 300px;"></canvas>
+          <button onclick="removeWidget('${id}')" class="absolute top-2 right-2 w-6 h-6 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-full hover:bg-red-100" title="Remove widget">×</button>
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-2">${config.title}</h4>
+            <p class="text-sm text-gray-600">${descriptions[config.type] || 'Chart widget for data visualization'}</p>
+          </div>
         </div>
       `;
     }
 
     function createTableWidget(id, config) {
-      const account = selectedAccountData ? selectedAccountData.name : 'Account';
+      const descriptions = {
+        campaign: 'Displays detailed campaign performance data in a tabular format',
+        adgroup: 'Shows ad group level metrics and performance data',
+        keyword: 'Displays keyword-level performance data and statistics'
+      };
+      
       return `
-        <div id="${id}" class="widget-item bg-white border rounded-lg overflow-hidden relative group" data-widget-type="table" data-widget-config='${JSON.stringify(config)}'>
-          <button onclick="removeWidget('${id}')" class="absolute top-2 right-2 text-red-500 opacity-0 group-hover:opacity-100 z-10">×</button>
-          <div class="px-4 py-3 border-b">
-            <h3 class="text-lg font-semibold">${config.title}</h3>
+        <div id="${id}" class="widget-item bg-white border rounded-lg p-4 relative group" data-widget-type="table" data-widget-config='${JSON.stringify(config)}'>
+          <button onclick="removeWidget('${id}')" class="absolute top-2 right-2 w-6 h-6 text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center rounded-full hover:bg-red-100" title="Remove widget">×</button>
+          <div>
+            <h4 class="text-lg font-semibold text-gray-900 mb-2">${config.title}</h4>
+            <p class="text-sm text-gray-600">${descriptions[config.type] || 'Table widget for displaying structured data'}</p>
           </div>
-          <table class="w-full">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-4 py-2 text-left text-xs uppercase">Campaign</th>
-                <th class="px-4 py-2 text-left text-xs uppercase">Account</th>
-                <th class="px-4 py-2 text-left text-xs uppercase">Spend</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td class="px-4 py-2">Campaign 1</td><td class="px-4 py-2">${account}</td><td class="px-4 py-2">$1,250</td></tr>
-              <tr><td class="px-4 py-2">Campaign 2</td><td class="px-4 py-2">${account}</td><td class="px-4 py-2">$890</td></tr>
-            </tbody>
-          </table>
         </div>
       `;
     }
 
-    // Initialize chart
-    function initChart(id, config) {
-      const canvas = document.getElementById(id + '-chart');
-      if (!canvas || typeof Chart === 'undefined') return;
-      
-      let data = {};
-      if (config.type === 'line') {
-        data = {
-          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
-          datasets: [{
-            label: 'Spend',
-            data: [1200, 1350, 1100, 1800, 1650],
-            borderColor: '#3B82F6'
-          }]
-        };
-      } else if (config.type === 'bar') {
-        data = {
-          labels: ['Google', 'Meta', 'LinkedIn'],
-          datasets: [{
-            label: 'Spend',
-            data: [1500, 800, 150],
-            backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6']
-          }]
-        };
-      }
-      
-      new Chart(canvas, {
-        type: config.type,
-        data: data,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false
-        }
-      });
-    }
+
 
     // Remove widget
     function removeWidget(id) {
@@ -559,7 +567,6 @@
       document.getElementById('emptyState').style.display = 'block';
       
       widgetCounter = 0;
-      showNotification('Canvas cleared', 'info');
     }
 
     // Button handlers
@@ -567,90 +574,112 @@
       console.log('Save clicked');
       if (!validate()) return;
       
-      document.getElementById('saveReportModal').classList.remove('hidden');
-    }
-
-    function handlePreviewClick() {
-      console.log('Preview clicked');
-      if (!validate()) return;
+      // Prompt for report name
+      const reportName = prompt('Enter a name for your report:', `Custom Report ${new Date().toLocaleDateString()}`);
+      if (!reportName) {
+        showNotification('Report name is required', 'warning');
+        return;
+      }
       
-      // Generate simple preview
       const widgets = getWidgets();
-      let html = '<h1>Report Preview</h1>';
-      widgets.forEach(w => {
-        html += '<div style="border: 1px solid #ccc; padding: 10px; margin: 10px;">';
-        html += '<h3>' + (w.config.title || w.type) + '</h3>';
-        html += '</div>';
-      });
-      
-      const preview = window.open('', '_blank');
-      preview.document.write(html);
-      preview.document.close();
-    }
-
-    function handleSaveSubmit(event) {
-      event.preventDefault();
-      console.log('Saving report...');
-      
-      const form = new FormData(event.target);
       const data = {
-        name: form.get('name'),
-        description: form.get('description'),
+        name: reportName.trim(),
+        description: '', // Can be added later if needed
         connectedAccountId: parseInt(selectedAccountId),
-        widgetLayout: getWidgets(),
+        widgetLayout: widgets,
         platform: selectedAccountData ? selectedAccountData.platform : 'google_ads'
       };
       
-      console.log('Report data:', data);
+      console.log('Saving report directly:', data);
+      
+      // Show loading state on button
+      const saveBtn = document.getElementById('saveReportBtn');
+      const originalText = saveBtn.innerHTML;
+      saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Saving...';
+      saveBtn.disabled = true;
       
       // Send to server
-      fetch('/reports/save-layout', {
+      fetch('/reports/save-layout-debug', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': '{{ csrfToken }}'
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         },
         body: JSON.stringify(data)
       })
-      .then(res => res.json())
+      .then(res => {
+        console.log('Response status:', res.status);
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
       .then(result => {
         console.log('Save result:', result);
         if (result.success) {
-          hideModal();
-          showNotification('Report saved!', 'success');
-          setTimeout(() => {
-            window.location.href = '/reports';
-          }, 2000);
+          showNotification('Report saved successfully!', 'success');
+          
+          // Redirect to the report page
+          if (result.redirect) {
+            setTimeout(() => {
+              window.location.href = result.redirect;
+            }, 1000);
+          } else {
+            setTimeout(() => {
+              window.location.href = '/reports';
+            }, 1000);
+          }
         } else {
-          showNotification('Error: ' + (result.error || 'Unknown'), 'error');
+          let errorMessage = 'Error: ' + (result.error || 'Unknown error');
+          if (result.details) {
+            console.error('Validation details:', result.details);
+            if (Array.isArray(result.details)) {
+              const fieldErrors = result.details.map(detail => detail.field + ': ' + detail.message).join(', ');
+              errorMessage += ' - ' + fieldErrors;
+            }
+          }
+          showNotification(errorMessage, 'error');
         }
       })
       .catch(err => {
         console.error('Save error:', err);
-        showNotification('Failed to save', 'error');
+        showNotification('Failed to save: ' + err.message, 'error');
+      })
+      .finally(() => {
+        // Restore button state
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
       });
     }
 
-    function hideModal() {
-      document.getElementById('saveReportModal').classList.add('hidden');
-    }
+
+
+
 
     // Validation
     function validate() {
       let valid = true;
+      let errorMessages = [];
       
       if (!selectedAccountId) {
         document.getElementById('accountRequiredError').classList.remove('hidden');
+        errorMessages.push('Please select an account');
         valid = false;
+      } else {
+        document.getElementById('accountRequiredError').classList.add('hidden');
       }
       
       if (getWidgets().length === 0) {
         document.getElementById('canvasRequiredError').classList.remove('hidden');
+        errorMessages.push('Please add at least one widget');
         valid = false;
+      } else {
+        document.getElementById('canvasRequiredError').classList.add('hidden');
       }
       
-      if (!valid) {
-        showNotification('Please select an account and add widgets', 'warning');
+      if (!valid && errorMessages.length > 0) {
+        showNotification(errorMessages.join(' and ') + ' before saving', 'warning');
       }
       
       return valid;
@@ -674,23 +703,42 @@
     function showNotification(msg, type) {
       console.log('[' + type + '] ' + msg);
       
-      // Remove old
+      // Remove old notifications
       const old = document.querySelector('.notification-toast');
       if (old) old.remove();
       
       const colors = {
-        success: 'bg-green-100 text-green-700',
-        error: 'bg-red-100 text-red-700',
-        warning: 'bg-yellow-100 text-yellow-700',
-        info: 'bg-blue-100 text-blue-700'
+        success: 'bg-green-500 text-white border-green-600',
+        error: 'bg-red-500 text-white border-red-600',
+        warning: 'bg-yellow-500 text-white border-yellow-600',
+        info: 'bg-blue-500 text-white border-blue-600'
       };
       
       const div = document.createElement('div');
-      div.className = 'notification-toast fixed top-4 right-4 px-4 py-2 rounded ' + (colors[type] || colors.info) + ' z-50';
-      div.textContent = msg;
+      div.className = 'notification-toast fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg border-2 z-50 max-w-sm ' + (colors[type] || colors.info);
+      div.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas ${
+            type === 'success' ? 'fa-check-circle' :
+            type === 'error' ? 'fa-exclamation-circle' :
+            type === 'warning' ? 'fa-exclamation-triangle' :
+            'fa-info-circle'
+          } mr-2"></i>
+          <span class="font-medium">${msg}</span>
+        </div>
+      `;
+      
       document.body.appendChild(div);
       
-      setTimeout(() => div.remove(), 5000);
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        if (div.parentNode) {
+          div.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+          div.style.opacity = '0';
+          div.style.transform = 'translateX(100%)';
+          setTimeout(() => div.remove(), 500);
+        }
+      }, 5000);
     }
 
     // Auto-select first account if only one

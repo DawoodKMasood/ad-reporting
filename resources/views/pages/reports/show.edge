@@ -86,8 +86,8 @@
               </div>
             </div>
             <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Account:</span>
-              <span class="text-sm font-medium">{{ customReport.connectedAccount.accountDisplayName }}</span>
+            <span class="text-sm text-gray-600">Account:</span>
+            <span class="text-sm font-medium">{{ customReport.connectedAccount ? (customReport.connectedAccount.displayName || customReport.connectedAccount.accountName || customReport.connectedAccount.accountId) : 'Unknown Account' }}</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-sm text-gray-600">Date Range:</span>
@@ -167,7 +167,33 @@
         </div>
       </div>
 
-      <!-- Report Data Placeholder -->
+      <!-- Report Widget Layout -->
+      @if(customReport.widgetLayout && customReport.widgetLayout.length > 0)
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">
+            <i class="fas fa-puzzle-piece mr-2 text-purple-600"></i>
+            Report Widgets ({{ customReport.widgetLayout.length }})
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @each(widget in customReport.widgetLayout)
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div class="flex items-center mb-2">
+                  @if(widget.config && widget.config.icon)
+                    <i class="fas {{ widget.config.icon }} text-blue-600 mr-2"></i>
+                  @else
+                    <i class="fas fa-widget text-blue-600 mr-2"></i>
+                  @end
+                  <h4 class="text-sm font-semibold text-gray-900">{{ widget.config ? widget.config.title : widget.type }}</h4>
+                </div>
+                <p class="text-xs text-gray-600">Type: {{ widget.type }}</p>
+                @if(widget.config && widget.config.type)
+                  <p class="text-xs text-gray-600">Metric: {{ widget.config.type }}</p>
+                @end
+              </div>
+            @end
+          </div>
+        </div>
+      @end
       <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">
           <i class="fas fa-table mr-2 text-blue-600"></i>
@@ -242,25 +268,64 @@
 
   <script>
     function generateReport() {
-      alert('Report generation feature coming soon!');
+      showNotification('Generating report...', 'info');
+      // In a real implementation, this would make an API call to generate the report data
+      setTimeout(() => {
+        showNotification('Report generation feature is coming soon!', 'warning');
+      }, 1000);
     }
 
     function editReport() {
-      alert('Edit report feature coming soon!');
+      // Redirect to the custom report builder with this report's data
+      window.location.href = '/reports/custom?edit={{ customReport.id }}';
     }
 
     function exportReport() {
-      alert('Export report feature coming soon!');
+      showNotification('Export feature coming soon!', 'info');
     }
 
     function enableSchedule() {
-      alert('Enable schedule feature coming soon!');
+      showNotification('Schedule feature coming soon!', 'info');
     }
 
     function disableSchedule() {
       if (confirm('Are you sure you want to disable automated reporting for this report?')) {
-        alert('Disable schedule feature coming soon!');
+        showNotification('Disable schedule feature coming soon!', 'info');
       }
+    }
+
+    // Simple notification system
+    function showNotification(message, type = 'info') {
+      // Remove existing notifications
+      const existing = document.querySelector('.notification');
+      if (existing) existing.remove();
+      
+      const colors = {
+        success: 'bg-green-100 border-green-400 text-green-700',
+        error: 'bg-red-100 border-red-400 text-red-700',
+        warning: 'bg-yellow-100 border-yellow-400 text-yellow-700',
+        info: 'bg-blue-100 border-blue-400 text-blue-700'
+      };
+      
+      const notification = document.createElement('div');
+      notification.className = `notification fixed top-4 right-4 border px-4 py-3 rounded z-50 max-w-sm ${colors[type] || colors.info}`;
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <i class="fas fa-info-circle mr-2"></i>
+          <span>${message}</span>
+        </div>
+      `;
+      
+      document.body.appendChild(notification);
+      
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.style.transition = 'opacity 0.5s ease-out';
+          notification.style.opacity = '0';
+          setTimeout(() => notification.remove(), 500);
+        }
+      }, 5000);
     }
 
     // Auto-hide error messages

@@ -237,9 +237,14 @@ export default class ReportsController {
   async saveLayout({ request, auth, response }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      const data = request.all()
       
-      logger.info('SaveLayout called with data:', data)
+      // Log raw request data for debugging
+      const rawData = request.all()
+      logger.info('Raw request data received:', rawData)
+      
+      // Validate the data
+      const data = await request.validateUsing(saveLayoutValidator)
+      logger.info('SaveLayout called with validated data:', data)
 
       if (data.reportId) {
         // Update existing report
@@ -289,10 +294,22 @@ export default class ReportsController {
           widgetLayout: data.widgetLayout
         })
 
-        return response.json({ success: true, report: customReport })
+        logger.info('Created new custom report:', { id: customReport.id, name: customReport.name })
+        return response.json({ success: true, report: customReport, redirect: `/reports/${customReport.id}` })
       }
     } catch (error) {
       logger.error('Error saving widget layout:', error)
+      
+      // Handle validation errors specifically
+      if (error.code === 'E_VALIDATION_ERROR') {
+        logger.error('Validation error details:', error.messages)
+        return response.status(422).json({ 
+          success: false, 
+          error: 'Validation failed',
+          details: error.messages 
+        })
+      }
+      
       return response.status(400).json({ success: false, error: error.message || 'Failed to save layout' })
     }
   }
@@ -353,6 +370,66 @@ export default class ReportsController {
     } catch (error) {
       logger.error('Error generating preview:', error)
       return response.status(400).json({ success: false, error: error.message || 'Failed to generate preview' })
+    }
+  }
+
+  /**
+   * Debug version of saveLayout without validation
+   */
+  async saveLayoutDebug({ request, auth, response }: HttpContext) {
+    try {
+      const user = auth.getUserOrFail()
+      const data = request.all()
+      
+      logger.info('SaveLayoutDebug called with data:', JSON.stringify(data, null, 2))
+
+      // Basic validation
+      if (!data.connectedAccountId) {
+        return response.status(400).json({ 
+          success: false, 
+          error: 'Connected account is required' 
+        })
+      }
+
+      if (!data.widgetLayout || !Array.isArray(data.widgetLayout) || data.widgetLayout.length === 0) {
+        return response.status(400).json({ 
+          success: false, 
+          error: 'Widget layout is required and must be a non-empty array' 
+        })
+      }
+
+      // Verify the connected account belongs to the user
+      const connectedAccount = await ConnectedAccount.query()
+        .where('id', data.connectedAccountId)
+        .where('user_id', user.id)
+        .where('is_active', true)
+        .first()
+        
+      if (!connectedAccount) {
+        return response.status(400).json({ 
+          success: false, 
+          error: 'Connected account not found or inactive' 
+        })
+      }
+
+      const customReport = await CustomReport.create({
+        userId: user.id,
+        connectedAccountId: data.connectedAccountId,
+        name: data.name || `Custom Report ${new Date().toISOString().split('T')[0]}`,
+        description: data.description || '',
+        platform: data.platform || connectedAccount.platform,
+        metrics: ['impressions', 'clicks', 'cost'], // Default metrics
+        dateRangeType: 'last_30_days',
+        status: 'active',
+        widgetLayout: data.widgetLayout
+      })
+
+      logger.info('Created new custom report via debug method:', { id: customReport.id, name: customReport.name })
+      return response.json({ success: true, report: customReport, redirect: `/reports/${customReport.id}` })
+      
+    } catch (error) {
+      logger.error('Error in saveLayoutDebug:', error)
+      return response.status(500).json({ success: false, error: error.message || 'Failed to save layout' })
     }
   }
 

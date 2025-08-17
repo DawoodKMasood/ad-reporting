@@ -702,9 +702,6 @@ export class GoogleAdsService {
           campaignSubType: row.campaign?.advertising_channel_sub_type || null,
           date: row.segments?.date ? DateTime.fromFormat(row.segments.date, 'yyyy-MM-dd') : DateTime.now(),
           spend: row.metrics?.cost_micros ? parseFloat(row.metrics.cost_micros) / 1000000 : 0,
-          impressions: row.metrics?.impressions ? parseInt(row.metrics.impressions) : 0,
-          clicks: row.metrics?.clicks ? parseInt(row.metrics.clicks) : 0,
-          conversions: row.metrics?.conversions ? parseFloat(row.metrics.conversions) : 0,
           // Store additional metadata for manager accounts
           metadata: row.childAccountId ? {
             childAccountId: row.childAccountId,
@@ -714,8 +711,28 @@ export class GoogleAdsService {
       }).filter(data => data.campaignId && data.campaignName)
 
       if (batch.length > 0) {
-        const created = await CampaignData.createMany(batch)
-        processedData.push(...created)
+        // Check for existing campaigns and only insert new ones or update existing ones
+        for (const item of batch) {
+          const existing = await CampaignData.query()
+            .where('connected_account_id', connectedAccountId)
+            .where('campaign_id', item.campaignId)
+            .first()
+            
+          if (existing) {
+            // Update existing campaign data
+            await existing.merge({
+              campaignName: item.campaignName,
+              campaignType: item.campaignType,
+              campaignSubType: item.campaignSubType,
+              metadata: item.metadata
+            }).save()
+            processedData.push(existing)
+          } else {
+            // Create new campaign record
+            const created = await CampaignData.create(item)
+            processedData.push(created)
+          }
+        }
       }
     }
 
@@ -801,20 +818,9 @@ export class GoogleAdsService {
   }
 
   public enrichCampaignData(campaignData: CampaignData) {
-    const ctr = campaignData.impressions > 0 ? (campaignData.clicks / campaignData.impressions) * 100 : 0
-    const cpc = campaignData.clicks > 0 ? campaignData.spend / campaignData.clicks : 0
-    const cpa = campaignData.conversions > 0 ? campaignData.spend / campaignData.conversions : 0
-    const cpm = campaignData.impressions > 0 ? (campaignData.spend / campaignData.impressions) * 1000 : 0
-
     return {
       ...campaignData.serialize(),
-      ctr,
-      cpc,
-      cpa,
-      cpm,
-      performanceCategory: this.categorizePerformance(ctr, cpc),
-      campaignCategory: this.categorizeCampaignType(campaignData.campaignType),
-      efficiencyScore: this.calculateEfficiencyScore(ctr, cpc, campaignData.conversions, campaignData.clicks, campaignData.spend)
+      campaignCategory: this.categorizeCampaignType(campaignData.campaignType)
     }
   }
 
@@ -1274,12 +1280,7 @@ export class GoogleAdsService {
     return expiry ? expiry > DateTime.now() : false
   }
 
-  private categorizePerformance(ctr: number, cpc: number): string {
-    if (ctr > 5 && cpc < 2) return 'Excellent'
-    if (ctr > 2 && cpc < 5) return 'Good'
-    if (ctr > 1 && cpc < 10) return 'Average'
-    return 'Poor'
-  }
+
 
   private categorizeCampaignType(campaignType: string | null): string {
     if (!campaignType) return 'Unknown'
@@ -1291,17 +1292,7 @@ export class GoogleAdsService {
     return 'Other'
   }
 
-  private calculateEfficiencyScore(ctr: number, cpc: number, conversions: number, clicks: number, spend: number): number {
-    const conversionRate = clicks > 0 ? (conversions / clicks) * 100 : 0
-    const roas = spend > 0 ? conversions / spend : 0
 
-    const ctrScore = Math.min(100, ctr * 10)
-    const cpcScore = Math.max(0, 100 - (cpc * 10))
-    const conversionRateScore = Math.min(100, conversionRate * 100)
-    const roasScore = Math.min(100, roas * 100)
-
-    return Math.round((ctrScore * 0.1) + (cpcScore * 0.1) + (conversionRateScore * 0.4) + (roasScore * 0.4))
-  }
 }
 
 export default new GoogleAdsService()

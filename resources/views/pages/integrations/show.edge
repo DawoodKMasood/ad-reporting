@@ -38,7 +38,7 @@
         </div>
         <div class="flex space-x-3">
           <button
-            onclick="editAccountName('{{ connectedAccount.id }}', '{{ connectedAccount.displayName || connectedAccount.accountName || '' }}')"
+            onclick="editAccountName('{{ connectedAccount.id }}', `{{ (connectedAccount.displayName || connectedAccount.accountName || '').replace(/`/g, '\\`') }}`)"
             data-account-id="{{ connectedAccount.id }}"
             class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
@@ -234,7 +234,7 @@
           headers: {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
           },
           body: JSON.stringify({ displayName: newName })
         })
@@ -290,7 +290,7 @@
         headers: {
           'Content-Type': 'application/json',
           'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
         }
       })
       .then(response => response.json())
@@ -322,7 +322,7 @@
           headers: {
             'Content-Type': 'application/json',
             'X-Requested-With': 'XMLHttpRequest',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
           }
         })
         .then(response => response.json())

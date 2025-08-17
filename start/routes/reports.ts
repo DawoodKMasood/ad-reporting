@@ -14,6 +14,7 @@ router
     router.delete('/:id', [ReportsController, 'destroy']).as('reports.destroy')
     router.post('/:id/archive', [ReportsController, 'archive']).as('reports.archive')
     router.post('/save-layout', [ReportsController, 'saveLayout']).as('reports.saveLayout')
+    router.post('/save-layout-debug', [ReportsController, 'saveLayoutDebug']).as('reports.saveLayoutDebug')
     router.get('/:id/load-layout', [ReportsController, 'loadLayout']).as('reports.loadLayout')
     router.post('/preview', [ReportsController, 'preview']).as('reports.preview')
   })

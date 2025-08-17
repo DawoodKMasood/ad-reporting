@@ -32,15 +32,6 @@ export default class CampaignData extends BaseModel {
   @column()
   declare spend: number
 
-  @column()
-  declare impressions: number
-
-  @column()
-  declare clicks: number
-
-  @column()
-  declare conversions: number
-
   @column({
     consume: (value: string | null) => {
       if (!value) return null;
@@ -99,27 +90,5 @@ export default class CampaignData extends BaseModel {
         )
       }
     }
-  }
-
-  /**
-   * Computed property for Click-Through Rate (CTR)
-   * CTR = (Clicks / Impressions) * 100
-   */
-  get ctr(): number {
-    if (this.impressions === 0) {
-      return 0
-    }
-    return (this.clicks / this.impressions) * 100
-  }
-
-  /**
-   * Computed property for Cost Per Click (CPC)
-   * CPC = Spend / Clicks
-   */
-  get cpc(): number {
-    if (this.clicks === 0) {
-      return 0
-    }
-    return this.spend / this.clicks
   }
 }
