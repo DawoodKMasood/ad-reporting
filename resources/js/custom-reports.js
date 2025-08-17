@@ -48,13 +48,13 @@ class CustomReportBuilder {
 
         // Clear all selections
         accountOptions.forEach((opt) => {
-          opt.classList.remove('border-purple-600', 'bg-purple-50', 'shadow-md')
+          opt.classList.remove('border-green-600', 'bg-green-50')
           opt.classList.add('border-gray-200')
         })
 
         // Select this one
         option.classList.remove('border-gray-200')
-        option.classList.add('border-purple-600', 'bg-purple-50', 'shadow-md')
+        option.classList.add('border-green-600', 'bg-green-50')
 
         // Store data
         this.selectedAccountId = option.dataset.accountId
@@ -99,19 +99,19 @@ class CustomReportBuilder {
     // Setup drop zone
     this.reportCanvas.addEventListener('dragover', (e) => {
       e.preventDefault()
-      this.reportCanvas.classList.add('border-purple-400', 'bg-purple-50')
+      this.reportCanvas.classList.add('border-green-400', 'bg-green-50')
     })
 
     this.reportCanvas.addEventListener('dragleave', (e) => {
       if (e.target === this.reportCanvas) {
-        this.reportCanvas.classList.remove('border-purple-400', 'bg-purple-50')
+        this.reportCanvas.classList.remove('border-green-400', 'bg-green-50')
       }
     })
 
     this.reportCanvas.addEventListener('drop', (e) => {
       e.preventDefault()
       console.log('Drop event')
-      this.reportCanvas.classList.remove('border-purple-400', 'bg-purple-50')
+      this.reportCanvas.classList.remove('border-green-400', 'bg-green-50')
 
       try {
         const data = JSON.parse(e.dataTransfer.getData('text/plain'))

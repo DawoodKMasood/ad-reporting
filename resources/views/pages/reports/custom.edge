@@ -449,19 +449,19 @@
       function handleDragOver(event) {
         event.preventDefault();
         event.dataTransfer.dropEffect = "copy";
-        document.getElementById("reportCanvas").classList.add("border-purple-400", "bg-purple-50");
+        document.getElementById("reportCanvas").classList.add("border-green-600", "bg-green-50");
       }
       
       function handleDragLeave(event) {
         if (event.target.id === "reportCanvas") {
-          document.getElementById("reportCanvas").classList.remove("border-purple-400", "bg-purple-50");
+          document.getElementById("reportCanvas").classList.remove("border-green-600", "bg-green-50");
         }
       }
       
       function handleDrop(event) {
         event.preventDefault();
         console.log("Drop event");
-        document.getElementById("reportCanvas").classList.remove("border-purple-400", "bg-purple-50");
+        document.getElementById("reportCanvas").classList.remove("border-green-600", "bg-green-50");
         try {
           const data = JSON.parse(event.dataTransfer.getData("text/plain"));
           addWidget(data);
