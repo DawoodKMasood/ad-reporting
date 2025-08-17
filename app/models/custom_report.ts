@@ -25,39 +25,39 @@ export default class CustomReport extends BaseModel {
 
   @column({
     consume: (value: string | null) => {
-      if (!value) return null;
+      if (!value) return null
       try {
-        return typeof value === 'string' ? JSON.parse(value) : value;
+        return typeof value === 'string' ? JSON.parse(value) : value
       } catch {
-        return null;
+        return null
       }
     },
-    prepare: (value: any) => JSON.stringify(value)
+    prepare: (value: any) => JSON.stringify(value),
   })
   declare filters: Record<string, any> | null
 
   @column({
     consume: (value: string) => {
       try {
-        return typeof value === 'string' ? JSON.parse(value) : value;
+        return typeof value === 'string' ? JSON.parse(value) : value
       } catch {
-        return [];
+        return []
       }
     },
-    prepare: (value: any) => JSON.stringify(value)
+    prepare: (value: any) => JSON.stringify(value),
   })
   declare metrics: string[]
 
   @column({
     consume: (value: string | null) => {
-      if (!value) return null;
+      if (!value) return null
       try {
-        return typeof value === 'string' ? JSON.parse(value) : value;
+        return typeof value === 'string' ? JSON.parse(value) : value
       } catch {
-        return null;
+        return null
       }
     },
-    prepare: (value: any) => JSON.stringify(value)
+    prepare: (value: any) => JSON.stringify(value),
   })
   declare dimensions: string[] | null
 
@@ -81,14 +81,14 @@ export default class CustomReport extends BaseModel {
 
   @column({
     consume: (value: string | null) => {
-      if (!value) return null;
+      if (!value) return null
       try {
-        return typeof value === 'string' ? JSON.parse(value) : value;
+        return typeof value === 'string' ? JSON.parse(value) : value
       } catch {
-        return null;
+        return null
       }
     },
-    prepare: (value: any) => JSON.stringify(value)
+    prepare: (value: any) => JSON.stringify(value),
   })
   declare widgetLayout: any[] | null
 
@@ -116,7 +116,9 @@ export default class CustomReport extends BaseModel {
       meta_ads: 'Meta Ads',
       tiktok_ads: 'TikTok Ads',
     }
-    return platformNames[this.platform] || this.platform.charAt(0).toUpperCase() + this.platform.slice(1)
+    return (
+      platformNames[this.platform] || this.platform.charAt(0).toUpperCase() + this.platform.slice(1)
+    )
   }
 
   /**

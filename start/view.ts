@@ -67,7 +67,7 @@ edge.global('old', function (this: any, key: string, defaultValue: any = null) {
   if (!session?.flashMessages) {
     return defaultValue
   }
-  
+
   try {
     const oldData = session.flashMessages.get('old') || {}
     return oldData[key] !== undefined ? oldData[key] : defaultValue

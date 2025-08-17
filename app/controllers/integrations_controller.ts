@@ -58,41 +58,46 @@ export default class IntegrationsController {
       let syncIssues = {
         hasData: false,
         isManagerWithNoChildren: false,
-        lastSyncError: null
+        lastSyncError: null,
       }
 
       try {
         // Check if there's existing campaign data in the database (last 30 days)
         const thirtyDaysAgo = new Date()
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-        
+
         const existingData = await CampaignData.query()
           .where('connected_account_id', connectedAccount.id)
           .where('date', '>=', thirtyDaysAgo.toISOString().split('T')[0])
-        
+
         syncIssues.hasData = existingData.length > 0
-        
       } catch (metricsError: any) {
         logger.warn('Could not fetch existing campaign data:', metricsError)
         syncIssues.lastSyncError = metricsError.message
       }
 
       // Fetch sync history data
-      let syncHistory: { id: number; date: DateTime; status: string; records: number; duration: string }[] = []
+      let syncHistory: {
+        id: number
+        date: DateTime
+        status: string
+        records: number
+        duration: string
+      }[] = []
       try {
         // Fetch actual sync history from the database
         const syncHistoryRecords = await SyncHistory.query()
           .where('connected_account_id', connectedAccount.id)
           .orderBy('synced_at', 'desc')
           .limit(50) // Limit to last 50 sync events to prevent performance issues
-        
+
         // Transform the data to match the expected format
-        syncHistory = syncHistoryRecords.map(record => ({
+        syncHistory = syncHistoryRecords.map((record) => ({
           id: record.id,
           date: record.syncedAt,
           status: record.status,
           records: record.recordsSynced,
-          duration: record.formattedDuration
+          duration: record.formattedDuration,
         }))
       } catch (syncHistoryError: any) {
         logger.warn('Could not fetch sync history data:', syncHistoryError)
@@ -150,7 +155,7 @@ export default class IntegrationsController {
       if (isApiRequest) {
         return response.badRequest({
           error: 'Validation failed',
-          message: error.messages
+          message: error.messages,
         })
       }
 
@@ -169,7 +174,7 @@ export default class IntegrationsController {
       if (!state || state !== storedState) {
         return response.badRequest({
           error: 'Invalid state parameter',
-          message: 'Possible CSRF attack detected'
+          message: 'Possible CSRF attack detected',
         })
       }
 
@@ -178,14 +183,14 @@ export default class IntegrationsController {
       if (!code) {
         return response.badRequest({
           error: 'Missing authorization code',
-          message: 'Authorization code is required'
+          message: 'Authorization code is required',
         })
       }
 
       if (platform !== 'google_ads') {
         return response.badRequest({
           error: 'Unsupported platform',
-          message: `Platform ${platform} is not supported`
+          message: `Platform ${platform} is not supported`,
         })
       }
 
@@ -205,7 +210,7 @@ export default class IntegrationsController {
           return response.badRequest({
             error: 'Failed to retrieve Google Ads account information',
             message: 'Unable to fetch your Google Ads customer ID',
-            details: customerIdError.message
+            details: customerIdError.message,
           })
         }
         return response.redirect().toRoute('integrations.index')
@@ -216,7 +221,7 @@ export default class IntegrationsController {
         return {
           success: true,
           accounts: connectedAccounts,
-          message: `${connectedAccounts.length} account(s) connected successfully`
+          message: `${connectedAccounts.length} account(s) connected successfully`,
         }
       }
 
@@ -228,7 +233,7 @@ export default class IntegrationsController {
       if (isApiRequest) {
         return response.badRequest({
           error: 'OAuth2 callback failed',
-          message: error.message
+          message: error.message,
         })
       }
 
@@ -248,7 +253,7 @@ export default class IntegrationsController {
         if (isApiRequest) {
           return response.badRequest({
             error: 'Invalid account ID',
-            message: 'Account ID must be a valid number'
+            message: 'Account ID must be a valid number',
           })
         }
         return response.redirect().back()
@@ -265,7 +270,7 @@ export default class IntegrationsController {
       if (isApiRequest) {
         return {
           success: true,
-          message: 'Account disconnected successfully'
+          message: 'Account disconnected successfully',
         }
       }
 
@@ -277,7 +282,7 @@ export default class IntegrationsController {
       if (isApiRequest) {
         return response.badRequest({
           error: 'Failed to disconnect account',
-          message: error.message
+          message: error.message,
         })
       }
 
@@ -286,9 +291,9 @@ export default class IntegrationsController {
   }
 
   async sync({ params, request, auth, response }: HttpContext) {
-    let syncHistoryRecord: SyncHistory | null = null;
-    const startTime = Date.now();
-    
+    let syncHistoryRecord: SyncHistory | null = null
+    const startTime = Date.now()
+
     try {
       const user = auth.getUserOrFail()
       const payload = await request.validateUsing(syncValidator)
@@ -300,7 +305,7 @@ export default class IntegrationsController {
         if (isApiRequest) {
           return response.badRequest({
             error: 'Invalid account ID',
-            message: 'Account ID must be a valid number'
+            message: 'Account ID must be a valid number',
           })
         }
         return response.redirect().back()
@@ -317,7 +322,7 @@ export default class IntegrationsController {
         syncedAt: DateTime.now(),
         status: 'in_progress',
         recordsSynced: 0,
-        durationMs: 0
+        durationMs: 0,
       })
 
       const enrichedData = await googleAdsService.getEnrichedCampaignData(
@@ -327,17 +332,17 @@ export default class IntegrationsController {
       )
 
       // Update the sync history record with success status
-      const durationMs = Date.now() - startTime;
+      const durationMs = Date.now() - startTime
       if (syncHistoryRecord) {
-        syncHistoryRecord.status = 'completed';
-        syncHistoryRecord.recordsSynced = enrichedData.length;
-        syncHistoryRecord.durationMs = durationMs;
-        await syncHistoryRecord.save();
+        syncHistoryRecord.status = 'completed'
+        syncHistoryRecord.recordsSynced = enrichedData.length
+        syncHistoryRecord.durationMs = durationMs
+        await syncHistoryRecord.save()
       }
 
       // Update the connected account's lastSyncAt timestamp
-      connectedAccount.lastSyncAt = DateTime.now();
-      await connectedAccount.save();
+      connectedAccount.lastSyncAt = DateTime.now()
+      await connectedAccount.save()
 
       const isApiRequest = request.header('Accept')?.includes('application/json')
       if (isApiRequest) {
@@ -345,7 +350,7 @@ export default class IntegrationsController {
           success: true,
           message: 'Data sync completed successfully',
           account: connectedAccount,
-          dataCount: enrichedData.length
+          dataCount: enrichedData.length,
         }
       }
 
@@ -355,21 +360,21 @@ export default class IntegrationsController {
 
       // Update the sync history record with failed status
       if (syncHistoryRecord) {
-        const durationMs = Date.now() - startTime;
-        syncHistoryRecord.status = 'failed';
-        syncHistoryRecord.durationMs = durationMs;
-        syncHistoryRecord.errorMessage = error.message || 'Unknown error';
-        await syncHistoryRecord.save();
+        const durationMs = Date.now() - startTime
+        syncHistoryRecord.status = 'failed'
+        syncHistoryRecord.durationMs = durationMs
+        syncHistoryRecord.errorMessage = error.message || 'Unknown error'
+        await syncHistoryRecord.save()
       }
 
       // Better error formatting to provide more details to the user
       let errorMessage = 'Unknown error occurred during sync'
       let errorDetails = {}
-      
+
       if (error?.message) {
         errorMessage = error.message
       }
-      
+
       if (error?.details) {
         errorDetails = error.details
       } else if (error?.response) {
@@ -404,7 +409,7 @@ export default class IntegrationsController {
         if (isApiRequest) {
           return response.badRequest({
             error: 'Invalid account ID',
-            message: 'Account ID must be a valid number'
+            message: 'Account ID must be a valid number',
           })
         }
         return response.redirect().back()
@@ -423,7 +428,7 @@ export default class IntegrationsController {
         return {
           success: true,
           message: 'Account name updated successfully',
-          account: connectedAccount
+          account: connectedAccount,
         }
       }
 
@@ -435,7 +440,7 @@ export default class IntegrationsController {
       if (isApiRequest) {
         return response.badRequest({
           error: 'Failed to update account name',
-          message: error.message
+          message: error.message,
         })
       }
 
@@ -457,7 +462,7 @@ export default class IntegrationsController {
         .count('* as total')
 
       const hasData = campaignDataCount[0].$extras.total > 0
-      
+
       return {
         success: true,
         account: {
@@ -471,14 +476,14 @@ export default class IntegrationsController {
           isManagerAccount: connectedAccount.isManagerAccount,
           lastSyncAt: connectedAccount.lastSyncAt,
           hasData,
-          dataCount: campaignDataCount[0].$extras.total
-        }
+          dataCount: campaignDataCount[0].$extras.total,
+        },
       }
     } catch (error) {
       logger.error('Error getting sync status:', error)
       return response.badRequest({
         error: 'Failed to get sync status',
-        message: error.message
+        message: error.message,
       })
     }
   }
@@ -496,7 +501,7 @@ export default class IntegrationsController {
       if (connectedAccounts.length === 0) {
         return response.badRequest({
           error: 'No connected accounts found',
-          message: 'Please connect a Google Ads account first'
+          message: 'Please connect a Google Ads account first',
         })
       }
 
@@ -525,7 +530,7 @@ export default class IntegrationsController {
       logger.error('Error fetching accessible customers:', error)
       return response.badRequest({
         error: 'Failed to fetch accessible customers',
-        message: error.message
+        message: error.message,
       })
     }
   }

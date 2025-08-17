@@ -8,22 +8,23 @@ import { DateTime } from 'luxon'
 import securityMonitoringService from '#services/security_monitoring_service'
 
 const revokedTokens: Set<string> = new Set()
-const tokenAccessAttempts: Map<string, { count: number; timestamp: number; lastAttempt: number }> = new Map()
+const tokenAccessAttempts: Map<string, { count: number; timestamp: number; lastAttempt: number }> =
+  new Map()
 const clientCache: Map<string, { client: any; timestamp: number }> = new Map()
 const failedTokenAttempts: Set<string> = new Set()
 
 export class GoogleAdsOAuthService {
   private oauth2Client: any
-  private static readonly MAX_ACCESS_ATTEMPTS = 5  // Reduced back to 5
-  private static readonly ACCESS_WINDOW_MS = 60000  // 1 minute window
-  private static readonly CLIENT_CACHE_TTL = 600000  // 10 minutes cache
+  private static readonly MAX_ACCESS_ATTEMPTS = 5 // Reduced back to 5
+  private static readonly ACCESS_WINDOW_MS = 60000 // 1 minute window
+  private static readonly CLIENT_CACHE_TTL = 600000 // 10 minutes cache
   private static readonly BACKOFF_BASE_MS = 2000
   private static readonly MAX_BACKOFF_MS = 60000
   private static readonly RETRY_AFTER_FAIL_MS = 300000 // 5 minutes before retrying failed tokens
 
   constructor() {
     const redirectUri = this.buildRedirectUri()
-    
+
     this.oauth2Client = new google.auth.OAuth2(
       env.get('GOOGLE_ADS_CLIENT_ID'),
       env.get('GOOGLE_ADS_CLIENT_SECRET'),
@@ -36,11 +37,11 @@ export class GoogleAdsOAuthService {
     const nodeEnv = env.get('NODE_ENV')
     const host = env.get('HOST')
     const port = env.get('PORT')
-    
+
     if (appUrl) {
       return `${appUrl}/integrations/callback/google_ads`
     }
-    
+
     const protocol = nodeEnv === 'development' ? 'http' : 'https'
     const portSuffix = port && port !== 80 && port !== 443 ? `:${port}` : ''
     return `${protocol}://${host}${portSuffix}/integrations/callback/google_ads`
@@ -48,7 +49,7 @@ export class GoogleAdsOAuthService {
 
   public generateAuthUrl(userId: number, state?: string): string {
     const stateParam = state || this.generateStateParameter(userId)
-    
+
     return this.oauth2Client.generateAuthUrl({
       access_type: 'offline',
       scope: ['https://www.googleapis.com/auth/adwords'],
@@ -73,13 +74,16 @@ export class GoogleAdsOAuthService {
     }
   }
 
-  public async getAccessibleCustomers(accessToken: string, refreshToken: string): Promise<Array<{customerId: string, resourceName: string}>> {
+  public async getAccessibleCustomers(
+    accessToken: string,
+    refreshToken: string
+  ): Promise<Array<{ customerId: string; resourceName: string }>> {
     console.log('🔍 Starting getAccessibleCustomers with tokens:', {
       hasAccessToken: !!accessToken,
       hasRefreshToken: !!refreshToken,
       accessTokenLength: accessToken?.length,
       refreshTokenLength: refreshToken?.length,
-      developerToken: env.get('GOOGLE_ADS_DEVELOPER_TOKEN')?.substring(0, 10) + '...'
+      developerToken: env.get('GOOGLE_ADS_DEVELOPER_TOKEN')?.substring(0, 10) + '...',
     })
 
     try {
@@ -105,28 +109,38 @@ export class GoogleAdsOAuthService {
 
       console.log('📊 listAccessibleCustomers result:', accessibleCustomers)
 
-      if (!accessibleCustomers || !accessibleCustomers.resource_names || accessibleCustomers.resource_names.length === 0) {
-        throw new Error('No accessible customers found. Make sure you have at least one Google Ads account associated with your Google account.')
+      if (
+        !accessibleCustomers ||
+        !accessibleCustomers.resource_names ||
+        accessibleCustomers.resource_names.length === 0
+      ) {
+        throw new Error(
+          'No accessible customers found. Make sure you have at least one Google Ads account associated with your Google account.'
+        )
       }
 
       // Extract all customer IDs
-      const customers = accessibleCustomers.resource_names.map(resourceName => {
-        const customerId = resourceName.split('/')[1]
-        
-        if (!/^\d{10}$/.test(customerId)) {
-          console.warn(`Invalid customer ID format: ${customerId}, skipping`)
-          return null
-        }
+      const customers = accessibleCustomers.resource_names
+        .map((resourceName) => {
+          const customerId = resourceName.split('/')[1]
 
-        return {
-          customerId,
-          resourceName
-        }
-      }).filter(Boolean) as Array<{customerId: string, resourceName: string}>
+          if (!/^\d{10}$/.test(customerId)) {
+            console.warn(`Invalid customer ID format: ${customerId}, skipping`)
+            return null
+          }
 
-      console.log('✅ Accessible customers retrieved successfully:', customers.map(c => c.customerId))
+          return {
+            customerId,
+            resourceName,
+          }
+        })
+        .filter(Boolean) as Array<{ customerId: string; resourceName: string }>
+
+      console.log(
+        '✅ Accessible customers retrieved successfully:',
+        customers.map((c) => c.customerId)
+      )
       return customers
-
     } catch (error: any) {
       console.error('❌ Error in getAccessibleCustomers:', {
         message: error?.message,
@@ -137,15 +151,19 @@ export class GoogleAdsOAuthService {
         details: error?.details,
         response: error?.response,
         toString: error?.toString(),
-        fullError: error
+        fullError: error,
       })
-      
+
       logger.error('Error in getAccessibleCustomers', error)
-      
+
       // Provide specific error messages based on the error type
       const errorMessage = error?.message || error?.toString() || 'Unknown error'
-      
-      if (errorMessage.includes('No access, refresh token, API key or refresh handler callback is set')) {
+
+      if (
+        errorMessage.includes(
+          'No access, refresh token, API key or refresh handler callback is set'
+        )
+      ) {
         throw new Error(`Google Ads API authentication failed. Please ensure:
 
 1. Your Google Ads developer token is valid and approved.
@@ -160,8 +178,11 @@ Current configuration:
 - Access Token: ${accessToken ? 'Present' : 'Missing'}
 - Refresh Token: ${refreshToken ? 'Present' : 'Missing'}`)
       }
-      
-      if (errorMessage.includes('invalid_request') || errorMessage.includes('Getting metadata from plugin failed')) {
+
+      if (
+        errorMessage.includes('invalid_request') ||
+        errorMessage.includes('Getting metadata from plugin failed')
+      ) {
         throw new Error(`Google Ads API authentication failed. This is likely due to:
 
 1. The Google Ads API not being enabled in your Google Cloud Project.
@@ -173,9 +194,11 @@ Please ensure that:
 - Your developer token is approved and active.
 - The authenticated Google account has access to Google Ads accounts.`)
       }
-      
-      if (errorMessage.includes('Google Ads API has not been used in project') || 
-          errorMessage.includes('is disabled')) {
+
+      if (
+        errorMessage.includes('Google Ads API has not been used in project') ||
+        errorMessage.includes('is disabled')
+      ) {
         throw new Error(`Google Ads API is not enabled in your Google Cloud Project. Please:
 
 1. Go to Google Cloud Console
@@ -208,26 +231,29 @@ Please ensure that:
     } catch (error: any) {
       console.error('❌ Refresh token error:', error)
       logger.error('Error refreshing access token', error)
-      
+
       if (error.message?.includes('invalid_grant')) {
         throw new Error('Refresh token expired. Please reconnect account')
       }
-      
+
       throw new Error(`Failed to refresh access token: ${error.message || 'Unknown error'}`)
     }
   }
 
-  public async getCustomerInfo(customerId: string, refreshToken: string): Promise<{
-    name: string,
-    timezone: string,
-    isTestAccount: boolean,
-    isManagerAccount: boolean,
+  public async getCustomerInfo(
+    customerId: string,
+    refreshToken: string
+  ): Promise<{
+    name: string
+    timezone: string
+    isTestAccount: boolean
+    isManagerAccount: boolean
     parentAccountId?: string
   }> {
     const cacheKey = `customer_info_${customerId}`
     const cached = clientCache.get(cacheKey)
-    
-    if (cached && (Date.now() - cached.timestamp) < GoogleAdsOAuthService.CLIENT_CACHE_TTL) {
+
+    if (cached && Date.now() - cached.timestamp < GoogleAdsOAuthService.CLIENT_CACHE_TTL) {
       return cached.client
     }
 
@@ -249,8 +275,8 @@ Please ensure that:
           'customer.descriptive_name',
           'customer.time_zone',
           'customer.test_account',
-          'customer.manager'
-        ]
+          'customer.manager',
+        ],
       })
 
       if (customerInfo.length === 0) {
@@ -259,23 +285,23 @@ Please ensure that:
 
       const info = customerInfo[0]
       const isManager = info.customer?.manager || false
-      
+
       console.log(`📋 Customer ${customerId} info:`, {
         name: info.customer?.descriptive_name,
         isManager,
-        isTest: info.customer?.test_account
+        isTest: info.customer?.test_account,
       })
-      
+
       const result = {
         name: info.customer?.descriptive_name || `Account ${customerId}`,
         timezone: info.customer?.time_zone || 'UTC',
         isTestAccount: info.customer?.test_account || false,
-        isManagerAccount: isManager
+        isManagerAccount: isManager,
       }
 
       // Cache the result
       clientCache.set(cacheKey, { client: result, timestamp: Date.now() })
-      
+
       return result
     } catch (error: any) {
       console.warn('Could not fetch customer info:', error.message)
@@ -284,7 +310,7 @@ Please ensure that:
         name: `Account ${customerId}`,
         timezone: 'UTC',
         isTestAccount: false,
-        isManagerAccount: false
+        isManagerAccount: false,
       }
     }
   }
@@ -302,28 +328,31 @@ Please ensure that:
 
       console.log('🔍 Fetching all accessible customers from Google Ads API...')
       const customers = await this.getAccessibleCustomers(accessToken, refreshToken)
-      console.log('✅ Retrieved customers:', customers.map(c => c.customerId))
-      
+      console.log(
+        '✅ Retrieved customers:',
+        customers.map((c) => c.customerId)
+      )
+
       const encryptedAccessToken = encryptionService.encrypt(accessToken)
       const encryptedRefreshToken = encryptionService.encrypt(refreshToken)
       const accessTokenHash = encryptionService.hashData(accessToken)
       const refreshTokenHash = encryptionService.hashData(refreshToken)
-      
+
       const connectedAccounts: ConnectedAccount[] = []
-      
+
       // Store accessible customers list for reference
-      const accessibleCustomerIds = customers.map(c => c.customerId)
-      
+      const accessibleCustomerIds = customers.map((c) => c.customerId)
+
       for (const customer of customers) {
         console.log(`🔍 Getting info for customer ${customer.customerId}...`)
         const customerInfo = await this.getCustomerInfo(customer.customerId, refreshToken)
-        
+
         let connectedAccount = await ConnectedAccount.query()
           .where('user_id', userId)
           .where('platform', 'google_ads' as const)
           .where('account_id', customer.customerId)
           .first()
-        
+
         const accountData = {
           userId,
           platform: 'google_ads' as const,
@@ -338,27 +367,29 @@ Please ensure that:
           accountName: customerInfo.name,
           accountTimezone: customerInfo.timezone,
           isTestAccount: customerInfo.isTestAccount,
-          isManagerAccount: customerInfo.isManagerAccount
+          isManagerAccount: customerInfo.isManagerAccount,
         }
-        
+
         if (connectedAccount) {
           await connectedAccount.merge(accountData).save()
         } else {
           connectedAccount = await ConnectedAccount.create(accountData)
         }
-        
+
         connectedAccounts.push(connectedAccount)
         console.log('✅ Tokens stored successfully for accountId:', customer.customerId)
-        
+
         // If this is a manager account, try to sync child account data immediately
         if (customerInfo.isManagerAccount) {
-          console.log(`📊 Manager account detected, will sync child accounts during first data fetch`)
+          console.log(
+            `📊 Manager account detected, will sync child accounts during first data fetch`
+          )
         }
       }
-      
-      logger.info('Tokens stored successfully for all customers', { 
-        customerIds: customers.map(c => c.customerId), 
-        userId 
+
+      logger.info('Tokens stored successfully for all customers', {
+        customerIds: customers.map((c) => c.customerId),
+        userId,
       })
       return connectedAccounts
     } catch (error: any) {
@@ -384,18 +415,18 @@ Please ensure that:
         accountId = await this.getCustomerId(accessToken, refreshToken)
         console.log('✅ Retrieved accountId:', accountId)
       }
-      
+
       const encryptedAccessToken = encryptionService.encrypt(accessToken)
       const encryptedRefreshToken = refreshToken ? encryptionService.encrypt(refreshToken) : null
       const accessTokenHash = encryptionService.hashData(accessToken)
       const refreshTokenHash = refreshToken ? encryptionService.hashData(refreshToken) : null
-      
+
       let connectedAccount = await ConnectedAccount.query()
         .where('user_id', userId)
         .where('platform', 'google_ads' as const)
         .where('account_id', accountId)
         .first()
-      
+
       const accountData = {
         userId,
         platform: 'google_ads' as const,
@@ -407,13 +438,13 @@ Please ensure that:
         expiresAt: expiresAt || null,
         isActive: true,
       }
-      
+
       if (connectedAccount) {
         await connectedAccount.merge(accountData).save()
       } else {
         connectedAccount = await ConnectedAccount.create(accountData)
       }
-      
+
       console.log('✅ Tokens stored successfully for accountId:', accountId)
       logger.info('Tokens stored successfully', { accountId, userId })
       return connectedAccount
@@ -426,7 +457,7 @@ Please ensure that:
 
   public async retrieveTokens(connectedAccountId: number, userId?: number) {
     const failKey = `failed_${connectedAccountId}`
-    
+
     // Check if this token recently failed and we should wait before retrying
     if (failedTokenAttempts.has(failKey)) {
       logger.info('Security event: token_access_rate_limit_exceeded')
@@ -438,23 +469,28 @@ Please ensure that:
         securityMonitoringService.logSecurityEvent('token_access_rate_limit_exceeded', { userId })
         await this.waitWithBackoff(userId)
       }
-      
+
       const connectedAccount = await ConnectedAccount.findOrFail(connectedAccountId)
-      
+
       if (!connectedAccount.accessToken) {
         throw new Error('No access token found. Please reconnect account')
       }
-      
-      if (connectedAccount.accessTokenHash && this.isTokenRevoked(connectedAccount.accessTokenHash)) {
+
+      if (
+        connectedAccount.accessTokenHash &&
+        this.isTokenRevoked(connectedAccount.accessTokenHash)
+      ) {
         throw new Error('Access token revoked. Please reconnect account')
       }
-      
+
       let accessToken = this.decryptIfNeeded(connectedAccount.accessToken)
-      let refreshToken = connectedAccount.refreshToken ? this.decryptIfNeeded(connectedAccount.refreshToken) : null
-      
+      let refreshToken = connectedAccount.refreshToken
+        ? this.decryptIfNeeded(connectedAccount.refreshToken)
+        : null
+
       if (connectedAccount.isTokenExpired && refreshToken) {
         const refreshedTokens = await this.refreshAccessToken(refreshToken)
-        
+
         await this.storeTokens(
           connectedAccount.userId,
           connectedAccount.accountId,
@@ -462,21 +498,21 @@ Please ensure that:
           refreshToken,
           refreshedTokens.expiryDate
         )
-        
+
         accessToken = refreshedTokens.accessToken
       }
-      
+
       return { accessToken, refreshToken }
     } catch (error: any) {
       console.error('❌ Retrieve tokens error:', error)
       logger.error('Error retrieving tokens', error)
-      
+
       // Mark this token as failed for a period
       failedTokenAttempts.add(failKey)
       setTimeout(() => {
         failedTokenAttempts.delete(failKey)
       }, GoogleAdsOAuthService.RETRY_AFTER_FAIL_MS)
-      
+
       throw new Error(`Rate limit exceeded for token access`)
     }
   }
@@ -484,18 +520,18 @@ Please ensure that:
   public async getAuthenticatedClient(connectedAccountId: number, userId?: number) {
     const cacheKey = `auth_client_${connectedAccountId}`
     const cached = clientCache.get(cacheKey)
-    
-    if (cached && (Date.now() - cached.timestamp) < GoogleAdsOAuthService.CLIENT_CACHE_TTL) {
+
+    if (cached && Date.now() - cached.timestamp < GoogleAdsOAuthService.CLIENT_CACHE_TTL) {
       return cached.client
     }
 
     const { accessToken, refreshToken } = await this.retrieveTokens(connectedAccountId, userId)
-    
+
     this.oauth2Client.setCredentials({
       access_token: accessToken,
       refresh_token: refreshToken,
     })
-    
+
     clientCache.set(cacheKey, { client: this.oauth2Client, timestamp: Date.now() })
     return this.oauth2Client
   }
@@ -503,27 +539,27 @@ Please ensure that:
   public async getGoogleAdsClient(connectedAccountId: number, userId?: number) {
     const cacheKey = `ads_client_${connectedAccountId}`
     const cached = clientCache.get(cacheKey)
-    
-    if (cached && (Date.now() - cached.timestamp) < GoogleAdsOAuthService.CLIENT_CACHE_TTL) {
+
+    if (cached && Date.now() - cached.timestamp < GoogleAdsOAuthService.CLIENT_CACHE_TTL) {
       return cached.client
     }
 
     const { accessToken, refreshToken } = await this.retrieveTokens(connectedAccountId, userId)
-    
+
     if (!refreshToken) {
       throw new Error('Refresh token required for Google Ads API access')
     }
-    
+
     // Create GoogleAdsApi client with only basic credentials
     const client = new GoogleAdsApi({
       client_id: env.get('GOOGLE_ADS_CLIENT_ID'),
       client_secret: env.get('GOOGLE_ADS_CLIENT_SECRET'),
       developer_token: env.get('GOOGLE_ADS_DEVELOPER_TOKEN'),
     })
-    
+
     const result = {
       client,
-      refreshToken
+      refreshToken,
     }
 
     clientCache.set(cacheKey, { client: result, timestamp: Date.now() })
@@ -543,41 +579,46 @@ Please ensure that:
     const key = `token_access_${userId}`
     const now = Date.now()
     const attempt = tokenAccessAttempts.get(key)
-    
+
     if (!attempt || now - attempt.timestamp > GoogleAdsOAuthService.ACCESS_WINDOW_MS) {
       tokenAccessAttempts.set(key, { count: 1, timestamp: now, lastAttempt: now })
       return false
     }
-    
+
     // Check if we should implement exponential backoff
     const timeSinceLastAttempt = now - attempt.lastAttempt
-    const minBackoffTime = GoogleAdsOAuthService.BACKOFF_BASE_MS * Math.pow(2, Math.max(0, attempt.count - 3))
-    
+    const minBackoffTime =
+      GoogleAdsOAuthService.BACKOFF_BASE_MS * Math.pow(2, Math.max(0, attempt.count - 3))
+
     if (timeSinceLastAttempt < minBackoffTime) {
       // Still in backoff period, don't increment counter but still rate limit
       return true
     }
-    
+
     attempt.count++
     attempt.lastAttempt = now
     tokenAccessAttempts.set(key, attempt)
-    
+
     return attempt.count > GoogleAdsOAuthService.MAX_ACCESS_ATTEMPTS
   }
 
   private async waitWithBackoff(userId: number): Promise<void> {
     const key = `token_access_${userId}`
     const attempt = tokenAccessAttempts.get(key)
-    
+
     if (!attempt) return
-    
+
     const backoffMs = Math.min(
-      GoogleAdsOAuthService.BACKOFF_BASE_MS * Math.pow(2, attempt.count - GoogleAdsOAuthService.MAX_ACCESS_ATTEMPTS),
+      GoogleAdsOAuthService.BACKOFF_BASE_MS *
+        Math.pow(2, attempt.count - GoogleAdsOAuthService.MAX_ACCESS_ATTEMPTS),
       GoogleAdsOAuthService.MAX_BACKOFF_MS
     )
-    
-    logger.info(`Rate limit hit, waiting ${backoffMs}ms before retry`, { userId, attempts: attempt.count })
-    await new Promise(resolve => setTimeout(resolve, backoffMs))
+
+    logger.info(`Rate limit hit, waiting ${backoffMs}ms before retry`, {
+      userId,
+      attempts: attempt.count,
+    })
+    await new Promise((resolve) => setTimeout(resolve, backoffMs))
   }
 
   private decryptIfNeeded(data: string): string {
@@ -588,8 +629,14 @@ Please ensure that:
   }
 
   private looksEncrypted(data: string): boolean {
-    return !!(data && !data.startsWith('ya29.') && !data.startsWith('1//') &&
-           !data.includes(' ') && data.length > 100 && /^[A-Za-z0-9+/=]+$/.test(data));
+    return !!(
+      data &&
+      !data.startsWith('ya29.') &&
+      !data.startsWith('1//') &&
+      !data.includes(' ') &&
+      data.length > 100 &&
+      /^[A-Za-z0-9+/=]+$/.test(data)
+    )
   }
 
   private generateStateParameter(userId: number): string {

@@ -1,167 +1,166 @@
 @layout.app({ title: 'Dashboard' })
 
-@slot('main')
-  <!-- Main Content -->
-  <div class="max-w-7xl mx-auto py-6">
-    <!-- Page Header with Account Switcher -->
-    <div class="mb-8">
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-3xl font-bold text-gray-900">
-            Dashboard
-          </h1>
-          <p class="mt-2 text-gray-600">
-            Welcome back, {{ user.fullName }}!
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- Overall Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-      <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-              <i class="fas fa-dollar-sign text-green-600"></i>
-            </div>
-          </div>
-          <div class="ml-4">
-            <h3 class="text-sm font-medium text-gray-500">
-              Total Spend
-            </h3>
-            <p class="text-2xl font-semibold text-gray-900">
-              ${{ formatNumber(stats.totalSpend) }}
+  @slot('main')
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto py-6">
+      <!-- Page Header with Account Switcher -->
+      <div class="mb-8">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900">
+              Dashboard
+            </h1>
+            <p class="mt-2 text-gray-600">
+              Welcome back, {{ user.fullName }}!
             </p>
           </div>
         </div>
       </div>
 
-      <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-              <i class="fas fa-eye text-blue-600"></i>
+      <!-- Overall Stats Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-dollar-sign text-green-600"></i>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-sm font-medium text-gray-500">
+                Total Spend
+              </h3>
+              <p class="text-2xl font-semibold text-gray-900">
+                ${{ formatNumber(stats.totalSpend) }}
+              </p>
             </div>
           </div>
-          <div class="ml-4">
-            <h3 class="text-sm font-medium text-gray-500">
-              Impressions
-            </h3>
-            <p class="text-2xl font-semibold text-gray-900">
-              {{ formatNumber(stats.totalImpressions) }}
-            </p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-eye text-blue-600"></i>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-sm font-medium text-gray-500">
+                Impressions
+              </h3>
+              <p class="text-2xl font-semibold text-gray-900">
+                {{ formatNumber(stats.totalImpressions) }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-mouse-pointer text-purple-600"></i>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-sm font-medium text-gray-500">
+                Clicks
+              </h3>
+              <p class="text-2xl font-semibold text-gray-900">
+                {{ formatNumber(stats.totalClicks) }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-trophy text-orange-600"></i>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-sm font-medium text-gray-500">
+                Conversions
+              </h3>
+              <p class="text-2xl font-semibold text-gray-900">
+                {{ formatNumber(stats.totalConversions) }}
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-              <i class="fas fa-mouse-pointer text-purple-600"></i>
-            </div>
-          </div>
-          <div class="ml-4">
-            <h3 class="text-sm font-medium text-gray-500">
-              Clicks
-            </h3>
-            <p class="text-2xl font-semibold text-gray-900">
-              {{ formatNumber(stats.totalClicks) }}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-        <div class="flex items-center">
-          <div class="flex-shrink-0">
-            <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center">
-              <i class="fas fa-trophy text-orange-600"></i>
-            </div>
-          </div>
-          <div class="ml-4">
-            <h3 class="text-sm font-medium text-gray-500">
-              Conversions
-            </h3>
-            <p class="text-2xl font-semibold text-gray-900">
-              {{ formatNumber(stats.totalConversions) }}
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Connected Accounts Section -->
-    <div class="mb-8">
-      @!component('components/connected-accounts', { 
+      <!-- Connected Accounts Section -->
+      <div class="mb-8">
+        @!component('components/connected-accounts', {
         connectedAccounts: connectedAccounts,
         user: user
-      })
-    </div>
+        })
+      </div>
 
-    <!-- Custom Reports Section -->
-    <div class="mb-8">
-      @!component('components/custom-reports-table', { 
+      <!-- Custom Reports Section -->
+      <div class="mb-8">
+        @!component('components/custom-reports-table', {
         customReports: customReports || [],
         user: user
-      })
-    </div>
+        })
+      </div>
 
-    <!-- Getting Started and Available Integrations Section -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <!-- Getting Started -->
-      <div>
-        @!component('components/getting-started', { 
+      <!-- Getting Started and Available Integrations Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Getting Started -->
+        <div>
+          @!component('components/getting-started', {
           connectedAccounts: connectedAccounts,
           user: user
-        })
-      </div>
+          })
+        </div>
 
-      <!-- Available Integrations -->
-      <div>
-        @!component('components/available-integrations', { 
+        <!-- Available Integrations -->
+        <div>
+          @!component('components/available-integrations', {
           connectedAccounts: connectedAccounts,
           availablePlatforms: availablePlatforms || null
-        })
+          })
+        </div>
       </div>
     </div>
-  </div>
 
-  <script>
-    function toggleDropdown() {
-      const dropdown = document.getElementById("userDropdown");
-      if (dropdown) {
-        dropdown.classList.toggle("hidden");
+    <script>
+      function toggleDropdown() {
+        const dropdown = document.getElementById("userDropdown");
+        if (dropdown) {
+          dropdown.classList.toggle("hidden");
+        }
       }
-    }
-    
-    // Close dropdown when clicking outside
-    document.addEventListener("click", function(event) {
-      const dropdown = document.getElementById("userDropdown");
-      if (!dropdown) return;
+      // Close dropdown when clicking outside
       
-      const button = event.target.closest("button");
-      if (!button || !button.getAttribute("onclick")) {
-        dropdown.classList.add("hidden");
-      }
-    });
-    
-    // Auto-hide flash messages after 5 seconds
-    setTimeout(() => {
-      const alerts = document.querySelectorAll('[class*="fixed top-4"]');
-      alerts.forEach(alert => {
-        if (alert && alert.style) {
-          alert.style.transition = "opacity 0.5s ease-out";
-          alert.style.opacity = "0";
-          setTimeout(() => {
-            if (alert && alert.remove) {
-              alert.remove();
-            }
-          }, 500);
+      document.addEventListener("click", function(event) {
+        const dropdown = document.getElementById("userDropdown");
+        if (!dropdown) return;
+        const button = event.target.closest("button");
+        if (!button || !button.getAttribute("onclick")) {
+          dropdown.classList.add("hidden");
         }
       });
-    }, 5000);
-  </script>
-@endslot
+      // Auto-hide flash messages after 5 seconds
+      
+      setTimeout(() => {
+        const alerts = document.querySelectorAll('[class*="fixed top-4"]');
+        alerts.forEach(alert => {
+          if (alert && alert.style) {
+            alert.style.transition = "opacity 0.5s ease-out";
+            alert.style.opacity = "0";
+            setTimeout(() => {
+              if (alert && alert.remove) {
+                alert.remove();
+              }
+            }, 500);
+          }
+        });
+      }, 5e3);
+    </script>
+  @endslot
 @end

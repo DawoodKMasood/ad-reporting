@@ -1,342 +1,355 @@
 @layout.app({ title: customReport ? customReport.name : 'Report Not Found' })
 
-@slot('main')
-  <div class="max-w-7xl mx-auto py-6">
-    @if(!customReport)
-      <!-- Report Not Found -->
-      <div class="text-center py-12">
-        <div class="max-w-md mx-auto">
-          <i class="fas fa-exclamation-triangle text-6xl text-red-300 mb-6"></i>
-          <h3 class="text-lg font-medium text-gray-900 mb-2">Report Not Found</h3>
-          <p class="text-gray-500 mb-6">
-            The custom report you're looking for doesn't exist or you don't have permission to view it.
-          </p>
-          <a 
-            href="{{ route('reports.index') }}"
-            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-          >
-            <i class="fas fa-arrow-left mr-2"></i>
-            Back to Reports
+  @slot('main')
+    <div class="max-w-7xl mx-auto py-6">
+      @if(!customReport)
+        <!-- Report Not Found -->
+        <div class="text-center py-12">
+          <div class="max-w-md mx-auto">
+            <i class="fas fa-exclamation-triangle text-6xl text-red-300 mb-6"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">
+              Report Not Found
+            </h3>
+            <p class="text-gray-500 mb-6">
+              The custom report you're looking for doesn't exist or you don't have permission to view it.
+            </p>
+            <a
+              href="{{ route('reports.index') }}"
+              class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <i class="fas fa-arrow-left mr-2"></i>
+              Back to Reports
           </a>
-        </div>
-      </div>
-    @else
-      <!-- Page Header -->
-      <div class="mb-8">
-        <div class="flex items-center justify-between">
-          <div>
-            <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
-              <a href="{{ route('reports.index') }}" class="hover:text-blue-600">Reports</a>
-              <i class="fas fa-chevron-right text-xs"></i>
-              <span class="text-gray-900">{{ customReport.name }}</span>
-            </nav>
-            <h1 class="text-3xl font-bold text-gray-900">
-              <i class="fas fa-chart-bar mr-3 text-blue-600"></i>
-              {{ customReport.name }}
-            </h1>
-            @if(customReport.description)
-              <p class="mt-2 text-gray-600">{{ customReport.description }}</p>
-            @end
-          </div>
-          
-          <!-- Report Actions -->
-          <div class="flex items-center space-x-3">
-            <button 
-              onclick="generateReport()"
-              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
-            >
-              <i class="fas fa-play mr-2"></i>
-              Generate Report
-            </button>
-            <button 
-              onclick="editReport()"
-              class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            >
-              <i class="fas fa-edit mr-2"></i>
-              Edit
-            </button>
-            <button 
-              onclick="exportReport()"
-              class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-            >
-              <i class="fas fa-download mr-2"></i>
-              Export
-            </button>
           </div>
         </div>
-      </div>
+      @else
+        <!-- Page Header -->
+        <div class="mb-8">
+          <div class="flex items-center justify-between">
+            <div>
+              <nav class="flex items-center space-x-2 text-sm text-gray-500 mb-2">
+                <a href="{{ route('reports.index') }}" class="hover:text-blue-600">Reports</a>
+                <i class="fas fa-chevron-right text-xs"></i>
+                <span class="text-gray-900">{{ customReport.name }}</span>
+              </nav>
+              <h1 class="text-3xl font-bold text-gray-900">
+                <i class="fas fa-chart-bar mr-3 text-blue-600"></i>
+                {{ customReport.name }}
+              </h1>
+              @if(customReport.description)
+                <p class="mt-2 text-gray-600">
+                  {{ customReport.description }}
+                </p>
+              @end
+            </div>
 
-      <!-- Report Overview -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <!-- Report Info -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">
-            <i class="fas fa-info-circle mr-2 text-blue-600"></i>
-            Report Information
-          </h3>
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Platform:</span>
-              <div class="flex items-center">
-                @!component('components/platform-logo', { 
-                  platform: customReport.platform, 
-                  size: 'sm' 
-                })
-                <span class="ml-2 text-sm font-medium">{{ customReport.platformDisplayName }}</span>
-              </div>
+            <!-- Report Actions -->
+            <div class="flex items-center space-x-3">
+              <button
+                onclick="generateReport()"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
+              >
+                <i class="fas fa-play mr-2"></i>
+                Generate Report
+            </button>
+              <button
+                onclick="editReport()"
+                class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <i class="fas fa-edit mr-2"></i>
+                Edit
+            </button>
+              <button
+                onclick="exportReport()"
+                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
+              >
+                <i class="fas fa-download mr-2"></i>
+                Export
+            </button>
             </div>
-            <div class="flex items-center justify-between">
-            <span class="text-sm text-gray-600">Account:</span>
-            <span class="text-sm font-medium">{{ customReport.connectedAccount ? (customReport.connectedAccount.displayName || customReport.connectedAccount.accountName || customReport.connectedAccount.accountId) : 'Unknown Account' }}</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Date Range:</span>
-              <span class="text-sm font-medium">{{ customReport.dateRangeDisplay }}</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Status:</span>
-              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ customReport.status === 'active' ? 'bg-green-100 text-green-800' : customReport.status === 'archived' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800' }}">
-                {{ customReport.status.charAt(0).toUpperCase() + customReport.status.slice(1) }}
-              </span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-sm text-gray-600">Created:</span>
-              <span class="text-sm font-medium">{{ customReport.createdAt.toRelative() }}</span>
-            </div>
-            @if(customReport.lastGeneratedAt)
-              <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600">Last Generated:</span>
-                <span class="text-sm font-medium">{{ customReport.lastGeneratedAt.toRelative() }}</span>
-              </div>
-            @end
           </div>
         </div>
 
-        <!-- Metrics -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">
-            <i class="fas fa-chart-line mr-2 text-green-600"></i>
-            Metrics
-          </h3>
-          <div class="space-y-2">
-            @each(metric in customReport.metrics)
-              <div class="flex items-center">
-                <i class="fas fa-check-circle text-green-500 mr-2 text-sm"></i>
-                <span class="text-sm text-gray-700">{{ metric }}</span>
-              </div>
-            @end
-          </div>
-        </div>
-
-        <!-- Schedule -->
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">
-            <i class="fas fa-clock mr-2 text-purple-600"></i>
-            Schedule
-          </h3>
-          @if(customReport.isScheduled)
+        <!-- Report Overview -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <!-- Report Info -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              <i class="fas fa-info-circle mr-2 text-blue-600"></i>
+              Report Information
+            </h3>
             <div class="space-y-3">
               <div class="flex items-center justify-between">
-                <span class="text-sm text-gray-600">Frequency:</span>
-                <span class="text-sm font-medium capitalize">{{ customReport.scheduleFrequency }}</span>
+                <span class="text-sm text-gray-600">Platform:</span>
+                <div class="flex items-center">
+                  @!component('components/platform-logo', {
+                  platform: customReport.platform,
+                  size: 'sm'
+                  })
+                  <span class="ml-2 text-sm font-medium">{{ customReport.platformDisplayName }}</span>
+                </div>
               </div>
-              <div class="flex items-center">
-                <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                <span class="text-sm text-green-700">Automated reporting enabled</span>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Account:</span>
+                <span class="text-sm font-medium">{{ customReport.connectedAccount ? (customReport.connectedAccount.displayName || customReport.connectedAccount.accountName || customReport.connectedAccount.accountId) : 'Unknown Account' }}</span>
               </div>
-              <button 
-                onclick="disableSchedule()"
-                class="w-full text-sm text-red-600 hover:text-red-700 font-medium"
-              >
-                Disable Schedule
-              </button>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Date Range:</span>
+                <span class="text-sm font-medium">{{ customReport.dateRangeDisplay }}</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Status:</span>
+                <span
+                  class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium {{ customReport.status === 'active' ? 'bg-green-100 text-green-800' : customReport.status === 'archived' ? 'bg-gray-100 text-gray-800' : 'bg-yellow-100 text-yellow-800' }}"
+                >
+                  {{ customReport.status.charAt(0).toUpperCase() + customReport.status.slice(1) }}
+              </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-sm text-gray-600">Created:</span>
+                <span class="text-sm font-medium">{{ customReport.createdAt.toRelative() }}</span>
+              </div>
+              @if(customReport.lastGeneratedAt)
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600">Last Generated:</span>
+                  <span class="text-sm font-medium">{{ customReport.lastGeneratedAt.toRelative() }}</span>
+                </div>
+              @end
             </div>
-          @else
-            <div class="text-center">
-              <i class="fas fa-clock text-3xl text-gray-300 mb-3"></i>
-              <p class="text-sm text-gray-500 mb-3">No automated schedule set</p>
-              <button 
-                onclick="enableSchedule()"
-                class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
-              >
-                <i class="fas fa-plus mr-1"></i>
-                Enable Schedule
-              </button>
-            </div>
-          @end
-        </div>
-      </div>
+          </div>
 
-      <!-- Report Widget Layout -->
-      @if(customReport.widgetLayout && customReport.widgetLayout.length > 0)
+          <!-- Metrics -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              <i class="fas fa-chart-line mr-2 text-green-600"></i>
+              Metrics
+            </h3>
+            <div class="space-y-2">
+              @each(metric in customReport.metrics)
+                <div class="flex items-center">
+                  <i class="fas fa-check-circle text-green-500 mr-2 text-sm"></i>
+                  <span class="text-sm text-gray-700">{{ metric }}</span>
+                </div>
+              @end
+            </div>
+          </div>
+
+          <!-- Schedule -->
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              <i class="fas fa-clock mr-2 text-purple-600"></i>
+              Schedule
+            </h3>
+            @if(customReport.isScheduled)
+              <div class="space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-sm text-gray-600">Frequency:</span>
+                  <span class="text-sm font-medium capitalize">{{ customReport.scheduleFrequency }}</span>
+                </div>
+                <div class="flex items-center">
+                  <i class="fas fa-check-circle text-green-500 mr-2"></i>
+                  <span class="text-sm text-green-700">Automated reporting enabled</span>
+                </div>
+                <button onclick="disableSchedule()" class="w-full text-sm text-red-600 hover:text-red-700 font-medium">
+                  Disable Schedule
+              </button>
+              </div>
+            @else
+              <div class="text-center">
+                <i class="fas fa-clock text-3xl text-gray-300 mb-3"></i>
+                <p class="text-sm text-gray-500 mb-3">
+                  No automated schedule set
+                </p>
+                <button
+                  onclick="enableSchedule()"
+                  class="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700"
+                >
+                  <i class="fas fa-plus mr-1"></i>
+                  Enable Schedule
+              </button>
+              </div>
+            @end
+          </div>
+        </div>
+
+        <!-- Report Widget Layout -->
+        @if(customReport.widgetLayout && customReport.widgetLayout.length > 0)
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              <i class="fas fa-puzzle-piece mr-2 text-purple-600"></i>
+              Report Widgets ({{ customReport.widgetLayout.length }})
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              @each(widget in customReport.widgetLayout)
+                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div class="flex items-center mb-2">
+                    @if(widget.config && widget.config.icon)
+                      <i class="fas {{ widget.config.icon }} text-blue-600 mr-2"></i>
+                    @else
+                      <i class="fas fa-widget text-blue-600 mr-2"></i>
+                    @end
+                    <h4 class="text-sm font-semibold text-gray-900">
+                      {{ widget.config ? widget.config.title : widget.type }}
+                    </h4>
+                  </div>
+                  <p class="text-xs text-gray-600">
+                    Type: {{ widget.type }}
+                  </p>
+                  @if(widget.config && widget.config.type)
+                    <p class="text-xs text-gray-600">
+                      Metric: {{ widget.config.type }}
+                    </p>
+                  @end
+                </div>
+              @end
+            </div>
+          </div>
+        @end
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">
-            <i class="fas fa-puzzle-piece mr-2 text-purple-600"></i>
-            Report Widgets ({{ customReport.widgetLayout.length }})
+            <i class="fas fa-table mr-2 text-blue-600"></i>
+            Report Data
           </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @each(widget in customReport.widgetLayout)
-              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div class="flex items-center mb-2">
-                  @if(widget.config && widget.config.icon)
-                    <i class="fas {{ widget.config.icon }} text-blue-600 mr-2"></i>
-                  @else
-                    <i class="fas fa-widget text-blue-600 mr-2"></i>
-                  @end
-                  <h4 class="text-sm font-semibold text-gray-900">{{ widget.config ? widget.config.title : widget.type }}</h4>
-                </div>
-                <p class="text-xs text-gray-600">Type: {{ widget.type }}</p>
-                @if(widget.config && widget.config.type)
-                  <p class="text-xs text-gray-600">Metric: {{ widget.config.type }}</p>
-                @end
-              </div>
-            @end
-          </div>
-        </div>
-      @end
-      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-        <h3 class="text-lg font-semibold text-gray-900 mb-4">
-          <i class="fas fa-table mr-2 text-blue-600"></i>
-          Report Data
-        </h3>
-        <div class="text-center py-12">
-          <i class="fas fa-play-circle text-6xl text-gray-300 mb-6"></i>
-          <h4 class="text-lg font-medium text-gray-900 mb-2">Generate Report to View Data</h4>
-          <p class="text-gray-500 mb-6">
-            Click the "Generate Report" button to run this report and view the latest data.
-          </p>
-          <button 
-            onclick="generateReport()"
-            class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-          >
-            <i class="fas fa-play mr-2"></i>
-            Generate Report Now
+          <div class="text-center py-12">
+            <i class="fas fa-play-circle text-6xl text-gray-300 mb-6"></i>
+            <h4 class="text-lg font-medium text-gray-900 mb-2">
+              Generate Report to View Data
+            </h4>
+            <p class="text-gray-500 mb-6">
+              Click the "Generate Report" button to run this report and view the latest data.
+            </p>
+            <button
+              onclick="generateReport()"
+              class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <i class="fas fa-play mr-2"></i>
+              Generate Report Now
           </button>
-        </div>
-      </div>
-
-      <!-- Filters and Dimensions -->
-      @if(customReport.filters || customReport.dimensions)
-        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">
-            <i class="fas fa-filter mr-2 text-orange-600"></i>
-            Filters & Dimensions
-          </h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            @if(customReport.filters)
-              <div>
-                <h4 class="text-md font-medium text-gray-900 mb-2">Applied Filters</h4>
-                <div class="space-y-2">
-                  @each((value, key) in customReport.filters)
-                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span class="text-sm font-medium text-gray-700">{{ key }}:</span>
-                      <span class="text-sm text-gray-600">{{ value }}</span>
-                    </div>
-                  @end
-                </div>
-              </div>
-            @end
-            
-            @if(customReport.dimensions)
-              <div>
-                <h4 class="text-md font-medium text-gray-900 mb-2">Dimensions</h4>
-                <div class="space-y-2">
-                  @each(dimension in customReport.dimensions)
-                    <div class="flex items-center p-2 bg-gray-50 rounded">
-                      <i class="fas fa-tag text-gray-400 mr-2"></i>
-                      <span class="text-sm text-gray-700">{{ dimension }}</span>
-                    </div>
-                  @end
-                </div>
-              </div>
-            @end
           </div>
         </div>
+
+        <!-- Filters and Dimensions -->
+        @if(customReport.filters || customReport.dimensions)
+          <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+              <i class="fas fa-filter mr-2 text-orange-600"></i>
+              Filters & Dimensions
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              @if(customReport.filters)
+                <div>
+                  <h4 class="text-md font-medium text-gray-900 mb-2">
+                    Applied Filters
+                  </h4>
+                  <div class="space-y-2">
+                    @each((value, key) in customReport.filters)
+                      <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <span class="text-sm font-medium text-gray-700">{{ key }}:</span>
+                        <span class="text-sm text-gray-600">{{ value }}</span>
+                      </div>
+                    @end
+                  </div>
+                </div>
+              @end
+              
+              @if(customReport.dimensions)
+                <div>
+                  <h4 class="text-md font-medium text-gray-900 mb-2">
+                    Dimensions
+                  </h4>
+                  <div class="space-y-2">
+                    @each(dimension in customReport.dimensions)
+                      <div class="flex items-center p-2 bg-gray-50 rounded">
+                        <i class="fas fa-tag text-gray-400 mr-2"></i>
+                        <span class="text-sm text-gray-700">{{ dimension }}</span>
+                      </div>
+                    @end
+                  </div>
+                </div>
+              @end
+            </div>
+          </div>
+        @end
       @end
-    @end
-  </div>
-
-  @if(error)
-    <!-- Error Message -->
-    <div class="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
-      <div class="flex items-center">
-        <i class="fas fa-exclamation-circle mr-2"></i>
-        <span>{{ error }}</span>
-      </div>
     </div>
-  @end
 
-  <script>
-    function generateReport() {
-      showNotification('Generating report...', 'info');
-      // In a real implementation, this would make an API call to generate the report data
-      setTimeout(() => {
-        showNotification('Report generation feature is coming soon!', 'warning');
-      }, 1000);
-    }
-
-    function editReport() {
-      // Redirect to the custom report builder with this report's data
-      window.location.href = '/reports/custom?edit={{ customReport.id }}';
-    }
-
-    function exportReport() {
-      showNotification('Export feature coming soon!', 'info');
-    }
-
-    function enableSchedule() {
-      showNotification('Schedule feature coming soon!', 'info');
-    }
-
-    function disableSchedule() {
-      if (confirm('Are you sure you want to disable automated reporting for this report?')) {
-        showNotification('Disable schedule feature coming soon!', 'info');
-      }
-    }
-
-    // Simple notification system
-    function showNotification(message, type = 'info') {
-      // Remove existing notifications
-      const existing = document.querySelector('.notification');
-      if (existing) existing.remove();
-      
-      const colors = {
-        success: 'bg-green-100 border-green-400 text-green-700',
-        error: 'bg-red-100 border-red-400 text-red-700',
-        warning: 'bg-yellow-100 border-yellow-400 text-yellow-700',
-        info: 'bg-blue-100 border-blue-400 text-blue-700'
-      };
-      
-      const notification = document.createElement('div');
-      notification.className = `notification fixed top-4 right-4 border px-4 py-3 rounded z-50 max-w-sm ${colors[type] || colors.info}`;
-      notification.innerHTML = `
+    @if(error)
+      <!-- Error Message -->
+      <div class="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
         <div class="flex items-center">
-          <i class="fas fa-info-circle mr-2"></i>
-          <span>${message}</span>
+          <i class="fas fa-exclamation-circle mr-2"></i>
+          <span>{{ error }}</span>
         </div>
-      `;
+      </div>
+    @end
+    
+    <script>
+      function generateReport() {
+        showNotification("Generating report...", "info");
+        // In a real implementation, this would make an API call to generate the report data
+        setTimeout(() => {
+          showNotification("Report generation feature is coming soon!", "warning");
+        }, 1e3);
+      }
       
-      document.body.appendChild(notification);
+      function editReport() {
+        // Redirect to the custom report builder with this report's data
+        window.location.href = "/reports/custom?edit={{ customReport.id }}";
+      }
       
-      // Auto-remove after 5 seconds
-      setTimeout(() => {
-        if (notification.parentNode) {
-          notification.style.transition = 'opacity 0.5s ease-out';
-          notification.style.opacity = '0';
-          setTimeout(() => notification.remove(), 500);
+      function exportReport() {
+        showNotification("Export feature coming soon!", "info");
+      }
+      
+      function enableSchedule() {
+        showNotification("Schedule feature coming soon!", "info");
+      }
+      
+      function disableSchedule() {
+        if (confirm("Are you sure you want to disable automated reporting for this report?")) {
+          showNotification("Disable schedule feature coming soon!", "info");
         }
-      }, 5000);
-    }
-
-    // Auto-hide error messages
-    setTimeout(() => {
-      const alerts = document.querySelectorAll('[class*="fixed top-4"]');
-      alerts.forEach(alert => {
-        alert.style.transition = "opacity 0.5s ease-out";
-        alert.style.opacity = "0";
-        setTimeout(() => alert.remove(), 500);
-      });
-    }, 5000);
-  </script>
-@endslot
+      }
+      // Simple notification system
+      
+      function showNotification(message, type = "info") {
+        // Remove existing notifications
+        const existing = document.querySelector(".notification");
+        if (existing) existing.remove();
+        const colors = {
+          success: "bg-green-100 border-green-400 text-green-700",
+          error: "bg-red-100 border-red-400 text-red-700",
+          warning: "bg-yellow-100 border-yellow-400 text-yellow-700",
+          info: "bg-blue-100 border-blue-400 text-blue-700"
+        };
+        const notification = document.createElement("div");
+        notification.className = `notification fixed top-4 right-4 border px-4 py-3 rounded z-50 max-w-sm ${colors[type] || colors.info}`;
+        notification.innerHTML = `
+              <div class="flex items-center">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span>${message}</span>
+              </div>
+            `;
+        document.body.appendChild(notification);
+        // Auto-remove after 5 seconds
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.style.transition = "opacity 0.5s ease-out";
+            notification.style.opacity = "0";
+            setTimeout(() => notification.remove(), 500);
+          }
+        }, 5e3);
+      }
+      // Auto-hide error messages
+      
+      setTimeout(() => {
+        const alerts = document.querySelectorAll('[class*="fixed top-4"]');
+        alerts.forEach(alert => {
+          alert.style.transition = "opacity 0.5s ease-out";
+          alert.style.opacity = "0";
+          setTimeout(() => alert.remove(), 500);
+        });
+      }, 5e3);
+    </script>
+  @endslot
 @end

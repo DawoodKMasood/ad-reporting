@@ -13,7 +13,7 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const campaigns = await googleAdsService.getCampaigns(connectedAccount.id, user.id)
-      
+
       return { success: true, data: campaigns }
     } catch (error) {
       logger.error('Error fetching campaigns:', error)
@@ -31,7 +31,7 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const adGroups = await googleAdsService.getAdGroups(connectedAccount.id, user.id, campaignId)
-      
+
       return { success: true, data: adGroups }
     } catch (error) {
       logger.error('Error fetching ad groups:', error)
@@ -49,7 +49,7 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const keywords = await googleAdsService.getKeywords(connectedAccount.id, user.id, adGroupId)
-      
+
       return { success: true, data: keywords }
     } catch (error) {
       logger.error('Error fetching keywords:', error)
@@ -67,7 +67,7 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const ads = await googleAdsService.getAds(connectedAccount.id, user.id, adGroupId)
-      
+
       return { success: true, data: ads }
     } catch (error) {
       logger.error('Error fetching ads:', error)
@@ -84,7 +84,7 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const searchTerms = await googleAdsService.getSearchTerms(connectedAccount.id, user.id)
-      
+
       return { success: true, data: searchTerms }
     } catch (error) {
       logger.error('Error fetching search terms:', error)
@@ -103,20 +103,23 @@ export default class GoogleAdsController {
       const [ageRanges, genders, locations] = await Promise.all([
         googleAdsService.getAudienceInsights(connectedAccount.id, user.id),
         googleAdsService.getGenderInsights(connectedAccount.id, user.id),
-        googleAdsService.getLocationInsights(connectedAccount.id, user.id)
+        googleAdsService.getLocationInsights(connectedAccount.id, user.id),
       ])
-      
-      return { 
-        success: true, 
-        data: { 
-          ageRanges, 
-          genders, 
-          locations 
-        } 
+
+      return {
+        success: true,
+        data: {
+          ageRanges,
+          genders,
+          locations,
+        },
       }
     } catch (error) {
       logger.error('Error fetching audience insights:', error)
-      return response.badRequest({ error: 'Failed to fetch audience insights', message: error.message })
+      return response.badRequest({
+        error: 'Failed to fetch audience insights',
+        message: error.message,
+      })
     }
   }
 
@@ -134,9 +137,9 @@ export default class GoogleAdsController {
         name,
         budgetMicros,
         advertisingChannelType,
-        biddingStrategy
+        biddingStrategy,
       })
-      
+
       return { success: true, data: result }
     } catch (error) {
       logger.error('Error creating campaign:', error)
@@ -154,11 +157,16 @@ export default class GoogleAdsController {
 
       const { campaignId, name, cpcBidMicros } = request.body()
 
-      const result = await googleAdsService.createAdGroup(connectedAccount.id, user.id, campaignId, {
-        name,
-        cpcBidMicros
-      })
-      
+      const result = await googleAdsService.createAdGroup(
+        connectedAccount.id,
+        user.id,
+        campaignId,
+        {
+          name,
+          cpcBidMicros,
+        }
+      )
+
       return { success: true, data: result }
     } catch (error) {
       logger.error('Error creating ad group:', error)
@@ -176,8 +184,13 @@ export default class GoogleAdsController {
 
       const { adGroupId, keywords } = request.body()
 
-      const result = await googleAdsService.addKeywords(connectedAccount.id, user.id, adGroupId, keywords)
-      
+      const result = await googleAdsService.addKeywords(
+        connectedAccount.id,
+        user.id,
+        adGroupId,
+        keywords
+      )
+
       return { success: true, data: result }
     } catch (error) {
       logger.error('Error adding keywords:', error)
@@ -199,9 +212,9 @@ export default class GoogleAdsController {
         headline1,
         headline2,
         description,
-        finalUrls
+        finalUrls,
       })
-      
+
       return { success: true, data: result }
     } catch (error) {
       logger.error('Error creating ad:', error)
@@ -219,12 +232,20 @@ export default class GoogleAdsController {
 
       const { campaignId, status } = request.body()
 
-      const result = await googleAdsService.updateCampaignStatus(connectedAccount.id, user.id, campaignId, status)
-      
+      const result = await googleAdsService.updateCampaignStatus(
+        connectedAccount.id,
+        user.id,
+        campaignId,
+        status
+      )
+
       return { success: true, data: result }
     } catch (error) {
       logger.error('Error updating campaign status:', error)
-      return response.badRequest({ error: 'Failed to update campaign status', message: error.message })
+      return response.badRequest({
+        error: 'Failed to update campaign status',
+        message: error.message,
+      })
     }
   }
 
@@ -237,11 +258,14 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const hierarchy = await googleAdsService.getAccountHierarchy(connectedAccount.id, user.id)
-      
+
       return { success: true, data: hierarchy }
     } catch (error) {
       logger.error('Error fetching account hierarchy:', error)
-      return response.badRequest({ error: 'Failed to fetch account hierarchy', message: error.message })
+      return response.badRequest({
+        error: 'Failed to fetch account hierarchy',
+        message: error.message,
+      })
     }
   }
 
@@ -254,11 +278,14 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const strategies = await googleAdsService.getBiddingStrategies(connectedAccount.id, user.id)
-      
+
       return { success: true, data: strategies }
     } catch (error) {
       logger.error('Error fetching bidding strategies:', error)
-      return response.badRequest({ error: 'Failed to fetch bidding strategies', message: error.message })
+      return response.badRequest({
+        error: 'Failed to fetch bidding strategies',
+        message: error.message,
+      })
     }
   }
 
@@ -271,7 +298,7 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const extensions = await googleAdsService.getExtensions(connectedAccount.id, user.id)
-      
+
       return { success: true, data: extensions }
     } catch (error) {
       logger.error('Error fetching extensions:', error)
@@ -288,11 +315,14 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const conversions = await googleAdsService.getConversionActions(connectedAccount.id, user.id)
-      
+
       return { success: true, data: conversions }
     } catch (error) {
       logger.error('Error fetching conversion actions:', error)
-      return response.badRequest({ error: 'Failed to fetch conversion actions', message: error.message })
+      return response.badRequest({
+        error: 'Failed to fetch conversion actions',
+        message: error.message,
+      })
     }
   }
 
@@ -305,13 +335,13 @@ export default class GoogleAdsController {
         .firstOrFail()
 
       const { dateRange } = request.qs()
-      
+
       const enrichedData = await googleAdsService.getEnrichedCampaignData(
-        connectedAccount.id, 
+        connectedAccount.id,
         user.id,
         dateRange ? JSON.parse(dateRange) : undefined
       )
-      
+
       return { success: true, data: enrichedData }
     } catch (error) {
       logger.error('Error fetching enriched data:', error)

@@ -47,11 +47,11 @@ export default class SyncHistory extends BaseModel {
     if (this.durationMs === 0) {
       return 'N/A'
     }
-    
+
     const seconds = Math.floor(this.durationMs / 1000)
     const minutes = Math.floor(seconds / 60)
     const remainingSeconds = seconds % 60
-    
+
     if (minutes > 0) {
       return `${minutes}m ${remainingSeconds}s`
     }

@@ -1,18 +1,18 @@
 <!-- Account Switcher Component -->
 <div class="relative inline-block text-left" x-data="{ open: false }">
   <div>
-    <button 
-      @click="open = !open" 
-      type="button" 
-      class="inline-flex items-center w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50" 
-      id="account-menu-button" 
-      aria-expanded="true" 
+    <button
+      @click="open = !open"
+      type="button"
+      class="inline-flex items-center w-full justify-center gap-x-1.5 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50"
+      id="account-menu-button"
+      aria-expanded="true"
       aria-haspopup="true"
     >
       <div class="flex items-center">
-        @!component('components/platform-logo', { 
-          platform: 'google_ads', 
-          size: 'sm' 
+        @!component('components/platform-logo', {
+          platform: 'google_ads',
+          size: 'sm'
         })
         <div class="ml-2 text-left">
           <div class="text-sm font-medium text-gray-900" id="current-account-name">
@@ -22,7 +22,11 @@
               Select Account
             @end
           </div>
-          <div class="text-xs text-gray-500" id="current-account-id" style="{{ currentAccount ? '' : 'display: none;' }}">
+          <div
+            class="text-xs text-gray-500"
+            id="current-account-id"
+            style="{{ currentAccount ? '' : 'display: none;' }}"
+          >
             @if(currentAccount)
               {{ currentAccount.formattedAccountId || currentAccount.accountId }}
             @end
@@ -33,8 +37,8 @@
     </button>
   </div>
 
-  <div 
-    x-show="open" 
+  <div
+    x-show="open"
     @click.away="open = false"
     x-transition:enter="transition ease-out duration-100"
     x-transition:enter-start="transform opacity-0 scale-95"
@@ -42,28 +46,33 @@
     x-transition:leave="transition ease-in duration-75"
     x-transition:leave-start="transform opacity-100 scale-100"
     x-transition:leave-end="transform opacity-0 scale-95"
-    class="absolute right-0 z-10 mt-2 w-80 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" 
-    role="menu" 
-    aria-orientation="vertical" 
-    aria-labelledby="account-menu-button" 
+    class="absolute right-0 z-10 mt-2 w-80 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+    role="menu"
+    aria-orientation="vertical"
+    aria-labelledby="account-menu-button"
     tabindex="-1"
   >
     <div class="py-1" role="none" id="account-list">
       <!-- Account list will be populated by JavaScript -->
       <div class="px-4 py-3 text-center">
         <div class="animate-pulse flex items-center justify-center">
-          <div class="w-4 h-4 bg-blue-200 rounded-full animate-bounce mr-2"></div>
-          <div class="w-4 h-4 bg-blue-200 rounded-full animate-bounce mr-2" style="animation-delay: 0.1s"></div>
-          <div class="w-4 h-4 bg-blue-200 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+          <div class="w-4 h-4 bg-blue-200 rounded-full animate-bounce mr-2">
+          </div>
+          <div class="w-4 h-4 bg-blue-200 rounded-full animate-bounce mr-2" style="animation-delay: 0.1s">
+          </div>
+          <div class="w-4 h-4 bg-blue-200 rounded-full animate-bounce" style="animation-delay: 0.2s">
+          </div>
         </div>
-        <p class="text-sm text-gray-500 mt-2">Loading accounts...</p>
+        <p class="text-sm text-gray-500 mt-2">
+          Loading accounts...
+        </p>
       </div>
     </div>
-    
+
     <div class="border-t border-gray-100">
-      <a 
-        href="{{ route('integrations.index') }}" 
-        class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" 
+      <a
+        href="{{ route('integrations.index') }}"
+        class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
         role="menuitem"
       >
         <i class="fas fa-cog mr-2 text-gray-400"></i>
@@ -74,238 +83,213 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  const accountSwitcher = {
-    currentAccount: null,
-    accounts: [],
-    
-    init() {
-      this.loadAccounts();
-      this.loadCurrentAccount();
-    },
-    
-    async loadAccounts() {
-      try {
-        const response = await fetch('/integrations/accounts', {
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json'
-          }
-        });
-        
-        if (!response.ok) {
-          // Handle different error status codes
-          if (response.status === 404) {
-            throw new Error('Account switcher endpoint not found. Please ensure the route is properly configured.');
-          } else if (response.status === 401) {
-            throw new Error('Authentication required. Please log in again.');
-          } else if (response.status === 403) {
-            throw new Error('Access denied. You do not have permission to view accounts.');
-          } else {
-            throw new Error(`Server error: ${response.status} ${response.statusText}`);
-          }
-        }
-        
-        const data = await response.json();
-        if (data.success) {
-          this.accounts = data.accounts || [];
-          this.renderAccountList();
-        } else {
-          throw new Error(data.message || 'Unknown error occurred while loading accounts');
-        }
-      } catch (error) {
-        console.error('Error loading accounts:', error);
-        this.renderError();
-        
-        // Show user-friendly error message
-        if (window.integrationManager) {
-          const errorMessage = error.message || 'Failed to load accounts';
-          window.integrationManager.showNotification(errorMessage, 'error');
-        }
-      }
-    },
-    
-    loadCurrentAccount() {
-      // Try to get current account from localStorage or use first account
-      const saved = localStorage.getItem('current_google_ads_account');
-      if (saved) {
+  document.addEventListener("DOMContentLoaded", function() {
+    const accountSwitcher = {
+      currentAccount: null,
+      accounts: [],
+      init() {
+        this.loadAccounts();
+        this.loadCurrentAccount();
+      },
+      async loadAccounts() {
         try {
-          this.currentAccount = JSON.parse(saved);
-        } catch (e) {
-          localStorage.removeItem('current_google_ads_account');
+          const response = await fetch("/integrations/accounts", {
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              Accept: "application/json"
+            }
+          });
+          if (!response.ok) {
+            // Handle different error status codes
+            if (response.status === 404) {
+              throw new Error("Account switcher endpoint not found. Please ensure the route is properly configured.");
+            } else if (response.status === 401) {
+              throw new Error("Authentication required. Please log in again.");
+            } else if (response.status === 403) {
+              throw new Error("Access denied. You do not have permission to view accounts.");
+            } else {
+              throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
+          }
+          const data = await response.json();
+          if (data.success) {
+            this.accounts = data.accounts || [];
+            this.renderAccountList();
+          } else {
+            throw new Error(data.message || "Unknown error occurred while loading accounts");
+          }
+        } catch (error) {
+          console.error("Error loading accounts:", error);
+          this.renderError();
+          // Show user-friendly error message
+          if (window.integrationManager) {
+            const errorMessage = error.message || "Failed to load accounts";
+            window.integrationManager.showNotification(errorMessage, "error");
+          }
         }
-      }
-    },
-    
-    renderAccountList() {
-      const accountList = document.getElementById('account-list');
-      if (!accountList) {
-        console.warn('Account list element not found');
-        return;
-      }
-      
-      if (this.accounts.length === 0) {
-        accountList.innerHTML = `
-          <div class="px-4 py-2 text-center text-gray-500">
-            <i class="fas fa-exclamation-circle mr-2"></i>
-            No accounts found
-          </div>
-        `;
-        this.updateCurrentAccountDisplay(); // Update display even with no accounts
-        return;
-      }
-      
-      // Set current account if not set
-      if (!this.currentAccount && this.accounts.length > 0) {
-        this.currentAccount = this.accounts[0];
-        this.saveCurrentAccount();
-        // Trigger account change event for the first account
-        window.dispatchEvent(new CustomEvent('accountChanged', { 
-          detail: { account: this.currentAccount } 
-        }));
-      }
-      
-      accountList.innerHTML = this.accounts.map(account => `
-        <button 
-          onclick="accountSwitcher.switchAccount(${account.id})"
-          class="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 flex items-center justify-between ${this.currentAccount && this.currentAccount.id === account.id ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}"
-          role="menuitem"
-        >
-          <div class="flex-1">
-            <div class="flex items-center">
-              <div class="flex-1">
-                <div class="font-medium">${account.displayName}</div>
-                <div class="text-xs text-gray-500">ID: ${account.formattedAccountId}</div>
-                <div class="flex items-center mt-1 space-x-2">
-                  ${account.isTestAccount ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-flask mr-1"></i>Test</span>' : ''}
-                  ${account.isManagerAccount ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><i class="fas fa-users mr-1"></i>Manager</span>' : ''}
+      },
+      loadCurrentAccount() {
+        // Try to get current account from localStorage or use first account
+        const saved = localStorage.getItem("current_google_ads_account");
+        if (saved) {
+          try {
+            this.currentAccount = JSON.parse(saved);
+          } catch (e) {
+            localStorage.removeItem("current_google_ads_account");
+          }
+        }
+      },
+      renderAccountList() {
+        const accountList = document.getElementById("account-list");
+        if (!accountList) {
+          console.warn("Account list element not found");
+          return;
+        }
+        if (this.accounts.length === 0) {
+          accountList.innerHTML = `
+            <div class="px-4 py-2 text-center text-gray-500">
+              <i class="fas fa-exclamation-circle mr-2"></i>
+              No accounts found
+            </div>
+          `;
+          this.updateCurrentAccountDisplay(); // Update display even with no accounts
+          return;
+        }
+        // Set current account if not set
+        if (!this.currentAccount && this.accounts.length > 0) {
+          this.currentAccount = this.accounts[0];
+          this.saveCurrentAccount();
+          // Trigger account change event for the first account
+          window.dispatchEvent(new CustomEvent("accountChanged", {
+            detail: {
+              account: this.currentAccount
+            }
+          }));
+        }
+        accountList.innerHTML = this.accounts.map(account => `
+          <button 
+            onclick="accountSwitcher.switchAccount(${account.id})"
+            class="w-full text-left px-4 py-3 text-sm hover:bg-gray-100 flex items-center justify-between ${this.currentAccount && this.currentAccount.id === account.id ? "bg-blue-50 text-blue-700" : "text-gray-700"}"
+            role="menuitem"
+          >
+            <div class="flex-1">
+              <div class="flex items-center">
+                <div class="flex-1">
+                  <div class="font-medium">${account.displayName}</div>
+                  <div class="text-xs text-gray-500">ID: ${account.formattedAccountId}</div>
+                  <div class="flex items-center mt-1 space-x-2">
+                    ${account.isTestAccount ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"><i class="fas fa-flask mr-1"></i>Test</span>' : ""}
+                    ${account.isManagerAccount ? '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"><i class="fas fa-users mr-1"></i>Manager</span>' : ""}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          ${this.currentAccount && this.currentAccount.id === account.id ? '<i class="fas fa-check text-blue-600"></i>' : ''}
-        </button>
-      `).join('');
-      
-      this.updateCurrentAccountDisplay();
-    },
-    
-    renderError() {
-      const accountList = document.getElementById('account-list');
-      if (!accountList) {
-        console.warn('Account list element not found for error display');
-        return;
-      }
-      
-      accountList.innerHTML = `
-        <div class="px-4 py-2 text-center text-red-500">
-          <i class="fas fa-exclamation-triangle mr-2"></i>
-          Failed to load accounts
-        </div>
-      `;
-    },
-    
-    async switchAccount(accountId) {
-      const account = this.accounts.find(a => a.id === accountId);
-      if (!account) return;
-      
-      try {
-        const response = await fetch(`/integrations/accounts/${accountId}/switch`, {
-          method: 'POST',
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-          }
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to switch account');
+            ${this.currentAccount && this.currentAccount.id === account.id ? '<i class="fas fa-check text-blue-600"></i>' : ""}
+          </button>
+        `).join("");
+        this.updateCurrentAccountDisplay();
+      },
+      renderError() {
+        const accountList = document.getElementById("account-list");
+        if (!accountList) {
+          console.warn("Account list element not found for error display");
+          return;
         }
-        
-        const data = await response.json();
-        if (data.success) {
-          this.currentAccount = account;
-          this.saveCurrentAccount();
-          this.updateCurrentAccountDisplay();
-          
-          // Trigger account change event
-          window.dispatchEvent(new CustomEvent('accountChanged', { 
-            detail: { account: this.currentAccount } 
-          }));
-          
-          // Show success message
-          if (window.integrationManager) {
-            window.integrationManager.showNotification(`Switched to ${account.displayName}`, 'success');
+        accountList.innerHTML = `
+          <div class="px-4 py-2 text-center text-red-500">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Failed to load accounts
+          </div>
+        `;
+      },
+      async switchAccount(accountId) {
+        const account = this.accounts.find(a => a.id === accountId);
+        if (!account) return;
+        try {
+          const response = await fetch(`/integrations/accounts/${accountId}/switch`, {
+            method: "POST",
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              Accept: "application/json",
+              "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').getAttribute("content")
+            }
+          });
+          if (!response.ok) {
+            throw new Error("Failed to switch account");
           }
-          
-          // Close dropdown
-          const dropdownElement = document.querySelector('[x-data] [x-show="open"]');
-          if (dropdownElement && dropdownElement.closest('[x-data]').__x) {
-            const xData = dropdownElement.closest('[x-data]').__x.$data;
-            if (xData && typeof xData.open !== 'undefined') {
-              xData.open = false;
+          const data = await response.json();
+          if (data.success) {
+            this.currentAccount = account;
+            this.saveCurrentAccount();
+            this.updateCurrentAccountDisplay();
+            // Trigger account change event
+            window.dispatchEvent(new CustomEvent("accountChanged", {
+              detail: {
+                account: this.currentAccount
+              }
+            }));
+            // Show success message
+            if (window.integrationManager) {
+              window.integrationManager.showNotification(`Switched to ${account.displayName}`, "success");
+            }
+            // Close dropdown
+            const dropdownElement = document.querySelector('[x-data] [x-show="open"]');
+            if (dropdownElement && dropdownElement.closest("[x-data]").__x) {
+              const xData = dropdownElement.closest("[x-data]").__x.$data;
+              if (xData && typeof xData.open !== "undefined") {
+                xData.open = false;
+              }
             }
           }
+        } catch (error) {
+          console.error("Error switching account:", error);
+          if (window.integrationManager) {
+            window.integrationManager.showNotification("Failed to switch account", "error");
+          }
         }
-      } catch (error) {
-        console.error('Error switching account:', error);
-        if (window.integrationManager) {
-          window.integrationManager.showNotification('Failed to switch account', 'error');
+      },
+      updateCurrentAccountDisplay() {
+        if (!this.currentAccount) {
+          console.warn("No current account to display");
+          const nameElement = document.getElementById("current-account-name");
+          const idElement = document.getElementById("current-account-id");
+          if (nameElement) {
+            nameElement.textContent = "Select Account";
+          }
+          if (idElement) {
+            idElement.style.display = "none";
+          }
+          return;
         }
-      }
-    },
-    
-    updateCurrentAccountDisplay() {
-      if (!this.currentAccount) {
-        console.warn('No current account to display');
-        const nameElement = document.getElementById('current-account-name');
-        const idElement = document.getElementById('current-account-id');
-        
+        const nameElement = document.getElementById("current-account-name");
+        const idElement = document.getElementById("current-account-id");
         if (nameElement) {
-          nameElement.textContent = 'Select Account';
+          nameElement.textContent = this.currentAccount.displayName || this.currentAccount.accountName || `Account ${this.currentAccount.accountId}`;
+        } else {
+          console.warn("Current account name element not found");
         }
         if (idElement) {
-          idElement.style.display = 'none';
+          idElement.textContent = this.currentAccount.formattedAccountId || this.currentAccount.accountId;
+          idElement.style.display = "block";
+        } else {
+          console.warn("Current account ID element not found");
         }
-        return;
+      },
+      saveCurrentAccount() {
+        if (this.currentAccount) {
+          localStorage.setItem("current_google_ads_account", JSON.stringify(this.currentAccount));
+        }
       }
-      
-      const nameElement = document.getElementById('current-account-name');
-      const idElement = document.getElementById('current-account-id');
-      
-      if (nameElement) {
-        nameElement.textContent = this.currentAccount.displayName || this.currentAccount.accountName || `Account ${this.currentAccount.accountId}`;
-      } else {
-        console.warn('Current account name element not found');
-      }
-      
-      if (idElement) {
-        idElement.textContent = this.currentAccount.formattedAccountId || this.currentAccount.accountId;
-        idElement.style.display = 'block';
-      } else {
-        console.warn('Current account ID element not found');
-      }
-    },
-    
-    saveCurrentAccount() {
-      if (this.currentAccount) {
-        localStorage.setItem('current_google_ads_account', JSON.stringify(this.currentAccount));
-      }
+    };
+    // Make it globally available
+    window.accountSwitcher = accountSwitcher;
+    // Initialize only if the component exists on the page and has the required elements
+    const accountListElement = document.getElementById("account-list");
+    const accountMenuButton = document.getElementById("account-menu-button");
+    if (accountListElement && accountMenuButton) {
+      accountSwitcher.init();
+    } else {
+      console.log("Account switcher components not found on this page, skipping initialization");
     }
-  };
-  
-  // Make it globally available
-  window.accountSwitcher = accountSwitcher;
-  
-  // Initialize only if the component exists on the page and has the required elements
-  const accountListElement = document.getElementById('account-list');
-  const accountMenuButton = document.getElementById('account-menu-button');
-  
-  if (accountListElement && accountMenuButton) {
-    accountSwitcher.init();
-  } else {
-    console.log('Account switcher components not found on this page, skipping initialization');
-  }
-});
+  });
 </script>

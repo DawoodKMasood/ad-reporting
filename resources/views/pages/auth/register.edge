@@ -1,175 +1,175 @@
 @layout.auth({ title: 'Register - Ad Reporting Tool' })
 
-@slot('main')
-  <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
-    <!-- Header -->
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-10 text-center">
-      <div class="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4">
-        <i class="fas fa-chart-line text-2xl text-white"></i>
+  @slot('main')
+    <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-10 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-full mb-4">
+          <i class="fas fa-chart-line text-2xl text-white"></i>
+        </div>
+        <h1 class="text-2xl font-bold text-white mb-2">
+          Ad Reporting Tool
+        </h1>
+        <p class="text-blue-100">
+          Create your account
+        </p>
       </div>
-      <h1 class="text-2xl font-bold text-white mb-2">
-        Ad Reporting Tool
-      </h1>
-      <p class="text-blue-100">
-        Create your account
-      </p>
-    </div>
 
-    <!-- Form -->
-    <div class="px-8 py-8">
-      <form method="POST" action="{{ route('auth.register') }}" class="space-y-5">
-        {{ csrfField() }}
-        <div>
-          <label for="fullName" class="block text-sm font-semibold text-gray-700 mb-2">
-            Full Name
+      <!-- Form -->
+      <div class="px-8 py-8">
+        <form method="POST" action="{{ route('auth.register') }}" class="space-y-5">
+          {{ csrfField() }}
+          <div>
+            <label for="fullName" class="block text-sm font-semibold text-gray-700 mb-2">
+              Full Name
           </label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fas fa-user text-gray-400"></i>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-user text-gray-400"></i>
+              </div>
+              <input
+                type="text"
+                id="fullName"
+                name="fullName"
+                value="{{ old('fullName') || '' }}"
+                required
+                placeholder="Enter your full name"
+                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
             </div>
-            <input
-              type="text"
-              id="fullName"
-              name="fullName"
-              value="{{ old('fullName') || '' }}"
-              required
-              placeholder="Enter your full name"
-              class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
+            @if(flashMessages.has('errors.fullName'))
+              <p class="mt-2 text-sm text-red-600">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                {{ flashMessages.get('errors.fullName') }}
+              </p>
+            @end
           </div>
-          @if(flashMessages.has('errors.fullName'))
-            <p class="mt-2 text-sm text-red-600">
-              <i class="fas fa-exclamation-triangle mr-1"></i>
-              {{ flashMessages.get('errors.fullName') }}
-            </p>
-          @end
-        </div>
 
-        <div>
-          <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
-            Email Address
+          <div>
+            <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
+              Email Address
           </label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fas fa-envelope text-gray-400"></i>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-envelope text-gray-400"></i>
+              </div>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value="{{ old('email') || '' }}"
+                required
+                autocomplete="email"
+                placeholder="Enter your email address"
+                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
             </div>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value="{{ old('email') || '' }}"
-              required
-              autocomplete="email"
-              placeholder="Enter your email address"
-              class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
+            @if(flashMessages.has('errors.email'))
+              <p class="mt-2 text-sm text-red-600">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                {{ flashMessages.get('errors.email') }}
+              </p>
+            @end
           </div>
-          @if(flashMessages.has('errors.email'))
-            <p class="mt-2 text-sm text-red-600">
-              <i class="fas fa-exclamation-triangle mr-1"></i>
-              {{ flashMessages.get('errors.email') }}
-            </p>
-          @end
-        </div>
 
-        <div>
-          <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">
-            Password
+          <div>
+            <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">
+              Password
           </label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fas fa-lock text-gray-400"></i>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-lock text-gray-400"></i>
+              </div>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                placeholder="Create a strong password"
+                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
             </div>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              required
-              placeholder="Create a strong password"
-              class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
+            @if(flashMessages.has('errors.password'))
+              <p class="mt-2 text-sm text-red-600">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                {{ flashMessages.get('errors.password') }}
+              </p>
+            @else
+              <p class="mt-2 text-xs text-gray-500">
+                <i class="fas fa-info-circle mr-1"></i>
+                Password must be at least 8 characters long
+              </p>
+            @end
           </div>
-          @if(flashMessages.has('errors.password'))
-            <p class="mt-2 text-sm text-red-600">
-              <i class="fas fa-exclamation-triangle mr-1"></i>
-              {{ flashMessages.get('errors.password') }}
-            </p>
-          @else
-            <p class="mt-2 text-xs text-gray-500">
-              <i class="fas fa-info-circle mr-1"></i>
-              Password must be at least 8 characters long
-            </p>
-          @end
-        </div>
 
-        <div>
-          <label for="password_confirmation" class="block text-sm font-semibold text-gray-700 mb-2">
-            Confirm Password
+          <div>
+            <label for="password_confirmation" class="block text-sm font-semibold text-gray-700 mb-2">
+              Confirm Password
           </label>
-          <div class="relative">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <i class="fas fa-lock text-gray-400"></i>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <i class="fas fa-lock text-gray-400"></i>
+              </div>
+              <input
+                type="password"
+                id="password_confirmation"
+                name="password_confirmation"
+                required
+                placeholder="Confirm your password"
+                class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
             </div>
-            <input
-              type="password"
-              id="password_confirmation"
-              name="password_confirmation"
-              required
-              placeholder="Confirm your password"
-              class="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
+            @if(flashMessages.has('errors.password_confirmation'))
+              <p class="mt-2 text-sm text-red-600">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                {{ flashMessages.get('errors.password_confirmation') }}
+              </p>
+            @end
           </div>
-          @if(flashMessages.has('errors.password_confirmation'))
-            <p class="mt-2 text-sm text-red-600">
-              <i class="fas fa-exclamation-triangle mr-1"></i>
-              {{ flashMessages.get('errors.password_confirmation') }}
-            </p>
-          @end
-        </div>
 
-        <div class="flex items-start">
-          <input
-            type="checkbox"
-            id="terms"
-            required
-            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
-          />
-          <label for="terms" class="ml-3 text-sm text-gray-600 leading-5">
-            I agree to the 
+          <div class="flex items-start">
+            <input
+              type="checkbox"
+              id="terms"
+              required
+              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+            />
+            <label for="terms" class="ml-3 text-sm text-gray-600 leading-5">
+              I agree to the 
             <a href="#" class="text-blue-600 hover:text-blue-500 font-medium">Terms of Service</a>
-            and 
+              and 
             <a href="#" class="text-blue-600 hover:text-blue-500 font-medium">Privacy Policy</a>
-          </label>
-        </div>
+            </label>
+          </div>
 
-        <button
-          type="submit"
-          class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-        >
-          <i class="fas fa-user-plus mr-2"></i>
-          Create Account
+          <button
+            type="submit"
+            class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-semibold py-3 px-4 rounded-lg transition-all duration-200 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            <i class="fas fa-user-plus mr-2"></i>
+            Create Account
         </button>
-      </form>
+        </form>
+      </div>
+
+      <!-- Footer -->
+      <div class="px-8 py-6 bg-gray-50 border-t border-gray-200 text-center">
+        <p class="text-sm text-gray-600">
+          Already have an account? 
+        <a
+            href="{{ route('auth.login') }}"
+            class="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
+          >
+            Sign in here
+        </a>
+        </p>
+      </div>
     </div>
 
-    <!-- Footer -->
-    <div class="px-8 py-6 bg-gray-50 border-t border-gray-200 text-center">
-      <p class="text-sm text-gray-600">
-        Already have an account? 
-        <a
-          href="{{ route('auth.login') }}"
-          class="font-semibold text-blue-600 hover:text-blue-500 transition-colors"
-        >
-          Sign in here
-        </a>
+    <div class="text-center mt-8">
+      <p class="text-white/80 text-sm">
+        © 2025 Ad Reporting Tool. All rights reserved.
       </p>
     </div>
-  </div>
-
-  <div class="text-center mt-8">
-    <p class="text-white/80 text-sm">
-      © 2025 Ad Reporting Tool. All rights reserved.
-    </p>
-  </div>
-@endslot
+  @endslot
 @end

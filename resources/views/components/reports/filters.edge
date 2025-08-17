@@ -6,34 +6,42 @@
       <div class="flex items-center space-x-2">
         <i class="fas fa-calendar-alt text-gray-500"></i>
         <span class="text-sm font-medium text-gray-700">Date Range:</span>
-        <select 
-          id="dateRangeSelect" 
+        <select
+          id="dateRangeSelect"
           onchange="updateDateRange(this.value)"
           class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
         >
-          <option value="7">Last 7 days</option>
-          <option value="30" selected>Last 30 days</option>
-          <option value="90">Last 90 days</option>
-          <option value="custom">Custom Range</option>
+          <option value="7">
+            Last 7 days
+          </option>
+          <option value="30" selected>
+            Last 30 days
+          </option>
+          <option value="90">
+            Last 90 days
+          </option>
+          <option value="custom">
+            Custom Range
+          </option>
         </select>
       </div>
 
       <!-- Custom Date Inputs (Hidden by default) -->
       <div id="customDateInputs" class="hidden flex items-center space-x-2">
-        <input 
-          type="date" 
-          id="startDate" 
+        <input
+          type="date"
+          id="startDate"
           value="{{ selectedDateRange.start }}"
           class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-        >
+        />
         <span class="text-gray-500">to</span>
-        <input 
-          type="date" 
-          id="endDate" 
+        <input
+          type="date"
+          id="endDate"
           value="{{ selectedDateRange.end }}"
           class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
-        >
-        <button 
+        />
+        <button
           onclick="applyCustomDateRange()"
           class="px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700"
         >
@@ -45,24 +53,17 @@
       <div class="flex items-center space-x-2">
         <i class="fas fa-filter text-gray-500"></i>
         <span class="text-sm font-medium text-gray-700">Platform:</span>
-        <select 
-          id="platformSelect" 
+        <select
+          id="platformSelect"
           onchange="updatePlatform(this.value)"
           class="border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
         >
-          <option value="all" {{ selectedPlatform === 'all' ? 'selected' : '' }}>All Platforms</option>
+          <option value="all" {{ selectedPlatform === 'all' ? 'selected' : '' }}>
+            All Platforms
+          </option>
           @each(account in connectedAccounts)
-            <option 
-              value="{{ account.platform }}" 
-              {{ selectedPlatform === account.platform ? 'selected' : '' }}
-            >
-              {{ account.platform === 'google_ads' ? 'Google Ads' : 
-                 account.platform === 'meta_ads' ? 'Meta Ads' : 
-                 account.platform === 'facebook_ads' ? 'Facebook Ads' : 
-                 account.platform === 'instagram_ads' ? 'Instagram Ads' : 
-                 account.platform === 'tiktok_ads' ? 'TikTok Ads' : 
-                 account.platform === 'linkedin_ads' ? 'LinkedIn Ads' : 
-                 account.platform.charAt(0).toUpperCase() + account.platform.slice(1) }}
+            <option value="{{ account.platform }}" {{ selectedPlatform === account.platform ? 'selected' : '' }}>
+              {{ account.platform === 'google_ads' ? 'Google Ads' :                  account.platform === 'meta_ads' ? 'Meta Ads' :                  account.platform === 'facebook_ads' ? 'Facebook Ads' :                  account.platform === 'instagram_ads' ? 'Instagram Ads' :                  account.platform === 'tiktok_ads' ? 'TikTok Ads' :                  account.platform === 'linkedin_ads' ? 'LinkedIn Ads' :                  account.platform.charAt(0).toUpperCase() + account.platform.slice(1) }}
             </option>
           @end
         </select>
@@ -71,14 +72,14 @@
 
     <!-- Quick Actions -->
     <div class="flex items-center space-x-2">
-      <button 
+      <button
         onclick="refreshData()"
         class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
       >
         <i class="fas fa-sync-alt mr-2"></i>
         Refresh
       </button>
-      <button 
+      <button
         onclick="saveAsTemplate()"
         class="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
       >
@@ -91,81 +92,70 @@
 
 <script>
   function updateDateRange(days) {
-    if (days === 'custom') {
-      document.getElementById('customDateInputs').classList.remove('hidden');
+    if (days === "custom") {
+      document.getElementById("customDateInputs").classList.remove("hidden");
       return;
     }
-    
-    document.getElementById('customDateInputs').classList.add('hidden');
-    
+    document.getElementById("customDateInputs").classList.add("hidden");
     const endDate = new Date();
     const startDate = new Date();
     startDate.setDate(endDate.getDate() - parseInt(days));
-    
     const params = new URLSearchParams(window.location.search);
-    params.set('start_date', startDate.toISOString().split('T')[0]);
-    params.set('end_date', endDate.toISOString().split('T')[0]);
-    
+    params.set("start_date", startDate.toISOString().split("T")[0]);
+    params.set("end_date", endDate.toISOString().split("T")[0]);
     window.location.search = params.toString();
   }
-
+  
   function applyCustomDateRange() {
-    const startDate = document.getElementById('startDate').value;
-    const endDate = document.getElementById('endDate').value;
-    
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
     if (!startDate || !endDate) {
-      alert('Please select both start and end dates');
+      alert("Please select both start and end dates");
       return;
     }
-    
     if (new Date(startDate) > new Date(endDate)) {
-      alert('Start date must be before end date');
+      alert("Start date must be before end date");
       return;
     }
-    
     const params = new URLSearchParams(window.location.search);
-    params.set('start_date', startDate);
-    params.set('end_date', endDate);
-    
+    params.set("start_date", startDate);
+    params.set("end_date", endDate);
     window.location.search = params.toString();
   }
-
+  
   function updatePlatform(platform) {
     const params = new URLSearchParams(window.location.search);
-    if (platform === 'all') {
-      params.delete('platform');
+    if (platform === "all") {
+      params.delete("platform");
     } else {
-      params.set('platform', platform);
+      params.set("platform", platform);
     }
-    
     window.location.search = params.toString();
   }
-
+  
   function refreshData() {
     window.location.reload();
   }
-
+  
   function saveAsTemplate() {
-    alert('Save as template feature coming soon!');
+    alert("Save as template feature coming soon!");
   }
-
   // Initialize date range selector
-  document.addEventListener('DOMContentLoaded', function() {
+  
+  document.addEventListener("DOMContentLoaded", function() {
     const urlParams = new URLSearchParams(window.location.search);
-    const startDate = urlParams.get('start_date');
-    const endDate = urlParams.get('end_date');
-    
+    const startDate = urlParams.get("start_date");
+    const endDate = urlParams.get("end_date");
     if (startDate && endDate) {
       const today = new Date();
       const start = new Date(startDate);
-      const daysDiff = Math.ceil((today - start) / (1000 * 60 * 60 * 24));
-      
-      const select = document.getElementById('dateRangeSelect');
-      if ([7, 30, 90].includes(daysDiff)) {
+      const daysDiff = Math.ceil((today - start) / (1e3 * 60 * 60 * 24));
+      const select = document.getElementById("dateRangeSelect");
+      if ([ 7, 30, 90 ].includes(daysDiff)) {
         select.value = daysDiff.toString();
       } else {
-        select.value = 'custom';
-        document.getElementById('customDateInputs').classList.remove('hidden');
+        select.value = "custom";
+        document.getElementById("customDateInputs").classList.remove("hidden");
       }
     }
   });

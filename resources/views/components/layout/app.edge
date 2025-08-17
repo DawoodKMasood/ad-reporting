@@ -3,11 +3,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ title || 'Ad Reporting Tool' }}</title>
-    <meta name="csrf-token" content="{{ csrfToken }}">
+    <title>
+      {{ title || 'Ad Reporting Tool' }}
+    </title>
+    <meta name="csrf-token" content="{{ csrfToken }}" />
     @vite(['resources/js/app.js'])
     <link href="/css/fontawesome.css" rel="stylesheet" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js">
+      
+    </script>
     @if ($slots.meta)
       {{{ await $slots.meta() }}}
     @endif
@@ -50,21 +54,31 @@
       
       <!-- Flash Messages -->
       @if(flashMessages && flashMessages.has && flashMessages.has('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4" role="alert" aria-live="polite">
+        <div
+          class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"
+          role="alert"
+          aria-live="polite"
+        >
           <i class="fas fa-check-circle mr-2" aria-hidden="true"></i>
           {{ flashMessages.get('success') }}
         </div>
       @end
       
       @if(flashMessages && flashMessages.has && flashMessages.has('error'))
-        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert" aria-live="polite">
+        <div
+          class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
+          role="alert"
+          aria-live="polite"
+        >
           <i class="fas fa-exclamation-circle mr-2" aria-hidden="true"></i>
           {{ flashMessages.get('error') }}
         </div>
       @end
       
       <!-- Main Content -->
-      <main class="{{ (auth && auth.isAuthenticated) ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : '' }}">
+      <main
+        class="{{ (auth && auth.isAuthenticated) ? 'max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8' : '' }}"
+      >
         {{{ await $slots.main() }}}
       </main>
     </div>
@@ -74,90 +88,80 @@
       // Integration helper functions
       window.syncAccount = function(accountId) {
         // Set up the confirmation callback
-        window['sync-account-modal_onConfirm'] = function() {
-          const button = event?.target?.closest('button');
+        window["sync-account-modal_onConfirm"] = function() {
+          const button = event?.target?.closest("button");
           if (!button) {
-            console.error('Button element not found for sync action');
+            console.error("Button element not found for sync action");
             return;
           }
-          
           const originalContent = button.innerHTML;
           button.disabled = true;
           button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Syncing...';
-          
           fetch(`/integrations/sync/${accountId}`, {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || ""
             }
-          })
-          .then(response => response.json())
-          .then(data => {
+          }).then(response => response.json()).then(data => {
             if (data.success) {
               window.location.reload();
             } else {
               // Show error modal with specific message
-              const errorMessage = 'Failed to sync account: ' + (data.message || 'Unknown error');
-              const errorElement = document.getElementById('sync-error-modal-description');
+              const errorMessage = "Failed to sync account: " + (data.message || "Unknown error");
+              const errorElement = document.getElementById("sync-error-modal-description");
               if (errorElement) {
                 errorElement.textContent = errorMessage;
               }
-              if (window['sync-error-modal_show']) {
-                window['sync-error-modal_show']();
+              if (window["sync-error-modal_show"]) {
+                window["sync-error-modal_show"]();
               }
               button.disabled = false;
               button.innerHTML = originalContent;
             }
-          })
-          .catch(error => {
-            console.error('Error:', error);
+          }).catch(error => {
+            console.error("Error:", error);
             // Show generic error modal
-            const errorElement = document.getElementById('sync-error-modal-description');
+            const errorElement = document.getElementById("sync-error-modal-description");
             if (errorElement) {
-              errorElement.textContent = 'Failed to sync account. Please try again.';
+              errorElement.textContent = "Failed to sync account. Please try again.";
             }
-            if (window['sync-error-modal_show']) {
-              window['sync-error-modal_show']();
+            if (window["sync-error-modal_show"]) {
+              window["sync-error-modal_show"]();
             }
             button.disabled = false;
             button.innerHTML = originalContent;
           });
         };
-        
         // Show the confirmation modal
-        console.log('sync-account-modal_show called');
-        if (window['sync-account-modal_show']) {
-          window['sync-account-modal_show']();
+        console.log("sync-account-modal_show called");
+        if (window["sync-account-modal_show"]) {
+          window["sync-account-modal_show"]();
         } else {
-          console.error('sync-account-modal_show function not found');
+          console.error("sync-account-modal_show function not found");
         }
       };
-
+      
       window.disconnectAccount = function(accountId, redirectTo = null) {
         // Set up the confirmation callback
-        window['disconnect-account-modal_onConfirm'] = function() {
-          const button = event?.target?.closest('button');
+        window["disconnect-account-modal_onConfirm"] = function() {
+          const button = event?.target?.closest("button");
           if (!button) {
-            console.error('Button element not found for disconnect action');
+            console.error("Button element not found for disconnect action");
             return;
           }
-          
           const originalContent = button.innerHTML;
           button.disabled = true;
           button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Disconnecting...';
-          
           fetch(`/integrations/disconnect/${accountId}`, {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || ""
             }
-          })
-          .then(response => response.json())
-          .then(data => {
+          }).then(response => response.json()).then(data => {
             if (data.success) {
               if (redirectTo) {
                 window.location.href = redirectTo;
@@ -166,99 +170,92 @@
               }
             } else {
               // Show error modal with specific message
-              const errorMessage = 'Failed to disconnect account: ' + (data.message || 'Unknown error');
-              const errorElement = document.getElementById('disconnect-error-modal-description');
+              const errorMessage = "Failed to disconnect account: " + (data.message || "Unknown error");
+              const errorElement = document.getElementById("disconnect-error-modal-description");
               if (errorElement) {
                 errorElement.textContent = errorMessage;
               }
-              if (window['disconnect-error-modal_show']) {
-                window['disconnect-error-modal_show']();
+              if (window["disconnect-error-modal_show"]) {
+                window["disconnect-error-modal_show"]();
               }
               button.disabled = false;
               button.innerHTML = originalContent;
             }
-          })
-          .catch(error => {
-            console.error('Error:', error);
+          }).catch(error => {
+            console.error("Error:", error);
             // Show generic error modal
-            const errorElement = document.getElementById('disconnect-error-modal-description');
+            const errorElement = document.getElementById("disconnect-error-modal-description");
             if (errorElement) {
-              errorElement.textContent = 'Failed to disconnect account. Please try again.';
+              errorElement.textContent = "Failed to disconnect account. Please try again.";
             }
-            if (window['disconnect-error-modal_show']) {
-              window['disconnect-error-modal_show']();
+            if (window["disconnect-error-modal_show"]) {
+              window["disconnect-error-modal_show"]();
             }
             button.disabled = false;
             button.innerHTML = originalContent;
           });
         };
-        
         // Show the confirmation modal
-        console.log('showModal called disconnect-account-modal');
-        if (window['disconnect-account-modal_show']) {
-          window['disconnect-account-modal_show']();
+        console.log("showModal called disconnect-account-modal");
+        if (window["disconnect-account-modal_show"]) {
+          window["disconnect-account-modal_show"]();
         } else {
-          console.error('disconnect-account-modal_show function not found');
+          console.error("disconnect-account-modal_show function not found");
         }
       };
-
+      
       window.connectPlatform = function(platformName) {
         const button = event?.target;
         if (!button) {
-          console.error('Button element not found for connect action');
+          console.error("Button element not found for connect action");
           return;
         }
-        
         const originalText = button.innerHTML;
         button.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Connecting...';
         button.disabled = true;
-        
-        fetch('/integrations/connect', {
-          method: 'POST',
+        fetch("/integrations/connect", {
+          method: "POST",
           headers: {
-            'Content-Type': 'application/json',
-            'Accept': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]')?.getAttribute("content") || ""
           },
           body: JSON.stringify({
             platform: platformName
           })
-        })
-        .then(response => response.json())
-        .then(data => {
+        }).then(response => response.json()).then(data => {
           if (data.success && data.redirectUrl) {
             // Redirect to OAuth URL
             window.location.href = data.redirectUrl;
           } else {
             // Show error modal with specific message
-            const errorMessage = 'Failed to initiate connection: ' + (data.message || 'Unknown error');
-            const errorElement = document.getElementById('connection-error-modal-description');
+            const errorMessage = "Failed to initiate connection: " + (data.message || "Unknown error");
+            const errorElement = document.getElementById("connection-error-modal-description");
             if (errorElement) {
               errorElement.textContent = errorMessage;
             }
-            if (window['connection-error-modal_show']) {
-              window['connection-error-modal_show']();
+            if (window["connection-error-modal_show"]) {
+              window["connection-error-modal_show"]();
             }
             button.innerHTML = originalText;
             button.disabled = false;
           }
-        })
-        .catch(error => {
-          console.error('Error:', error);
+        }).catch(error => {
+          console.error("Error:", error);
           // Show generic error modal
-          const errorElement = document.getElementById('connection-error-modal-description');
+          const errorElement = document.getElementById("connection-error-modal-description");
           if (errorElement) {
-            errorElement.textContent = 'Failed to connect platform. Please try again.';
+            errorElement.textContent = "Failed to connect platform. Please try again.";
           }
-          if (window['connection-error-modal_show']) {
-            window['connection-error-modal_show']();
+          if (window["connection-error-modal_show"]) {
+            window["connection-error-modal_show"]();
           }
           button.innerHTML = originalText;
           button.disabled = false;
         });
       };
     </script>
-    
+
     <!-- Confirmation Modals -->
     @!component('components/confirmation-modal', {
       id: 'sync-account-modal',
@@ -267,7 +264,7 @@
       confirmButtonText: 'Sync Account',
       cancelButtonText: 'Cancel'
     })
-    
+
     @!component('components/confirmation-modal', {
       id: 'sync-error-modal',
       title: 'Sync Failed',
@@ -275,7 +272,7 @@
       confirmButtonText: 'OK',
       cancelButtonText: 'Close'
     })
-    
+
     @!component('components/confirmation-modal', {
       id: 'disconnect-account-modal',
       title: 'Disconnect Account',
@@ -283,7 +280,7 @@
       confirmButtonText: 'Disconnect',
       cancelButtonText: 'Cancel'
     })
-    
+
     @!component('components/confirmation-modal', {
       id: 'disconnect-error-modal',
       title: 'Disconnect Failed',
@@ -291,7 +288,7 @@
       confirmButtonText: 'OK',
       cancelButtonText: 'Close'
     })
-    
+
     @!component('components/confirmation-modal', {
       id: 'connection-error-modal',
       title: 'Connection Failed',

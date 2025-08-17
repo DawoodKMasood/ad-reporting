@@ -19,7 +19,7 @@ export const createCustomReportValidator = vine.compile(
     isScheduled: vine.boolean().optional(),
     scheduleFrequency: vine.enum(['daily', 'weekly', 'monthly']).optional(),
     widgetLayout: vine.array(vine.any()).optional(),
-    ajax: vine.boolean().optional()
+    ajax: vine.boolean().optional(),
   })
 )
 
@@ -41,7 +41,7 @@ export const updateCustomReportValidator = vine.compile(
     isScheduled: vine.boolean().optional(),
     scheduleFrequency: vine.enum(['daily', 'weekly', 'monthly']).optional(),
     widgetLayout: vine.array(vine.any()).optional(),
-    ajax: vine.boolean().optional()
+    ajax: vine.boolean().optional(),
   })
 )
 
@@ -55,7 +55,7 @@ export const saveLayoutValidator = vine.compile(
     widgetLayout: vine.array(vine.any()).minLength(1),
     name: vine.string().minLength(3).maxLength(255).optional(),
     description: vine.string().optional(),
-    platform: vine.enum(['google_ads', 'meta_ads', 'tiktok_ads']).optional()
+    platform: vine.enum(['google_ads', 'meta_ads', 'tiktok_ads']).optional(),
   })
 )
 
@@ -66,6 +66,6 @@ export const previewReportValidator = vine.compile(
   vine.object({
     widgetLayout: vine.array(vine.any()).minLength(1),
     reportId: vine.number().positive().optional(),
-    connectedAccountId: vine.number().positive().optional()
+    connectedAccountId: vine.number().positive().optional(),
   })
 )

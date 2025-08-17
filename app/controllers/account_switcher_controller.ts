@@ -5,20 +5,20 @@ import logger from '@adonisjs/core/services/logger'
 export default class AccountSwitcherController {
   async index({ auth, response }: HttpContext) {
     try {
-      console.log('🟢 AccountSwitcherController.index called');
-      
+      console.log('🟢 AccountSwitcherController.index called')
+
       const user = auth.getUserOrFail()
-      console.log('🟢 User authenticated:', user.id);
-      
+      console.log('🟢 User authenticated:', user.id)
+
       const connectedAccounts = await ConnectedAccount.query()
         .where('user_id', user.id)
         .where('platform', 'google_ads')
         .where('is_active', true)
         .orderBy('created_at', 'desc')
-      
-      console.log('🟢 Found connected accounts:', connectedAccounts.length);
-      
-      const formattedAccounts = connectedAccounts.map(account => {
+
+      console.log('🟢 Found connected accounts:', connectedAccounts.length)
+
+      const formattedAccounts = connectedAccounts.map((account) => {
         try {
           return {
             id: account.id,
@@ -30,10 +30,10 @@ export default class AccountSwitcherController {
             isManagerAccount: account.isManagerAccount || false,
             accountTimezone: account.accountTimezone || 'UTC',
             lastSyncAt: account.lastSyncAt,
-            isActive: account.isActive
+            isActive: account.isActive,
           }
         } catch (error) {
-          console.error('🔴 Error formatting account:', account.id, error);
+          console.error('🔴 Error formatting account:', account.id, error)
           return {
             id: account.id,
             accountId: account.accountId,
@@ -44,23 +44,23 @@ export default class AccountSwitcherController {
             isManagerAccount: false,
             accountTimezone: 'UTC',
             lastSyncAt: account.lastSyncAt,
-            isActive: account.isActive
+            isActive: account.isActive,
           }
         }
       })
-      
-      console.log('🟢 Returning formatted accounts:', formattedAccounts);
-      
+
+      console.log('🟢 Returning formatted accounts:', formattedAccounts)
+
       return response.json({
         success: true,
-        accounts: formattedAccounts
+        accounts: formattedAccounts,
       })
     } catch (error) {
-      console.error('🔴 Error in AccountSwitcherController.index:', error);
+      console.error('🔴 Error in AccountSwitcherController.index:', error)
       logger.error('Error fetching connected accounts:', error)
       return response.badRequest({
         error: 'Failed to fetch accounts',
-        message: error.message
+        message: error.message,
       })
     }
   }
@@ -69,20 +69,20 @@ export default class AccountSwitcherController {
     try {
       const user = auth.getUserOrFail()
       const accountId = parseInt(params.id, 10)
-      
+
       if (!accountId || isNaN(accountId)) {
         return response.badRequest({
           error: 'Invalid account ID',
-          message: 'Account ID must be a valid number'
+          message: 'Account ID must be a valid number',
         })
       }
-      
+
       const connectedAccount = await ConnectedAccount.query()
         .where('id', accountId)
         .where('user_id', user.id)
         .where('platform', 'google_ads')
         .firstOrFail()
-      
+
       return response.json({
         success: true,
         account: {
@@ -92,15 +92,15 @@ export default class AccountSwitcherController {
           displayName: connectedAccount.accountDisplayName,
           accountName: connectedAccount.accountName,
           isTestAccount: connectedAccount.isTestAccount,
-          isManagerAccount: connectedAccount.isManagerAccount
+          isManagerAccount: connectedAccount.isManagerAccount,
         },
-        message: `Switched to ${connectedAccount.accountDisplayName}`
+        message: `Switched to ${connectedAccount.accountDisplayName}`,
       })
     } catch (error) {
       logger.error('Error switching account:', error)
       return response.badRequest({
         error: 'Failed to switch account',
-        message: error.message
+        message: error.message,
       })
     }
   }
@@ -109,20 +109,20 @@ export default class AccountSwitcherController {
     try {
       const user = auth.getUserOrFail()
       const accountId = parseInt(params.id, 10)
-      
+
       if (!accountId || isNaN(accountId)) {
         return response.badRequest({
           error: 'Invalid account ID',
-          message: 'Account ID must be a valid number'
+          message: 'Account ID must be a valid number',
         })
       }
-      
+
       const connectedAccount = await ConnectedAccount.query()
         .where('id', accountId)
         .where('user_id', user.id)
         .where('platform', 'google_ads')
         .firstOrFail()
-      
+
       // Return mock metrics for now to avoid dependency issues
       return response.json({
         success: true,
@@ -133,14 +133,14 @@ export default class AccountSwitcherController {
           conversions: 0,
           ctr: 0,
           cpc: 0,
-          campaignCount: 0
-        }
+          campaignCount: 0,
+        },
       })
     } catch (error) {
       logger.error('Error fetching account metrics:', error)
       return response.badRequest({
         error: 'Failed to fetch metrics',
-        message: error.message
+        message: error.message,
       })
     }
   }

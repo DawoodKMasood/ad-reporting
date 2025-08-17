@@ -4,7 +4,7 @@ import { DateTime } from 'luxon'
 
 /**
  * Service for enhancing database security
- * 
+ *
  * This service provides additional encryption for sensitive campaign data,
  * field-level encryption for PII, database access logging, and row-level security.
  */
@@ -16,15 +16,15 @@ export class DatabaseSecurityService {
     'refresh_token',
     // Add other sensitive fields as needed
   ]
-  
+
   // Fields that contain PII and should be encrypted
   private static readonly PII_FIELDS: string[] = [
     // Add PII fields as needed
   ]
-  
+
   /**
    * Encrypt sensitive data before storing in the database
-   * 
+   *
    * @param data - The data to encrypt
    * @param field - The field name
    * @returns The encrypted data
@@ -35,12 +35,12 @@ export class DatabaseSecurityService {
       if (DatabaseSecurityService.ENCRYPTED_FIELDS.includes(field)) {
         return encryptionService.encrypt(data)
       }
-      
+
       // Check if this field contains PII
       if (DatabaseSecurityService.PII_FIELDS.includes(field)) {
         return encryptionService.encrypt(data)
       }
-      
+
       // Return data as-is if no encryption is needed
       return data
     } catch (error) {
@@ -48,10 +48,10 @@ export class DatabaseSecurityService {
       throw new Error(`Failed to encrypt field ${field}: ${error.message}`)
     }
   }
-  
+
   /**
    * Decrypt sensitive data after retrieving from the database
-   * 
+   *
    * @param data - The data to decrypt
    * @param field - The field name
    * @returns The decrypted data
@@ -59,11 +59,13 @@ export class DatabaseSecurityService {
   public decryptField(data: string, field: string): string {
     try {
       // Check if this field should be decrypted
-      if (DatabaseSecurityService.ENCRYPTED_FIELDS.includes(field) || 
-          DatabaseSecurityService.PII_FIELDS.includes(field)) {
+      if (
+        DatabaseSecurityService.ENCRYPTED_FIELDS.includes(field) ||
+        DatabaseSecurityService.PII_FIELDS.includes(field)
+      ) {
         return encryptionService.decrypt(data)
       }
-      
+
       // Return data as-is if no decryption is needed
       return data
     } catch (error) {
@@ -71,48 +73,48 @@ export class DatabaseSecurityService {
       throw new Error(`Failed to decrypt field ${field}: ${error.message}`)
     }
   }
-  
+
   /**
    * Encrypt multiple fields in an object
-   * 
+   *
    * @param data - The data object
    * @param fields - The fields to encrypt
    * @returns The data object with encrypted fields
    */
   public encryptFields(data: Record<string, any>, fields: string[]): Record<string, any> {
     const encryptedData = { ...data }
-    
+
     for (const field of fields) {
       if (encryptedData[field] && typeof encryptedData[field] === 'string') {
         encryptedData[field] = this.encryptField(encryptedData[field], field)
       }
     }
-    
+
     return encryptedData
   }
-  
+
   /**
    * Decrypt multiple fields in an object
-   * 
+   *
    * @param data - The data object
    * @param fields - The fields to decrypt
    * @returns The data object with decrypted fields
    */
   public decryptFields(data: Record<string, any>, fields: string[]): Record<string, any> {
     const decryptedData = { ...data }
-    
+
     for (const field of fields) {
       if (decryptedData[field] && typeof decryptedData[field] === 'string') {
         decryptedData[field] = this.decryptField(decryptedData[field], field)
       }
     }
-    
+
     return decryptedData
   }
-  
+
   /**
    * Log database access for security monitoring
-   * 
+   *
    * @param operation - The database operation (SELECT, INSERT, UPDATE, DELETE)
    * @param table - The table being accessed
    * @param userId - The ID of the user performing the operation
@@ -137,13 +139,13 @@ export class DatabaseSecurityService {
       ipAddress,
       userAgent,
     }
-    
+
     logger.info(`Database access: ${operation} on ${table}`, logEntry)
   }
-  
+
   /**
    * Apply row-level security filters to a query
-   * 
+   *
    * @param query - The database query
    * @param userId - The ID of the user
    * @param table - The table being queried
@@ -154,23 +156,23 @@ export class DatabaseSecurityService {
     switch (table) {
       case 'campaign_data':
         // Users can only access campaign data for their connected accounts
-        return query.whereIn('connected_account_id', function(this: any) {
+        return query.whereIn('connected_account_id', function (this: any) {
           this.select('id').from('connected_accounts').where('user_id', userId)
         })
-      
+
       case 'connected_accounts':
         // Users can only access their own connected accounts
         return query.where('user_id', userId)
-      
+
       default:
         // For other tables, apply a generic filter
         return query
     }
   }
-  
+
   /**
    * Sanitize data to prevent injection attacks
-   * 
+   *
    * @param data - The data to sanitize
    * @returns The sanitized data
    */
@@ -179,25 +181,33 @@ export class DatabaseSecurityService {
       // Remove potentially dangerous characters
       return data.replace(/[\x00\x08\x09\x1a\n\r"'\\\%]/g, function (char: string) {
         switch (char) {
-          case '\x00': return '\\0'
-          case '\x08': return '\\b'
-          case '\x09': return '\\t'
-          case '\x1a': return '\\z'
-          case '\n': return '\\n'
-          case '\r': return '\\r'
+          case '\x00':
+            return '\\0'
+          case '\x08':
+            return '\\b'
+          case '\x09':
+            return '\\t'
+          case '\x1a':
+            return '\\z'
+          case '\n':
+            return '\\n'
+          case '\r':
+            return '\\r'
           case '"':
           case "'":
           case '\\':
-          case '%': return '\\' + char
-          default: return char
+          case '%':
+            return '\\' + char
+          default:
+            return char
         }
       })
     }
-    
+
     if (Array.isArray(data)) {
       return data.map((item) => this.sanitizeData(item))
     }
-    
+
     if (typeof data === 'object' && data !== null) {
       const sanitized: Record<string, any> = {}
       for (const [key, value] of Object.entries(data)) {
@@ -205,7 +215,7 @@ export class DatabaseSecurityService {
       }
       return sanitized
     }
-    
+
     return data
   }
 }

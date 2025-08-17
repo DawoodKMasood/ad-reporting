@@ -8,9 +8,15 @@ if (process.env.NODE_ENV === 'development') {
   router
     .group(() => {
       router.get('/', [MultiAccountTestController, 'index']).as('test.multi_account')
-      router.get('/connection-test', [MultiAccountTestController, 'testConnection']).as('test.connection')
-      router.get('/debug/:id', [MultiAccountTestController, 'debugAccountInfo']).as('test.debug_account')
-      router.get('/format/:customerId', [MultiAccountTestController, 'formatCustomerId']).as('test.format_customer_id')
+      router
+        .get('/connection-test', [MultiAccountTestController, 'testConnection'])
+        .as('test.connection')
+      router
+        .get('/debug/:id', [MultiAccountTestController, 'debugAccountInfo'])
+        .as('test.debug_account')
+      router
+        .get('/format/:customerId', [MultiAccountTestController, 'formatCustomerId'])
+        .as('test.format_customer_id')
     })
     .prefix('/test/multi-account')
     .middleware([middleware.auth()])

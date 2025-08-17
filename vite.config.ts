@@ -7,7 +7,7 @@ export default defineConfig({
     adonisjs({
       entrypoints: ['resources/js/app.js'],
       reload: ['resources/views/**/*.edge'],
-    })
+    }),
   ],
   css: {
     postcss: {

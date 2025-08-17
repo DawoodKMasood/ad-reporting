@@ -12,20 +12,20 @@ export default class MultiAccountTestController {
   async testConnection({ auth, response }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      
+
       // Get all connected Google Ads accounts
       const accounts = await ConnectedAccount.query()
         .where('user_id', user.id)
         .where('platform', 'google_ads')
         .orderBy('created_at', 'desc')
-      
+
       const results = []
-      
+
       for (const account of accounts) {
         try {
           // Test API connection
           const campaigns = await googleAdsService.getCampaigns(account.id, user.id)
-          
+
           results.push({
             accountId: account.accountId,
             formattedAccountId: account.formattedAccountId,
@@ -35,7 +35,7 @@ export default class MultiAccountTestController {
             isManagerAccount: account.isManagerAccount,
             campaignCount: campaigns.length,
             connectionStatus: 'success',
-            lastTested: new Date().toISOString()
+            lastTested: new Date().toISOString(),
           })
         } catch (error) {
           results.push({
@@ -45,21 +45,21 @@ export default class MultiAccountTestController {
             isActive: account.isActive,
             connectionStatus: 'error',
             error: error.message,
-            lastTested: new Date().toISOString()
+            lastTested: new Date().toISOString(),
           })
         }
       }
-      
+
       return {
         success: true,
         accountCount: accounts.length,
-        results
+        results,
       }
     } catch (error) {
       logger.error('Error testing multi-account connections:', error)
       return response.badRequest({
         error: 'Failed to test connections',
-        message: error.message
+        message: error.message,
       })
     }
   }
@@ -68,18 +68,18 @@ export default class MultiAccountTestController {
     try {
       const user = auth.getUserOrFail()
       const accountId = parseInt(params.id, 10)
-      
+
       const account = await ConnectedAccount.query()
         .where('id', accountId)
         .where('user_id', user.id)
         .firstOrFail()
-      
+
       // Get raw token info (for debugging)
       const { refreshToken } = await googleAdsOAuthService.retrieveTokens(account.id, user.id)
-      
+
       // Test accessible customers
       const accessibleCustomers = await googleAdsService.getAccessibleCustomers(account.id, user.id)
-      
+
       return {
         success: true,
         account: {
@@ -94,19 +94,19 @@ export default class MultiAccountTestController {
           accessibleCustomers: account.accessibleCustomers,
           isActive: account.isActive,
           lastSyncAt: account.lastSyncAt,
-          createdAt: account.createdAt
+          createdAt: account.createdAt,
         },
         tokens: {
           hasRefreshToken: !!refreshToken,
-          refreshTokenLength: refreshToken?.length || 0
+          refreshTokenLength: refreshToken?.length || 0,
         },
-        accessibleCustomers
+        accessibleCustomers,
       }
     } catch (error) {
       logger.error('Error getting debug info:', error)
       return response.badRequest({
         error: 'Failed to get debug info',
-        message: error.message
+        message: error.message,
       })
     }
   }
@@ -114,17 +114,17 @@ export default class MultiAccountTestController {
   async formatCustomerId({ params, response }: HttpContext) {
     try {
       const { customerId } = params
-      
+
       return {
         success: true,
         original: customerId,
         formatted: ConnectedAccount.formatCustomerId(customerId),
-        isValid: /^\d{10}$/.test(customerId)
+        isValid: /^\d{10}$/.test(customerId),
       }
     } catch (error) {
       return response.badRequest({
         error: 'Failed to format customer ID',
-        message: error.message
+        message: error.message,
       })
     }
   }

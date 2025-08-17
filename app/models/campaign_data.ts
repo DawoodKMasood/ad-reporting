@@ -34,17 +34,17 @@ export default class CampaignData extends BaseModel {
 
   @column({
     consume: (value: string | null) => {
-      if (!value) return null;
+      if (!value) return null
       try {
-        return typeof value === 'string' ? JSON.parse(value) : value;
+        return typeof value === 'string' ? JSON.parse(value) : value
       } catch {
-        return null;
+        return null
       }
     },
     prepare: (value: any) => {
-      if (!value) return null;
-      return typeof value === 'object' ? JSON.stringify(value) : value;
-    }
+      if (!value) return null
+      return typeof value === 'object' ? JSON.stringify(value) : value
+    },
   })
   declare metadata: any | null
 

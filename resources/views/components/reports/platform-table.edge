@@ -7,15 +7,15 @@
         Platform Performance Breakdown
       </h3>
       <div class="flex items-center space-x-2">
-        <button 
-          onclick="toggleTableView('summary')" 
+        <button
+          onclick="toggleTableView('summary')"
           id="summaryViewBtn"
           class="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-md"
         >
           Summary
         </button>
-        <button 
-          onclick="toggleTableView('detailed')" 
+        <button
+          onclick="toggleTableView('detailed')"
           id="detailedViewBtn"
           class="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200"
         >
@@ -88,13 +88,19 @@
                     </div>
                   @endif
                   <div>
-                    <div class="text-sm font-medium text-gray-900">{{ platform.displayName }}</div>
-                    <div class="text-xs text-gray-500">{{ platform.platform }}</div>
+                    <div class="text-sm font-medium text-gray-900">
+                      {{ platform.displayName }}
+                    </div>
+                    <div class="text-xs text-gray-500">
+                      {{ platform.platform }}
+                    </div>
                   </div>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <span
+                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                >
                   {{ platform.campaignCount }}
                 </span>
               </td>
@@ -108,7 +114,9 @@
                 {{ formatNumber(platform.totalClicks, 'number') }}
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                <span class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium {{ platform.ctr >= 2 ? 'bg-green-100 text-green-800' : platform.ctr >= 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800' }}">
+                <span
+                  class="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium {{ platform.ctr >= 2 ? 'bg-green-100 text-green-800' : platform.ctr >= 1 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800' }}"
+                >
                   {{ platform.ctr.toFixed(2) }}%
                 </span>
               </td>
@@ -226,33 +234,36 @@
   @else
     <div class="px-6 py-8 text-center">
       <i class="fas fa-table text-4xl text-gray-300 mb-4"></i>
-      <h3 class="text-lg font-medium text-gray-900 mb-2">No Platform Data</h3>
-      <p class="text-gray-500">No performance data available for the selected criteria.</p>
+      <h3 class="text-lg font-medium text-gray-900 mb-2">
+        No Platform Data
+      </h3>
+      <p class="text-gray-500">
+        No performance data available for the selected criteria.
+      </p>
     </div>
   @endif
 </div>
 
 <script>
   function toggleTableView(view) {
-    const summaryView = document.getElementById('summaryView');
-    const detailedView = document.getElementById('detailedView');
-    const summaryBtn = document.getElementById('summaryViewBtn');
-    const detailedBtn = document.getElementById('detailedViewBtn');
-
-    if (view === 'summary') {
-      summaryView.classList.remove('hidden');
-      detailedView.classList.add('hidden');
-      summaryBtn.classList.remove('bg-gray-100', 'text-gray-700');
-      summaryBtn.classList.add('bg-blue-100', 'text-blue-800');
-      detailedBtn.classList.remove('bg-blue-100', 'text-blue-800');
-      detailedBtn.classList.add('bg-gray-100', 'text-gray-700');
+    const summaryView = document.getElementById("summaryView");
+    const detailedView = document.getElementById("detailedView");
+    const summaryBtn = document.getElementById("summaryViewBtn");
+    const detailedBtn = document.getElementById("detailedViewBtn");
+    if (view === "summary") {
+      summaryView.classList.remove("hidden");
+      detailedView.classList.add("hidden");
+      summaryBtn.classList.remove("bg-gray-100", "text-gray-700");
+      summaryBtn.classList.add("bg-blue-100", "text-blue-800");
+      detailedBtn.classList.remove("bg-blue-100", "text-blue-800");
+      detailedBtn.classList.add("bg-gray-100", "text-gray-700");
     } else {
-      summaryView.classList.add('hidden');
-      detailedView.classList.remove('hidden');
-      detailedBtn.classList.remove('bg-gray-100', 'text-gray-700');
-      detailedBtn.classList.add('bg-blue-100', 'text-blue-800');
-      summaryBtn.classList.remove('bg-blue-100', 'text-blue-800');
-      summaryBtn.classList.add('bg-gray-100', 'text-gray-700');
+      summaryView.classList.add("hidden");
+      detailedView.classList.remove("hidden");
+      detailedBtn.classList.remove("bg-gray-100", "text-gray-700");
+      detailedBtn.classList.add("bg-blue-100", "text-blue-800");
+      summaryBtn.classList.remove("bg-blue-100", "text-blue-800");
+      summaryBtn.classList.add("bg-gray-100", "text-gray-700");
     }
   }
 </script>

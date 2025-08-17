@@ -53,13 +53,13 @@ export default class ConnectedAccount extends BaseModel {
 
   @column({
     consume: (value: string | null) => {
-      if (!value) return null;
+      if (!value) return null
       try {
-        return typeof value === 'string' ? JSON.parse(value) : value;
+        return typeof value === 'string' ? JSON.parse(value) : value
       } catch {
-        return null;
+        return null
       }
-    }
+    },
   })
   declare accessibleCustomers: string[] | null
 
@@ -100,7 +100,7 @@ export default class ConnectedAccount extends BaseModel {
         logger.info(`Encrypting access token for account ${this.id}`)
         this.accessToken = databaseSecurityService.encryptField(this.accessToken, 'access_token')
       }
-      
+
       if (this.refreshToken && !this.isRefreshTokenEncrypted()) {
         logger.info(`Encrypting refresh token for account ${this.id}`)
         this.refreshToken = databaseSecurityService.encryptField(this.refreshToken, 'refresh_token')
@@ -120,7 +120,7 @@ export default class ConnectedAccount extends BaseModel {
       if (this.accessToken && this.isAccessTokenEncrypted()) {
         this.accessToken = databaseSecurityService.decryptField(this.accessToken, 'access_token')
       }
-      
+
       if (this.refreshToken && this.isRefreshTokenEncrypted()) {
         this.refreshToken = databaseSecurityService.decryptField(this.refreshToken, 'refresh_token')
       }
@@ -143,7 +143,7 @@ export default class ConnectedAccount extends BaseModel {
             'access_token'
           )
         }
-        
+
         if (record.refreshToken && record.isRefreshTokenEncrypted()) {
           record.refreshToken = databaseSecurityService.decryptField(
             record.refreshToken,
@@ -162,13 +162,15 @@ export default class ConnectedAccount extends BaseModel {
    */
   private isAccessTokenEncrypted(): boolean {
     if (!this.accessToken) return false
-    
+
     // Base64 encoded encrypted data will not contain spaces and will be longer than typical access tokens
     // Also check if it looks like a Google access token (starts with ya29.)
-    return !this.accessToken.startsWith('ya29.') && 
-           !this.accessToken.includes(' ') && 
-           this.accessToken.length > 100 &&
-           /^[A-Za-z0-9+/=]+$/.test(this.accessToken)
+    return (
+      !this.accessToken.startsWith('ya29.') &&
+      !this.accessToken.includes(' ') &&
+      this.accessToken.length > 100 &&
+      /^[A-Za-z0-9+/=]+$/.test(this.accessToken)
+    )
   }
 
   /**
@@ -176,13 +178,15 @@ export default class ConnectedAccount extends BaseModel {
    */
   private isRefreshTokenEncrypted(): boolean {
     if (!this.refreshToken) return false
-    
+
     // Similar check for refresh tokens
     // Google refresh tokens typically start with 1//
-    return !this.refreshToken.startsWith('1//') && 
-           !this.refreshToken.includes(' ') && 
-           this.refreshToken.length > 100 &&
-           /^[A-Za-z0-9+/=]+$/.test(this.refreshToken)
+    return (
+      !this.refreshToken.startsWith('1//') &&
+      !this.refreshToken.includes(' ') &&
+      this.refreshToken.length > 100 &&
+      /^[A-Za-z0-9+/=]+$/.test(this.refreshToken)
+    )
   }
 
   /**
@@ -202,7 +206,7 @@ export default class ConnectedAccount extends BaseModel {
     if (this.accessToken && !this.isAccessTokenEncrypted()) {
       this.accessToken = databaseSecurityService.encryptField(this.accessToken, 'access_token')
     }
-    
+
     if (this.refreshToken && !this.isRefreshTokenEncrypted()) {
       this.refreshToken = databaseSecurityService.encryptField(this.refreshToken, 'refresh_token')
     }
@@ -215,7 +219,7 @@ export default class ConnectedAccount extends BaseModel {
     if (this.accessToken && this.isAccessTokenEncrypted()) {
       this.accessToken = databaseSecurityService.decryptField(this.accessToken, 'access_token')
     }
-    
+
     if (this.refreshToken && this.isRefreshTokenEncrypted()) {
       this.refreshToken = databaseSecurityService.decryptField(this.refreshToken, 'refresh_token')
     }

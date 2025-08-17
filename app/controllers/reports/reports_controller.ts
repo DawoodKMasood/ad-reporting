@@ -6,7 +6,7 @@ import {
   createCustomReportValidator,
   updateCustomReportValidator,
   saveLayoutValidator,
-  previewReportValidator
+  previewReportValidator,
 } from '#validators/custom_report'
 
 export default class ReportsController {
@@ -34,7 +34,6 @@ export default class ReportsController {
         connectedAccounts,
         customReports,
       })
-
     } catch (error) {
       logger.error('Error fetching reports data:', error)
       const user = auth.getUserOrFail()
@@ -53,7 +52,7 @@ export default class ReportsController {
   async custom({ view, auth }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      
+
       const connectedAccounts = await ConnectedAccount.query()
         .where('user_id', user.id)
         .where('is_active', true)
@@ -62,7 +61,6 @@ export default class ReportsController {
         user,
         connectedAccounts,
       })
-
     } catch (error) {
       logger.error('Error fetching custom reports:', error)
       const user = auth.getUserOrFail()
@@ -104,7 +102,7 @@ export default class ReportsController {
         isScheduled: data.isScheduled || false,
         scheduleFrequency: data.scheduleFrequency,
         widgetLayout: data.widgetLayout,
-        status: 'active'
+        status: 'active',
       })
 
       if (data.ajax) {
@@ -115,7 +113,9 @@ export default class ReportsController {
     } catch (error) {
       logger.error('Error creating custom report:', error)
       if (request.input('ajax')) {
-        return response.status(400).json({ success: false, error: error.message || 'Failed to save report' })
+        return response
+          .status(400)
+          .json({ success: false, error: error.message || 'Failed to save report' })
       }
       return response.redirect().back()
     }
@@ -127,7 +127,7 @@ export default class ReportsController {
   async show({ params, view, auth }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      
+
       const customReport = await CustomReport.query()
         .where('id', params.id)
         .where('user_id', user.id)
@@ -138,7 +138,6 @@ export default class ReportsController {
         user,
         customReport,
       })
-
     } catch (error) {
       logger.error('Error fetching custom report:', error)
       const user = auth.getUserOrFail()
@@ -182,7 +181,9 @@ export default class ReportsController {
     } catch (error) {
       logger.error('Error updating custom report:', error)
       if (request.input('ajax')) {
-        return response.status(400).json({ success: false, error: error.message || 'Failed to update report' })
+        return response
+          .status(400)
+          .json({ success: false, error: error.message || 'Failed to update report' })
       }
       return response.redirect().back()
     }
@@ -194,7 +195,7 @@ export default class ReportsController {
   async destroy({ params, auth, response }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      
+
       const customReport = await CustomReport.query()
         .where('id', params.id)
         .where('user_id', user.id)
@@ -215,7 +216,7 @@ export default class ReportsController {
   async archive({ params, auth, response }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      
+
       const customReport = await CustomReport.query()
         .where('id', params.id)
         .where('user_id', user.id)
@@ -237,11 +238,11 @@ export default class ReportsController {
   async saveLayout({ request, auth, response }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      
+
       // Log raw request data for debugging
       const rawData = request.all()
       logger.info('Raw request data received:', rawData)
-      
+
       // Validate the data
       const data = await request.validateUsing(saveLayoutValidator)
       logger.info('SaveLayout called with validated data:', data)
@@ -260,7 +261,7 @@ export default class ReportsController {
             .where('user_id', user.id)
             .where('is_active', true)
             .firstOrFail()
-          
+
           customReport.connectedAccountId = data.connectedAccountId
         }
 
@@ -269,9 +270,9 @@ export default class ReportsController {
       } else {
         // Create new report - connectedAccountId is required for new reports
         if (!data.connectedAccountId) {
-          return response.status(400).json({ 
-            success: false, 
-            error: 'Connected account is required for new reports' 
+          return response.status(400).json({
+            success: false,
+            error: 'Connected account is required for new reports',
           })
         }
 
@@ -291,26 +292,32 @@ export default class ReportsController {
           metrics: ['impressions', 'clicks', 'cost'], // Default metrics
           dateRangeType: 'last_30_days',
           status: 'active',
-          widgetLayout: data.widgetLayout
+          widgetLayout: data.widgetLayout,
         })
 
         logger.info('Created new custom report:', { id: customReport.id, name: customReport.name })
-        return response.json({ success: true, report: customReport, redirect: `/reports/${customReport.id}` })
+        return response.json({
+          success: true,
+          report: customReport,
+          redirect: `/reports/${customReport.id}`,
+        })
       }
     } catch (error) {
       logger.error('Error saving widget layout:', error)
-      
+
       // Handle validation errors specifically
       if (error.code === 'E_VALIDATION_ERROR') {
         logger.error('Validation error details:', error.messages)
-        return response.status(422).json({ 
-          success: false, 
+        return response.status(422).json({
+          success: false,
           error: 'Validation failed',
-          details: error.messages 
+          details: error.messages,
         })
       }
-      
-      return response.status(400).json({ success: false, error: error.message || 'Failed to save layout' })
+
+      return response
+        .status(400)
+        .json({ success: false, error: error.message || 'Failed to save layout' })
     }
   }
 
@@ -320,7 +327,7 @@ export default class ReportsController {
   async loadLayout({ params, auth, response }: HttpContext) {
     try {
       const user = auth.getUserOrFail()
-      
+
       const customReport = await CustomReport.query()
         .where('id', params.id)
         .where('user_id', user.id)
@@ -361,15 +368,17 @@ export default class ReportsController {
         reportData = customReport
       }
 
-      return response.json({ 
-        success: true, 
+      return response.json({
+        success: true,
         layout: data.widgetLayout,
         reportData: reportData,
-        sampleData: this.getSampleData()
+        sampleData: this.getSampleData(),
       })
     } catch (error) {
       logger.error('Error generating preview:', error)
-      return response.status(400).json({ success: false, error: error.message || 'Failed to generate preview' })
+      return response
+        .status(400)
+        .json({ success: false, error: error.message || 'Failed to generate preview' })
     }
   }
 
@@ -380,21 +389,25 @@ export default class ReportsController {
     try {
       const user = auth.getUserOrFail()
       const data = request.all()
-      
+
       logger.info('SaveLayoutDebug called with data:', JSON.stringify(data, null, 2))
 
       // Basic validation
       if (!data.connectedAccountId) {
-        return response.status(400).json({ 
-          success: false, 
-          error: 'Connected account is required' 
+        return response.status(400).json({
+          success: false,
+          error: 'Connected account is required',
         })
       }
 
-      if (!data.widgetLayout || !Array.isArray(data.widgetLayout) || data.widgetLayout.length === 0) {
-        return response.status(400).json({ 
-          success: false, 
-          error: 'Widget layout is required and must be a non-empty array' 
+      if (
+        !data.widgetLayout ||
+        !Array.isArray(data.widgetLayout) ||
+        data.widgetLayout.length === 0
+      ) {
+        return response.status(400).json({
+          success: false,
+          error: 'Widget layout is required and must be a non-empty array',
         })
       }
 
@@ -404,11 +417,11 @@ export default class ReportsController {
         .where('user_id', user.id)
         .where('is_active', true)
         .first()
-        
+
       if (!connectedAccount) {
-        return response.status(400).json({ 
-          success: false, 
-          error: 'Connected account not found or inactive' 
+        return response.status(400).json({
+          success: false,
+          error: 'Connected account not found or inactive',
         })
       }
 
@@ -421,15 +434,23 @@ export default class ReportsController {
         metrics: ['impressions', 'clicks', 'cost'], // Default metrics
         dateRangeType: 'last_30_days',
         status: 'active',
-        widgetLayout: data.widgetLayout
+        widgetLayout: data.widgetLayout,
       })
 
-      logger.info('Created new custom report via debug method:', { id: customReport.id, name: customReport.name })
-      return response.json({ success: true, report: customReport, redirect: `/reports/${customReport.id}` })
-      
+      logger.info('Created new custom report via debug method:', {
+        id: customReport.id,
+        name: customReport.name,
+      })
+      return response.json({
+        success: true,
+        report: customReport,
+        redirect: `/reports/${customReport.id}`,
+      })
     } catch (error) {
       logger.error('Error in saveLayoutDebug:', error)
-      return response.status(500).json({ success: false, error: error.message || 'Failed to save layout' })
+      return response
+        .status(500)
+        .json({ success: false, error: error.message || 'Failed to save layout' })
     }
   }
 
@@ -439,53 +460,59 @@ export default class ReportsController {
   private getSampleData() {
     return {
       metrics: {
-        spend: 2450.50,
+        spend: 2450.5,
         impressions: 145680,
         clicks: 4720,
         conversions: 142,
         ctr: 3.24,
         cpc: 0.52,
-        cpa: 17.26
+        cpa: 17.26,
       },
       chartData: {
         line: {
           labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-          datasets: [{
-            label: 'Spend',
-            data: [1200, 1350, 1100, 1800, 1650, 2100],
-            borderColor: '#3B82F6',
-            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            tension: 0.4
-          }]
+          datasets: [
+            {
+              label: 'Spend',
+              data: [1200, 1350, 1100, 1800, 1650, 2100],
+              borderColor: '#3B82F6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              tension: 0.4,
+            },
+          ],
         },
         bar: {
           labels: ['Google Ads', 'Meta Ads', 'LinkedIn Ads'],
-          datasets: [{
-            label: 'Spend',
-            data: [1500, 800, 150],
-            backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6']
-          }]
+          datasets: [
+            {
+              label: 'Spend',
+              data: [1500, 800, 150],
+              backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6'],
+            },
+          ],
         },
         pie: {
           labels: ['Google Ads', 'Meta Ads', 'LinkedIn Ads'],
-          datasets: [{
-            data: [60, 32, 8],
-            backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6']
-          }]
-        }
+          datasets: [
+            {
+              data: [60, 32, 8],
+              backgroundColor: ['#3B82F6', '#10B981', '#8B5CF6'],
+            },
+          ],
+        },
       },
       tableData: {
         campaigns: [
           { name: 'Brand Campaign', spend: 1250, clicks: 2100, ctr: '3.2%' },
           { name: 'Product Campaign', spend: 890, clicks: 1580, ctr: '2.8%' },
-          { name: 'Retargeting Campaign', spend: 310, clicks: 1040, ctr: '4.1%' }
+          { name: 'Retargeting Campaign', spend: 310, clicks: 1040, ctr: '4.1%' },
         ],
         platforms: [
           { platform: 'Google Ads', spend: 1500, impressions: 85000, clicks: 2800 },
           { platform: 'Meta Ads', spend: 800, impressions: 45000, clicks: 1620 },
-          { platform: 'LinkedIn Ads', spend: 150, impressions: 15680, clicks: 300 }
-        ]
-      }
+          { platform: 'LinkedIn Ads', spend: 150, impressions: 15680, clicks: 300 },
+        ],
+      },
     }
   }
 }

@@ -138,7 +138,7 @@ export default class DashboardController {
       })
     } catch (error) {
       logger.error('Error fetching dashboard data:', error)
-      
+
       // Return fallback data in case of error
       const user = auth.getUserOrFail()
       // Define available platforms with connection status (fallback)
@@ -269,7 +269,7 @@ export default class DashboardController {
       })
     } catch (error) {
       logger.error('Error fetching overview data:', error)
-      
+
       // Return fallback data in case of error
       const user = auth.getUserOrFail()
       return view.render('pages/dashboard/overview', {
