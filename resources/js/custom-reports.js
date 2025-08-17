@@ -454,8 +454,6 @@ class CustomReportBuilder {
   }
 
   async saveReport(e) {
-    console.log('Save report')
-
     const form = new FormData(e.target)
     const data = {
       name: form.get('name'),

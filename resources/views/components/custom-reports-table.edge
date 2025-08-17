@@ -80,9 +80,6 @@
                       {{ report.dateRangeDisplay }}
                     </span>
                     <span class="text-xs text-gray-500">
-                      Metrics: {{ report.metricsDisplay }}
-                    </span>
-                    <span class="text-xs text-gray-500">
                       @if(report.lastGeneratedAt)
                         Generated {{ report.lastGeneratedAt.toRelative() }}
                       @else
@@ -134,20 +131,6 @@
                         Edit
                       </button>
                       <button
-                        onclick="duplicateReport('{{ report.id }}')"
-                        class="w-full text-left block px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                      >
-                        <i class="fas fa-copy mr-2"></i>
-                        Duplicate
-                      </button>
-                      <button
-                        onclick="archiveReport('{{ report.id }}')"
-                        class="w-full text-left block px-4 py-2 text-xs text-gray-700 hover:bg-gray-100"
-                      >
-                        <i class="fas fa-archive mr-2"></i>
-                        Archive
-                      </button>
-                      <button
                         onclick="deleteReport('{{ report.id }}')"
                         class="w-full text-left block px-4 py-2 text-xs text-red-600 hover:bg-red-50"
                       >
@@ -156,9 +139,6 @@
                       </button>
                     </div>
                   </div>
-                </div>
-                <div class="flex-shrink-0">
-                  <i class="fas fa-chevron-right text-gray-400 group-hover:text-blue-500 transition-colors"></i>
                 </div>
               </div>
             </div>
